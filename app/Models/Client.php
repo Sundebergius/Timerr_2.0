@@ -9,7 +9,7 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'contact_details', 'status', 'type', 'company_name', 'company_size'];
+    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'country', 'status'];
 
     const TYPE_INDIVIDUAL = 'individual';
     const TYPE_COMPANY = 'company';

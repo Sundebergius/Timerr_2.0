@@ -9,58 +9,57 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
-                    <form method="POST" action="{{ route('clients.store') }}" class="form-horizontal">
+                    <form method="POST" action="{{ route('clients.store') }}">
                         @csrf
 
-                        <div class="form-group">
-                            <label for="client_type" class="control-label">{{ __('Client Type') }}</label>
+                        <div class="mb-4">
+                            <label for="client_type" class="block text-sm font-bold mb-2">{{ __('Client Type') }}</label>
 
-                            <select name="client_type" id="client_type" onchange="clientTypeChange(this)" class="form-control">
+                            <select name="client_type" id="client_type" onchange="clientTypeChange(this)" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                 <option value="individual">Individual</option>
                                 <option value="company">Company</option>
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="name" class="control-label">{{ __('Name') }}</label>
-                            <input id="name" class="form-control" type="text" name="name" value="{{ old('name') }}" required autofocus />
+                        <div class="mb-4">
+                            <label for="name" class="block text-sm font-bold mb-2">{{ __('Name') }}</label>
+                            <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                         </div>
 
-                        <div class="form-group">
-                            <label for="email" class="control-label">{{ __('Email') }}</label>
-                            <input id="email" class="form-control" type="text" name="email" value="{{ old('email') }}" required autofocus />
+                        <div class="mb-4">
+                            <label for="email" class="block text-sm font-bold mb-2">{{ __('Email') }}</label>
+                            <input id="email" type="text" name="email" value="{{ old('email') }}" required autofocus class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                         </div>
 
                         <div id="company_info">
-                            <div class="form-group">
-                                <label for="company" class="control-label">{{ __('Company') }}</label>
-                                <input id="company" class="form-control" type="text" name="company" value="{{ old('company') }}" />
-                            </div>
+                            {{-- <div class="mb-4">
+                                <label for="company" class="block text-sm font-bold mb-2">{{ __('Company') }}</label>
+                                <input id="company" type="text" name="company" value="{{ old('company') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                            </div> --}}
 
-                            <div class="form-group">
-                                <label for="cvr" class="control-label">{{ __('CVR') }}</label>
-                                <input id="cvr" class="form-control" type="text" name="cvr" value="{{ old('cvr') }}" />
+                            <div class="mb-4">
+                                <label for="cvr" class="block text-sm font-bold mb-2">{{ __('CVR') }}</label>
+                                <input id="cvr" type="text" name="cvr" value="{{ old('cvr') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                             </div>
                         </div>
-
                         <!-- Additional Information -->
-                        <div class="form-group">
-                            <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#additionalInfo" aria-expanded="false" aria-controls="additionalInfo">
-                                Additional Information <i class="fas fa-chevron-down"></i>
+                        <div class="mb-4" x-data="{ open: false }">
+                            <button @click="open = !open" class="text-white font-bold py-2 px-4 rounded border border-blue-500 bg-gray-300 hover:bg-gray-600 transition" type="button">
+                                Additional Information <i class="fas fa-chevron-down" x-show="!open"></i><i class="fas fa-chevron-up" x-show="open"></i>
                             </button>
-                            <div class="collapse" id="additionalInfo">
-                                <div class="card card-body">
-                                    <div class="form-group">
-                                        <label for="phone" class="control-label">{{ __('Phone') }}</label>
-                                        <input id="phone" class="form-control" type="text" name="phone" value="{{ old('phone') }}" />
+                            <div x-show="open" class="mt-4 border rounded shadow">
+                                <div class="p-4">
+                                    <div class="mb-4">
+                                        <label for="phone" class="block text-sm font-bold mb-2">{{ __('Phone') }}</label>
+                                        <input id="phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="phone" value="{{ old('phone') }}" />
                                     </div>
-                                    <div class="form-group">
-                                        <label for="address" class="control-label">{{ __('Address') }}</label>
-                                        <input id="address" class="form-control" type="text" name="address" value="{{ old('address') }}" />
+                                    <div class="mb-4">
+                                        <label for="address" class="block text-sm font-bold mb-2">{{ __('Address') }}</label>
+                                        <input id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="address" value="{{ old('address') }}" />
                                     </div>
-                                    <div class="form-group">
-                                        <label for="country" class="control-label">{{ __('Country') }}</label>
-                                        <input id="country" class="form-control" type="text" name="country" value="{{ old('country') }}" />
+                                    <div class="mb-4">
+                                        <label for="country" class="block text-sm font-bold mb-2">{{ __('Country') }}</label>
+                                        <input id="country" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="country" value="{{ old('country') }}" />
                                     </div>
                                 </div>
                             </div>
@@ -69,7 +68,7 @@
                         <!-- Other fields -->
 
                         <div class="form-group">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                                 {{ __('Create Client') }}
                             </button>
                         </div>

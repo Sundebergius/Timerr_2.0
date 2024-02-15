@@ -17,6 +17,8 @@ class ClientController extends Controller
     {
         $data = $request->all();
         $data['user_id'] = auth()->id(); // set user_id to the ID of the currently authenticated user
+        $data['country'] = 'DK'; // set default country to 'DK'
+        $data['status'] = Client::STATUS_LEAD; // set default status to 'lead'
     
         $client = Client::create($data);
     
@@ -70,5 +72,14 @@ class ClientController extends Controller
         }
 
         return redirect()->route('clients.index');
+    }
+    
+    public function updateStatus(Request $request, $id)
+    {
+        $client = Client::find($id);
+        $client->status = $request->status;
+        $client->save();
+
+        return response()->json(['message' => 'Status updated successfully.']);
     }
 }

@@ -33,10 +33,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [ClientController::class, 'index'])->name('clients.index');
         Route::get('/create', [ClientController::class, 'create'])->name('clients.create');
         Route::post('/', [ClientController::class, 'store'])->name('clients.store');
-        Route::post('/clients/import', [ClientController::class, 'import'])->name('clients.import');
+        Route::post('/import', [ClientController::class, 'import'])->name('clients.import');
         Route::get('/{client}', [ClientController::class, 'show'])->name('clients.show');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
         Route::delete('/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+        Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
+        Route::get('/{id}/edit', [ClientController::class, 'edit'])->name('clients.edit');
+        Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
     });
 });
 
