@@ -28,7 +28,7 @@
 
                         <div class="mb-4">
                             <label for="email" class="block text-sm font-bold mb-2">{{ __('Email') }}</label>
-                            <input id="email" type="text" name="email" value="{{ old('email') }}" required autofocus class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                            <input id="email" type="text" name="email" value="{{ old('email') }}" autofocus class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                         </div>
 
                         <div id="company_info">

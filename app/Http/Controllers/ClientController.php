@@ -7,10 +7,30 @@ use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $clients = Client::all();
-        return view('clients.index', compact('clients'));
+        $searches = $request->get('search');
+        $pageSize = $request->get('pageSize', 10);
+        $sortField = $request->get('sortField', 'name');
+        $sortDirection = $request->get('sortDirection', 'asc');
+    
+        $query = Client::query();
+
+        if ($searches) {
+            foreach ($searches as $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'LIKE', "%{$search}%")
+                        ->orWhere('email', 'LIKE', "%{$search}%")
+                        ->orWhere('phone', 'LIKE', "%{$search}%")
+                        ->orWhere('status', 'LIKE', "%{$search}%");
+                });
+            }
+        }
+    
+        $clients = $query->orderBy($sortField, $sortDirection)
+            ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
+    
+        return view('clients.index', ['clients' => $clients]);
     }
 
     public function store(Request $request)
@@ -32,8 +52,19 @@ class ClientController extends Controller
 
     public function update(Request $request, Client $client)
     {
-        $client->update($request->all());
-        return redirect()->route('clients.index');
+        $validatedData = $request->validate([
+            'name' => 'required|max:255',
+            'status' => 'required',
+            'phone' => 'nullable',
+            'email' => 'nullable|email',
+            'tags' => 'nullable',
+            'categories' => 'nullable',
+            'notes' => 'nullable',
+        ]);
+
+        $client->update($validatedData);
+
+        return redirect()->route('clients.index')->with('success', 'Client updated successfully');
     }
 
     public function destroy(Client $client)
@@ -45,6 +76,11 @@ class ClientController extends Controller
     public function create()
     {
         return view('clients.create');
+    }
+
+    public function edit(Client $client)
+    {
+        return view('clients.edit', compact('client'));
     }
 
     public function import(Request $request)

@@ -38,8 +38,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
         Route::delete('/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
         Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
-        Route::get('/{id}/edit', [ClientController::class, 'edit'])->name('clients.edit');
+        Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
+        Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
     });
 });
 

@@ -17,9 +17,28 @@ use App\Models\Client;
                 <div class="p-6 text-gray-900 dark:text-gray-100">
                     <!-- Search form -->
                     <form method="GET" action="{{ route('clients.index') }}" class="mb-3 flex">
-                        <input type="text" class="form-input flex-grow mr-3" placeholder="Search clients" name="search">
+                        <input type="text" class="form-input flex-grow mr-3" placeholder="Search clients" name="search[]">
+                        @if(request('search'))
+                            @foreach(request('search') as $search)
+                                <input type="hidden" name="search[]" value="{{ $search }}">
+                            @endforeach
+                        @endif
                         <button class="btn btn-outline-secondary" type="submit">Search</button>
                     </form>
+
+                    <!-- Search tags -->
+                    <div class="tags flex flex-wrap">
+                        @if(request('search') && count(request('search')) > 0)
+                            @foreach(request('search') as $search)
+                                @if($search != '')
+                                    <span class="tag bg-gray-400 text-white px-2 py-1 m-1 rounded">
+                                        {{ $search }}
+                                        <a href="{{ url('clients') }}?search[]={{ implode('&search[]=', array_diff(request('search'), [$search])) }}" class="ml-1 text-white">x</a>
+                                    </span>
+                                @endif
+                            @endforeach
+                        @endif
+                    </div>
 
                     <!-- Add new client form -->
                     <form method="POST" action="{{ route('clients.store') }}">
@@ -32,9 +51,23 @@ use App\Models\Client;
                     <table class="table-auto w-full">
                         <thead>
                             <tr>
-                                <th class="px-4 py-2">Name</th>
+                                <th class="px-4 py-2">
+                                    <a href="{{ route('clients.index', ['sortField' => 'name', 'sortDirection' => request('sortField') === 'name' && request('sortDirection') === 'asc' ? 'desc' : 'asc']) }}">
+                                        Name
+                                        @if(request('sortField') === 'name')
+                                            <i class="fas fa-sort-{{ request('sortDirection') === 'asc' ? 'up' : 'down' }}"></i>
+                                        @endif
+                                    </a>
+                                </th>
                                 <th class="px-4 py-2">Contact Details</th>
-                                <th class="px-4 py-2">Status</th>
+                                <th class="px-4 py-2">
+                                    <a href="{{ route('clients.index', ['sortField' => 'status', 'sortDirection' => request('sortField') === 'status' && request('sortDirection') === 'asc' ? 'desc' : 'asc']) }}">
+                                        Status
+                                        @if(request('sortField') === 'status')
+                                            <i class="fas fa-sort-{{ request('sortDirection') === 'asc' ? 'up' : 'down' }}"></i>
+                                        @endif
+                                    </a>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
