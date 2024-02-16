@@ -80,7 +80,15 @@ class ClientController extends Controller
 
     public function edit(Client $client)
     {
-        return view('clients.edit', compact('client'));
+        $statuses = [
+            'lead' => Client::STATUS_LEAD,
+            'contacted' => Client::STATUS_CONTACTED,
+            'interested' => Client::STATUS_INTERESTED,
+            'negotiation' => Client::STATUS_NEGOTIATION,
+            'deal_made' => Client::STATUS_DEAL_MADE,
+        ];
+
+        return view('clients.edit', compact('client', 'statuses'));
     }
 
     public function import(Request $request)

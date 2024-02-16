@@ -9,7 +9,12 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'country', 'status'];
+    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'country', 'status', 'tags', 'tag_colors'];
+
+    protected $casts = [
+        'tags' => 'array',
+        'tag_colors' => 'array',
+    ];
 
     const TYPE_INDIVIDUAL = 'individual';
     const TYPE_COMPANY = 'company';
