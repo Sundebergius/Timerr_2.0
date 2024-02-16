@@ -57,7 +57,8 @@ class ClientController extends Controller
             'status' => 'required',
             'phone' => 'nullable',
             'email' => 'nullable|email',
-            'tags' => 'nullable',
+            'tags' => 'array',
+            'tag_colors' => 'array',
             'categories' => 'nullable',
             'notes' => 'nullable',
         ]);
