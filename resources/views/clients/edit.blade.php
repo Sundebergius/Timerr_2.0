@@ -29,7 +29,7 @@
                                     </label>
                                     <div class="mt-1 sm:mt-0 sm:col-span-2">
                                         <input type="text" id="name" name="name" value="{{ $client->name }}"
-                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs sm:text-sm border-gray-300 rounded-md">
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
                                     </div>
                                 </div>
     
@@ -41,7 +41,7 @@
                                     </label>
                                     <div class="mt-1 sm:mt-0 sm:col-span-2">
                                         <select id="status" name="status"
-                                            class="max-w-lg block focus:ring-indigo-500 focus:border-indigo-500 w-full shadow-sm sm:max-w-xs sm:text-sm border-gray-300 rounded-md">
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
                                             <option value="{{ $statuses['lead'] }}"
                                                 {{ $client->status == $statuses['lead'] ? 'selected' : '' }}>Lead</option>
                                             <option value="{{ $statuses['contacted'] }}"
@@ -68,7 +68,7 @@
                                     </label>
                                     <div class="mt-1 sm:mt-0 sm:col-span-2">
                                         <input type="text" id="phone" name="phone" value="{{ $client->phone }}"
-                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs sm:text-sm border-gray-300 rounded-md">
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
                                     </div>
                                 </div>
     
@@ -80,37 +80,52 @@
                                     </label>
                                     <div class="mt-1 sm:mt-0 sm:col-span-2">
                                         <input type="text" id="email" name="email" value="{{ $client->email }}"
-                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs sm:text-sm border-gray-300 rounded-md">
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
                                     </div>
                                 </div>
     
                                 <!-- Tags -->
-                                <div
-                                    class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
                                     <label for="tags" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                                         Tags
                                     </label>
                                     <div class="mt-1 sm:mt-0 sm:col-span-2">
-                                        <div class="flex items-center">
+                                        <div class="flex flex-col sm:flex-row items-center">
                                             <input type="text" id="tag-input"
-                                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                                class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md sm:mr-3 mb-3 sm:mb-0 sm:flex-grow">
                                             <select id="tag-color"
-                                                class="ml-3 block focus:ring-indigo-500 focus:border-indigo-500 w-full shadow-sm sm:max-w-xs sm:text-sm border-gray-300 rounded-md">
+                                                class="block focus:ring-indigo-500 focus:border-indigo-500 w-32 shadow-sm sm:max-w-xs sm:text-sm border-gray-300 rounded-md sm:mr-3 mb-3 sm:mb-0">
                                                 <option value="red">Red</option>
                                                 <option value="blue">Blue</option>
                                                 <option value="green">Green</option>
                                             </select>
-                                            <button id="add-tag" type="button"
-                                                class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Add
-                                                tag</button>
                                         </div>
+                                        <button id="add-tag" type="button"
+                                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 mt-3">Add
+                                            tag</button>
                                         <div id="tags-container" class="mt-2 space-y-1">
-                                            <!-- Tags will be dynamically added here -->
-                                            @foreach ($client->tags as $index => $tag)
-                                                <span
-                                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $client->tag_colors[$index] }}-100 text-{{ $client->tag_colors[$index] }}-800">{{ $tag }}</span>
-                                            @endforeach
+                                            <div id="tags-container" class="mt-2 space-y-1">
+                                                <!-- Tags will be dynamically added here -->
+                                                    @if(is_array($client->tags) && is_array($client->tag_colors))
+                                                        @foreach ($client->tags as $index => $tag)
+                                                            @php
+                                                                $color = $client->tag_colors[$index] ?? 'blue';
+                                                            @endphp
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $color }}-100 text-{{ $color }}-800 m-1">
+                                                                {{ $tag }}
+                                                                <button class="flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-{{ $color }}-500 bg-{{ $color }}-100 hover:bg-{{ $color }}-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ $color }}-500 delete-tag-button" data-tag="{{ $tag }}">
+                                                                    <span class="sr-only">Remove</span>
+                                                                    <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                                    </svg>
+                                                                </button>
+                                                            </span>
+                                                        @endforeach
+                                                    @endif
+                                             </div>
                                         </div>
+                                    </div>
+                                </div>
                                         <!-- Hidden form fields to actually submit the tags -->
                                         <div id="hidden-fields">
                                             @if ($client->tags)
@@ -175,8 +190,21 @@
             // Create the tag element
             var tagElement = document.createElement('span');
             tagElement.textContent = tagInput.value;
+            tagElement.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium m-1';
             tagElement.style.backgroundColor = tagColor.value;
             tagsContainer.appendChild(tagElement);
+
+            // Create a remove button for the tag
+            var removeButton = document.createElement('button');
+            removeButton.className = 'flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center';
+            removeButton.innerHTML = '<span class="sr-only">Remove</span><svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            removeButton.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent the button from submitting the form
+                tagElement.remove();
+                tagField.remove();
+                colorField.remove();
+            });
+            tagElement.appendChild(removeButton);
     
             // Create hidden fields to actually submit the tag
             var tagField = document.createElement('input');
@@ -193,6 +221,38 @@
     
             // Clear the input
             tagInput.value = '';
+        });
+        // Add event listeners to existing delete buttons
+        window.addEventListener('DOMContentLoaded', (event) => {
+            var deleteButtons = document.querySelectorAll('.delete-tag-button');
+            deleteButtons.forEach(function(button) {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var tagElement = e.target.closest('.inline-flex');
+                    var tag = button.dataset.tag;
+
+                    // Send a request to the server to delete the tag
+                    fetch('/delete-tag', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ tag: tag }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the tag element from the page
+                            tagElement.remove();
+                        } else {
+                            console.error('Error:', data.error);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+                });
+            });
         });
     </script>
     
