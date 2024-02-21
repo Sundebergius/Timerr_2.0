@@ -9,12 +9,11 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'country', 'status', 'tags', 'tag_colors'];
+    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'country', 'status'];
 
-    protected $casts = [
-        'tags' => 'array',
-        'tag_colors' => 'array',
-    ];
+    // protected $casts = [
+    //     'tag_colors' => 'array',
+    // ];
 
     const TYPE_INDIVIDUAL = 'individual';
     const TYPE_COMPANY = 'company';
@@ -42,5 +41,10 @@ class Client extends Model
             self::STATUS_NEGOTIATION,
             self::STATUS_DEAL_MADE,
         ];
+    }
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class)->withPivot('color');
     }
 }

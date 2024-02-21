@@ -3,6 +3,7 @@
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             Edit Client
         </h2>
+        @vite('resources/js/app.js')
     </x-slot>
 
     <div class="py-12">
@@ -87,6 +88,19 @@
                                 <!-- Tags -->
                                 <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
                                     <label for="tags" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                                        Vue Tags
+                                    </label>
+                                        <div id="app">
+                                            <div class="mt-1 sm:mt-0 sm:col-span-2">
+                                                <div class="flex flex-col sm:flex-row items-center">
+                                                    <tag-editor></tag-editor>
+                                                </div>
+                                            </div>
+                                        </div>
+                                </div>
+
+                                {{-- <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                    <label for="tags" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                                         Tags
                                     </label>
                                     <div class="mt-1 sm:mt-0 sm:col-span-2">
@@ -125,14 +139,16 @@
                                              </div>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
                                         <!-- Hidden form fields to actually submit the tags -->
                                         <div id="hidden-fields">
                                             @if ($client->tags)
-                                                @foreach ($client->tags as $index => $tag)
-                                                    <input type="hidden" name="tags[]" value="{{ $tag }}">
+                                                @foreach ($client->tags as $tag)
+                                                    <input type="hidden" name="tags[]" :value="{{ $tag->name }}">
+                                                    <input type="hidden" name="tag_colors[]" :value="{{ $tag->color }}">
+                                                    {{-- <input type="hidden" name="tags[]" value="{{ $tag }}">
                                                     <input type="hidden" name="tag_colors[]"
-                                                        value="{{ $client->tag_colors[$index] }}">
+                                                        value="{{ $client->tag_colors[$index] }}"> --}}
                                                 @endforeach
                                             @endif
                                         </div>
@@ -180,7 +196,7 @@
     </div>
     </x-app-layout>
     
-    <script>
+    {{-- <script>
         document.getElementById('add-tag').addEventListener('click', function() {
             var tagInput = document.getElementById('tag-input');
             var tagColor = document.getElementById('tag-color');
@@ -254,5 +270,5 @@
                 });
             });
         });
-    </script>
+    </script> --}}
     

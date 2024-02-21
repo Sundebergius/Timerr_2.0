@@ -22,7 +22,10 @@ class ClientController extends Controller
                     $query->where('name', 'LIKE', "%{$search}%")
                         ->orWhere('email', 'LIKE', "%{$search}%")
                         ->orWhere('phone', 'LIKE', "%{$search}%")
-                        ->orWhere('status', 'LIKE', "%{$search}%");
+                        ->orWhere('status', 'LIKE', "%{$search}%")
+                        ->orWhereHas('tags', function ($query) use ($search) {
+                            $query->where('name', 'LIKE', "%{$search}%");
+                        });
                 });
             }
         }
@@ -41,6 +44,15 @@ class ClientController extends Controller
         $data['status'] = Client::STATUS_LEAD; // set default status to 'lead'
     
         $client = Client::create($data);
+
+        // Handle the tags
+        $tags = $request->input('tags');
+        $tag_colors = $request->input('tag_colors');
+        foreach ($tags as $index => $tagName) {
+            $tagColor = $tag_colors[$index] ?? null;
+            $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
+            $client->tags()->attach($tag->id);
+        }
     
         return redirect()->route('clients.index');
     }
@@ -52,18 +64,40 @@ class ClientController extends Controller
 
     public function update(Request $request, Client $client)
     {
+        //dd($request->all());
         $validatedData = $request->validate([
             'name' => 'required|max:255',
             'status' => 'required',
             'phone' => 'nullable',
             'email' => 'nullable|email',
-            'tags' => 'array',
-            'tag_colors' => 'array',
             'categories' => 'nullable',
             'notes' => 'nullable',
         ]);
 
+        //dd($client->tags);
         $client->update($validatedData);
+
+        // Handle the tags
+        $newTags = $request->input('tags');
+        $newTagColors = $request->input('tag_colors');
+        $client->load('tags'); // reload the tags relationship
+        //dd($client->tags);
+        $currentTagIds = $client->tags->pluck('id')->toArray();
+
+        foreach ($newTags as $index => $tagName) {
+            $tagColor = $newTagColors[$index] ?? null;
+            $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
+            if (!in_array($tag->id, $currentTagIds)) {
+                $client->tags()->attach($tag->id); // attach new tags
+            } else {
+                $key = array_search($tag->id, $currentTagIds);
+                unset($currentTagIds[$key]); // remove tag from the list of current tags
+            }
+        }
+        // Any tags that are still in $currentTagIds have been removed in the request
+        foreach ($currentTagIds as $tagId) {
+            $client->tags()->detach($tagId);
+        }
 
         return redirect()->route('clients.index')->with('success', 'Client updated successfully');
     }
