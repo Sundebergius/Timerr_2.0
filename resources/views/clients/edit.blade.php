@@ -106,22 +106,26 @@
                                         <div id="tags-container" class="mt-2 space-y-1">
                                             <div id="tags-container" class="mt-2 space-y-1">
                                                 <!-- Tags will be dynamically added here -->
-                                                    @if(is_array($client->tags) && is_array($client->tag_colors))
-                                                        @foreach ($client->tags as $index => $tag)
-                                                            @php
-                                                                $color = $client->tag_colors[$index] ?? 'blue';
-                                                            @endphp
-                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $color }}-100 text-{{ $color }}-800 m-1">
-                                                                {{ $tag }}
-                                                                <button class="flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-{{ $color }}-500 bg-{{ $color }}-100 hover:bg-{{ $color }}-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ $color }}-500 delete-tag-button" data-tag="{{ $tag }}">
-                                                                    <span class="sr-only">Remove</span>
-                                                                    <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                                                    </svg>
-                                                                </button>
-                                                            </span>
-                                                        @endforeach
-                                                    @endif
+                                                @php
+                                                $tags = is_string($client->tags) ? json_decode($client->tags) : $client->tags;
+                                                $tag_colors = is_string($client->tag_colors) ? json_decode($client->tag_colors) : $client->tag_colors;
+                                                @endphp
+                                                @if(is_array($tags) && is_array($tag_colors))
+                                                @foreach ($tags as $index => $tag)
+                                                    @php
+                                                        $color = $tag_colors[$index] ?? 'blue';
+                                                    @endphp
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{{ $color }}-100 text-{{ $color }}-800 m-1">
+                                                        {{ $tag }}
+                                                        <button class="flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-{{ $color }}-500 bg-{{ $color }}-100 hover:bg-{{ $color }}-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-{{ $color }}-500 delete-tag-button" data-tag="{{ $tag }}">
+                                                            <span class="sr-only">Remove</span>
+                                                            <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </span>
+                                                @endforeach
+                                            @endif
                                              </div>
                                         </div>
                                     </div>

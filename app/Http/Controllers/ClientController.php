@@ -89,7 +89,11 @@ class ClientController extends Controller
             'deal_made' => Client::STATUS_DEAL_MADE,
         ];
 
-        return view('clients.edit', compact('client', 'statuses'));
+        // Check if the tags and tag_colors fields are already arrays
+        $tags = is_string($client->tags) ? json_decode($client->tags) : $client->tags;
+        $tag_colors = is_string($client->tag_colors) ? json_decode($client->tag_colors) : $client->tag_colors;
+
+        return view('clients.edit', compact('client', 'statuses', 'tags', 'tag_colors'));
     }
 
     public function import(Request $request)

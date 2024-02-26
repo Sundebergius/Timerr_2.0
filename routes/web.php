@@ -41,6 +41,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
+        Route::post('/{client}/delete-tag', [ClientController::class, 'deleteTag'])->name('clients.deleteTag');
     });
 });
 
