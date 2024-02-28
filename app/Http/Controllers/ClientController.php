@@ -82,16 +82,18 @@ class ClientController extends Controller
         $newTagColors = $request->input('tag_colors');
         $client->load('tags'); // reload the tags relationship
         //dd($client->tags);
-        $currentTagIds = $client->tags->pluck('id')->toArray();
+        $currentTagIds = $client->tags ? $client->tags->pluck('id')->toArray() : [];
 
-        foreach ($newTags as $index => $tagName) {
-            $tagColor = $newTagColors[$index] ?? null;
-            $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
-            if (!in_array($tag->id, $currentTagIds)) {
-                $client->tags()->attach($tag->id); // attach new tags
-            } else {
-                $key = array_search($tag->id, $currentTagIds);
-                unset($currentTagIds[$key]); // remove tag from the list of current tags
+        if ($newTags) {
+            foreach ($newTags as $index => $tagName) {
+                $tagColor = $newTagColors[$index] ?? null;
+                $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
+                if (!in_array($tag->id, $currentTagIds)) {
+                    $client->tags()->attach($tag->id); // attach new tags
+                } else {
+                    $key = array_search($tag->id, $currentTagIds);
+                    unset($currentTagIds[$key]); // remove tag from the list of current tags
+                }
             }
         }
         // Any tags that are still in $currentTagIds have been removed in the request

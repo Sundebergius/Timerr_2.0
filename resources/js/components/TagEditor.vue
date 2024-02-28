@@ -17,7 +17,7 @@
         <span v-for="(tag, index) in tags" :key="index" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium m-1"
           :class="`bg-${tagColors[index]}-100 text-${tagColors[index]}-800`">
           {{ tag }}
-          <button @click="removeTag(index)" class="flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center"
+          <button @click.prevent="removeTag(index)" class="flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center"
             :class="`text-${tagColors[index]}-500 bg-${tagColors[index]}-100 hover:bg-${tagColors[index]}-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${tagColors[index]}-500`">
             <span class="sr-only">Remove</span>
             <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -28,19 +28,32 @@
       </div>
     </div>
   </template>
-  
-  <script>
-    export default {
-    data() {
-        return {
-        newTag: '',
-        newTagColor: 'red',
-        tags: [],
-        tagColors: []
-        }
-    },
-    methods: {
-        addTag() {
+
+<script>
+export default {
+  props: {
+    client: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      newTag: '',
+      newTagColor: 'red',
+      tags: [],
+      tagColors: [],
+      clientData: null
+    }
+  },
+  mounted() {
+    console.log('Type of client:', typeof this.client);
+    this.clientData = JSON.parse(this.client);
+    console.log('Client:', this.clientData);
+    this.fetchTags();
+  },
+  methods: {
+    addTag() {
       fetch('http://timerr_2.0.test/api/tag', {
         method: 'POST',
         headers: {
@@ -48,10 +61,10 @@
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
         },
         body: JSON.stringify({ 
-                name: this.newTag, 
-                color: this.newTagColor,
-                client_id: this.client.id // assuming this.client is the current client
-            }),
+          name: this.newTag, 
+          color: this.newTagColor,
+          client_id: this.clientData.id // use clientData instead of client
+        }),
       })
       .then(response => response.json())
       .then(data => {
@@ -67,32 +80,50 @@
         console.error('Error:', error);
       });
     },
-        removeTag(index) {
-        const tag = this.tags[index];
-        fetch('http://timerr_2.0.test/api/tag', {
-            method: 'DELETE',
-            headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
-            },
-            body: JSON.stringify({ 
-                tag: tag,
-                client_id: this.client.id // assuming this.client is the current client
-            }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-            this.tags.splice(index, 1);
-            this.tagColors.splice(index, 1);
-            } else {
-            console.error('Error:', data.error);
-            }
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-        });
+    removeTag(index) {
+      const tag = this.tags[index];
+      fetch('http://timerr_2.0.test/api/tag', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
+        },
+        body: JSON.stringify({ 
+          tag: tag,
+          client_id: this.clientData.id // use clientData instead of client
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          this.tags.splice(index, 1);
+          this.tagColors.splice(index, 1);
+        } else {
+          console.error('Error:', data.error);
         }
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+    },
+    fetchTags() {
+      fetch(`http://timerr_2.0.test/api/clients/${this.clientData.id}/tags`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
+        },
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Server response:', data); // Log the server response
+        this.tags = data.map(tag => tag.name);
+        this.tagColors = data.map(tag => tag.color);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
     }
-    }
-  </script>
+  }
+}
+</script>

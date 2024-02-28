@@ -45,6 +45,6 @@ class Client extends Model
 
     public function tags()
     {
-        return $this->belongsToMany(Tag::class)->withPivot('color');
+        return $this->belongsToMany(Tag::class);
     }
 }

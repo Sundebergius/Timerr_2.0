@@ -4,6 +4,7 @@
             Edit Client
         </h2>
         @vite('resources/js/app.js')
+        <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
     </x-slot>
 
     <div class="py-12">
@@ -93,11 +94,27 @@
                                         <div id="app">
                                             <div class="mt-1 sm:mt-0 sm:col-span-2">
                                                 <div class="flex flex-col sm:flex-row items-center">
-                                                    <tag-editor></tag-editor>
+                                                    <tag-editor client="{{ json_encode($client) }}"></tag-editor>
                                                 </div>
                                             </div>
                                         </div>
                                 </div>
+
+                                {{-- <!-- Display Tags -->
+                                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                    <label class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                                        Current Tags
+                                    </label>
+                                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                                        @if ($client->tags)
+                                            @foreach ($client->tags as $tag)
+                                                <span class="inline-block bg-blue-200 text-blue-800 m-1 p-1 rounded">
+                                                    {{ $tag->name }}
+                                                </span>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                </div> --}}
 
                                 {{-- <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
                                     <label for="tags" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
@@ -195,6 +212,15 @@
         </div>
     </div>
     </x-app-layout>
+
+    <script>
+        var app = new Vue({
+            el: '#app',
+            data: {
+                client: {!! $client->toJson() !!}
+            }
+        });
+    </script>
     
     {{-- <script>
         document.getElementById('add-tag').addEventListener('click', function() {
