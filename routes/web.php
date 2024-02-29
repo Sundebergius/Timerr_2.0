@@ -35,12 +35,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [ClientController::class, 'store'])->name('clients.store');
         Route::post('/import', [ClientController::class, 'import'])->name('clients.import');
         Route::get('/{client}', [ClientController::class, 'show'])->name('clients.show');
-        Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
+        // Route::put('/{client}/edit/notes', [ClientController::class, 'updateNote'])->name('clients.notes.update');
         Route::delete('/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
         Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
-        Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
+        
     });
 });
 

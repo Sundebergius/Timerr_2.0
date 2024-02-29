@@ -47,4 +47,9 @@ class Client extends Model
     {
         return $this->belongsToMany(Tag::class);
     }
+
+    public function note()
+    {
+        return $this->hasOne(Note::class);
+    }
 }

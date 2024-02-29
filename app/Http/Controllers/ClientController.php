@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ClientController extends Controller
 {
@@ -45,13 +46,15 @@ class ClientController extends Controller
     
         $client = Client::create($data);
 
-        // Handle the tags
-        $tags = $request->input('tags');
-        $tag_colors = $request->input('tag_colors');
-        foreach ($tags as $index => $tagName) {
-            $tagColor = $tag_colors[$index] ?? null;
-            $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
-            $client->tags()->attach($tag->id);
+         // Handle the tags
+        if ($request->has('tags')) {
+            $tags = $request->input('tags');
+            $tag_colors = $request->input('tag_colors');
+            foreach ($tags as $index => $tagName) {
+                $tagColor = $tag_colors[$index] ?? null;
+                $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
+                $client->tags()->attach($tag->id);
+            }
         }
     
         return redirect()->route('clients.index');
@@ -99,6 +102,15 @@ class ClientController extends Controller
         // Any tags that are still in $currentTagIds have been removed in the request
         foreach ($currentTagIds as $tagId) {
             $client->tags()->detach($tagId);
+        }
+
+        // Check if a note has been provided
+        if ($request->has('notes')) {
+            // Create or update the note
+            $client->note()->updateOrCreate(
+                ['client_id' => $client->id],
+                ['content' => $request->notes]
+            );
         }
 
         return redirect()->route('clients.index')->with('success', 'Client updated successfully');
@@ -163,4 +175,21 @@ class ClientController extends Controller
 
         return response()->json(['message' => 'Status updated successfully.']);
     }
+
+    // public function updateNote(Request $request, Client $client)
+    // {
+    //     \Log::info('updateNote called');
+    //     \Log::info($request->all());
+    //     $validatedData = $request->validate([
+    //         'notes' => 'required|max:65000',
+    //     ]);
+
+    //     $client->note()->updateOrCreate(
+    //         ['client_id' => $client->id],
+    //         ['content' => $validatedData['notes']]
+    //     );
+
+    //     // return back()->with('success', 'Note updated successfully');
+    //     return redirect()->route('clients.edit', ['client' => $client->id])->with('success', 'Note updated successfully');
+    // }
 }

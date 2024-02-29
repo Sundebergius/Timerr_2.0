@@ -48,67 +48,65 @@ use App\Models\Client;
                     </form>
 
                     <!-- Client table -->
-                    <table class="table-auto w-full">
-                        <thead>
-                            <tr>
-                                <th class="px-4 py-2">
-                                    <a href="{{ route('clients.index', ['sortField' => 'name', 'sortDirection' => request('sortField') === 'name' && request('sortDirection') === 'asc' ? 'desc' : 'asc']) }}">
-                                        Name
-                                        @if(request('sortField') === 'name')
-                                            <i class="fas fa-sort-{{ request('sortDirection') === 'asc' ? 'up' : 'down' }}"></i>
-                                        @endif
-                                    </a>
-                                </th>
-                                <th class="px-4 py-2">Contact Details</th>
-                                <th class="px-4 py-2">
-                                    <a href="{{ route('clients.index', ['sortField' => 'status', 'sortDirection' => request('sortField') === 'status' && request('sortDirection') === 'asc' ? 'desc' : 'asc']) }}">
-                                        Status
-                                        @if(request('sortField') === 'status')
-                                            <i class="fas fa-sort-{{ request('sortDirection') === 'asc' ? 'up' : 'down' }}"></i>
-                                        @endif
-                                    </a>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($clients as $client)
-                            <tr>
-                                <td class="border px-4 py-2">{{ $client->name }}</td>
-                                <td class="border px-4 py-2">
-                                    @if($client->phone)
-                                    <strong>Phone Number:</strong>  {{ $client->phone }}<br>
-                                    @endif
-                                    @if($client->email)
-                                    <strong>Email:</strong>  {{ $client->email }}
-                                    @endif
-                                </td>
-                                    <td class="border px-4 py-2">
-                                        {{ $client->status }}
-                                        <select name="status" class="form-select block w-full mt-1" data-client-id="{{ $client->id }}">
-                                            <option value="{{ Client::STATUS_LEAD }}" {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>Lead</option>
-                                            <option value="{{ Client::STATUS_CONTACTED }}" {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>Contacted</option>
-                                            <option value="{{ Client::STATUS_INTERESTED }}" {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>Interested</option>
-                                            <option value="{{ Client::STATUS_NEGOTIATION }}" {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>Negotiation</option>
-                                            <option value="{{ Client::STATUS_DEAL_MADE }}" {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>Deal Made</option>
-                                        </select>
-                                    </td>
-                                    <td class="border px-4 py-2">
-                                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                                            <a href="{{ route('clients.show', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">View</a>
-                                            <a href="{{ route('clients.edit', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit</a>
-                                            <form method="POST" action="{{ route('clients.destroy', $client) }}">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="inline-block bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick="return confirm('Are you sure you want to delete this item?')">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+                        <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+                            <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+                                <table class="min-w-full divide-y divide-gray-200" id="clientTable">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Name
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                                                Contact Details
+                                            </th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                                                Status
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        @foreach ($clients as $client)
+                                        <tr class="client-row cursor-pointer flex flex-col md:table-row">
+                                            <td class="px-6 py-4 whitespace-nowrap client-name">{{ $client->name }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap client-details hidden sm:block md:table-cell">
+                                                @if($client->phone)
+                                                <strong>Phone Number:</strong>  {{ $client->phone }}<br>
+                                                @endif
+                                                @if($client->email)
+                                                <strong>Email:</strong>  {{ $client->email }}
+                                                @endif
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap client-details hidden sm:block md:table-cell">
+                                                {{ $client->status }}
+                                                <select name="status" class="form-select block w-full mt-1" data-client-id="{{ $client->id }}">
+                                                    <option value="{{ Client::STATUS_LEAD }}" {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>Lead</option>
+                                                    <option value="{{ Client::STATUS_CONTACTED }}" {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>Contacted</option>
+                                                    <option value="{{ Client::STATUS_INTERESTED }}" {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>Interested</option>
+                                                    <option value="{{ Client::STATUS_NEGOTIATION }}" {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>Negotiation</option>
+                                                    <option value="{{ Client::STATUS_DEAL_MADE }}" {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>Deal Made</option>
+                                                </select>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap client-details hidden sm:block md:table-cell">
+                                                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                                                    <a href="{{ route('clients.show', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center">View</a>
+                                                    <a href="{{ route('clients.edit', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center">Edit</a>
+                                                    <form method="POST" action="{{ route('clients.destroy', $client) }}">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="inline-block bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded  w-full sm:w-auto text-center" onclick="return confirm('Are you sure you want to delete this item?')">
+                                                            Delete
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -142,6 +140,13 @@ $(document).ready(function() {
                 console.log(textStatus, errorThrown);
             }
         });
+    });
+    $('.client-row').on('click', function() {
+        $(this).find('.client-details').toggleClass('hidden sm:block md:table-cell');
+    });
+    // Prevent click events from propagating up to .client-row when a button or other interactive element is clicked
+    $('.client-row .client-details, .client-row .client-details *').on('click', function(event) {
+        event.stopPropagation();
     });
 });
     </script>

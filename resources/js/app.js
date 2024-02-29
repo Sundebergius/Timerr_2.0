@@ -39,4 +39,7 @@ app.component('example-component', ExampleComponent);
  * scaffolding. Otherwise, you will need to add an element yourself.
  */
 
-app.mount('#app');
+// Check if the "#app" element exists before trying to mount the app
+if (document.querySelector("#app")) {
+    app.mount("#app");
+}
