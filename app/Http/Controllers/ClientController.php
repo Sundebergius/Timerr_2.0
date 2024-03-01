@@ -105,7 +105,7 @@ class ClientController extends Controller
         }
 
         // Check if a note has been provided
-        if ($request->has('notes')) {
+        if ($request->has('notes') && !empty($request->notes)) {
             // Create or update the note
             $client->note()->updateOrCreate(
                 ['client_id' => $client->id],
