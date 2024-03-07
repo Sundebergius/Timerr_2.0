@@ -34,22 +34,20 @@ class TagController extends Controller
         }
     }
 
-    public function delete(Request $request)
+    public function delete($id)
     {
-        $tag = $request->input('tag');
-        $clientId = $request->input('client_id');
+        // Find the tag by its ID
+        $tag = Tag::find($id);
 
-        // Assuming you have a Tag model with a 'name' field
-        $tagModel = Tag::where('name', $tag)->first();
-
-        if ($tagModel) {
-            // Find the client and detach the tag
-            $client = Client::find($clientId);
-            if ($client) {
-                $client->tags()->detach($tagModel->id);
+        if ($tag) {
+            // Detach the tag from any clients it's associated with
+            foreach ($tag->clients as $client) {
+                $client->tags()->detach($id);
             }
 
-            $tagModel->delete();
+            // Delete the tag
+            $tag->delete();
+
             return response()->json(['success' => true]);
         } else {
             return response()->json(['error' => 'Tag not found'], 404);

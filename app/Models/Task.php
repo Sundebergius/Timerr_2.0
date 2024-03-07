@@ -8,4 +8,20 @@ use Illuminate\Database\Eloquent\Model;
 class Task extends Model
 {
     use HasFactory;
+
+    const TYPE_PROJECT_BASED = 1;
+    const TYPE_HOURLY = 2;
+    const TYPE_PRODUCT = 3;
+    const TYPE_DISTANCE = 4;
+    const TYPE_OTHER = 5;
+
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
+
+    public function registrations()
+    {
+        return $this->hasMany(Registration::class);
+    }
 }

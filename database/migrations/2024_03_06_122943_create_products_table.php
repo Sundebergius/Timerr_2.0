@@ -10,13 +10,15 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    { 
-        Schema::create('tasks', function (Blueprint $table) {
+    {
+        Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('task_id');
-            $table->unsignedBigInteger('user_id');
+            $table->bigInteger('user_id')->unsigned();
+    
             $table->string('title');
-            $table->unsignedInteger('task_type');
+            $table->string('description')->nullable();
+            $table->decimal('price');
+    
             $table->timestamps();
         });
     }
@@ -26,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tasks');
+        Schema::dropIfExists('products');
     }
 };

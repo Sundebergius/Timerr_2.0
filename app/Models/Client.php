@@ -48,8 +48,8 @@ class Client extends Model
         return $this->belongsToMany(Tag::class);
     }
 
-    public function note()
+    public function clientNote()
     {
-        return $this->hasOne(Note::class);
+        return $this->hasOne(clientNote::class);
     }
 }

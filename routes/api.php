@@ -20,5 +20,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/tag', [TagController::class, 'store']);
-Route::delete('/tag', [TagController::class, 'delete']);
+Route::delete('/tag/{id}', [TagController::class, 'delete']);
 Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
