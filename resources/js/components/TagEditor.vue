@@ -18,9 +18,9 @@
         <span v-for="(tag, index) in tags" :key="index" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium m-1 border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-2"
           :class="tagClasses[index]">
           
-          {{ tag }}
+          {{ tag.name }}
           <button @click.prevent="removeTag(index)" class="flex-shrink-0 ml-2.5 h-4 w-4 rounded-full inline-flex items-center justify-center"
-            :class="getColorClass(tagColors[index])">
+            :class="getColorClass(tag)">
             <span class="sr-only">Remove</span>
             <svg class="h-2 w-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -56,8 +56,8 @@ export default {
   },
   computed: {
   tagClasses() {
-    return this.tagColors.map(color => {
-      switch (color) {
+    return this.tags.map(tag => {
+      switch (tag.color) {
         case 'rose':
           return 'border-rose-500 bg-rose-100 text-rose-500';
         case 'sky':
@@ -87,9 +87,10 @@ export default {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          this.tags.push(this.newTag);
-          this.tagColors.push(this.newTagColor);
+          this.tags.push({ name: this.newTag, color: this.newTagColor });
+          //this.tagColors.push(this.newTagColor);
           this.newTag = '';
+          this.newTagColor = 'neutral';
         } else {
           console.error('Error:', data.error);
         }
@@ -100,16 +101,12 @@ export default {
     },
     removeTag(index) {
       const tag = this.tags[index];
-      fetch('http://timerr_2.0.test/api/tag', {
+      fetch(`http://timerr_2.0.test/api/tag/${tag.id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
         },
-        body: JSON.stringify({ 
-          tag: tag,
-          client_id: this.clientData.id // use clientData instead of client
-        }),
       })
       .then(response => response.json())
       .then(data => {
@@ -135,15 +132,16 @@ export default {
       .then(response => response.json())
       .then(data => {
         console.log('Server response:', data); // Log the server response
-        this.tags = data.map(tag => tag.name);
-        this.tagColors = data.map(tag => tag.color);
+        //this.tags = data.map(tag => tag.name);
+        //this.tagColors = data.map(tag => tag.color);
+        this.tags = data;
       })
       .catch((error) => {
         console.error('Error:', error);
       });
     },
-    getColorClass(color) {
-      switch (color) {
+    getColorClass(tag) {
+      switch (tag.color) {
         case 'rose':
           return 'text-rose-500 bg-rose-100 hover:bg-rose-200';
         case 'sky':

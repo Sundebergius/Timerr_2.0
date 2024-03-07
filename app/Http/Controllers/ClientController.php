@@ -5,17 +5,27 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Models\Tag;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class ClientController extends Controller
 {
     public function index(Request $request)
     {
+        $colorClasses = [
+            'rose' => 'bg-rose-100 text-rose-500 hover:bg-rose-200',
+            'sky' => 'bg-sky-100 text-sky-500 hover:bg-sky-200',
+            'emerald' => 'bg-emerald-100 text-emerald-500 hover:bg-emerald-200',
+            'gray' => 'bg-gray-100 text-gray-500 hover:bg-gray-200',
+        ];
+        
         $searches = $request->get('search');
         $pageSize = $request->get('pageSize', 10);
         $sortField = $request->get('sortField', 'name');
         $sortDirection = $request->get('sortDirection', 'asc');
     
-        $query = Client::query();
+        $query = Client::with('tags');
 
         if ($searches) {
             foreach ($searches as $search) {
@@ -34,7 +44,7 @@ class ClientController extends Controller
         $clients = $query->orderBy($sortField, $sortDirection)
             ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
     
-        return view('clients.index', ['clients' => $clients]);
+            return view('clients.index', ['clients' => $clients, 'colorClasses' => $colorClasses]);
     }
 
     public function store(Request $request)
@@ -77,39 +87,37 @@ class ClientController extends Controller
             'notes' => 'nullable',
         ]);
 
-        //dd($client->tags);
         $client->update($validatedData);
 
-        // Handle the tags
-        $newTags = $request->input('tags');
-        $newTagColors = $request->input('tag_colors');
-        $client->load('tags'); // reload the tags relationship
-        //dd($client->tags);
-        $currentTagIds = $client->tags ? $client->tags->pluck('id')->toArray() : [];
+        // // Handle the tags
+        // $newTags = $request->input('tags');
+        // $newTagColors = $request->input('tag_colors');
+        // $client->load('tags'); // reload the tags relationship
+        // $currentTagIds = $client->tags ? $client->tags->pluck('id')->toArray() : [];
 
-        if ($newTags) {
-            foreach ($newTags as $index => $tagName) {
-                $tagColor = $newTagColors[$index] ?? null;
-                $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
-                if (!in_array($tag->id, $currentTagIds)) {
-                    $client->tags()->attach($tag->id); // attach new tags
-                } else {
-                    $key = array_search($tag->id, $currentTagIds);
-                    unset($currentTagIds[$key]); // remove tag from the list of current tags
-                }
-            }
-        }
-        // Any tags that are still in $currentTagIds have been removed in the request
-        foreach ($currentTagIds as $tagId) {
-            $client->tags()->detach($tagId);
-        }
+        // if ($newTags) {
+        //     foreach ($newTags as $index => $tagName) {
+        //         $tagColor = $newTagColors[$index] ?? null;
+        //         $tag = Tag::firstOrCreate(['name' => $tagName, 'color' => $tagColor]);
+        //         if (!in_array($tag->id, $currentTagIds)) {
+        //             $client->tags()->attach($tag->id); // attach new tags
+        //         } else {
+        //             $key = array_search($tag->id, $currentTagIds);
+        //             unset($currentTagIds[$key]); // remove tag from the list of current tags
+        //         }
+        //     }
+        // }
+        // // Any tags that are still in $currentTagIds have been removed in the request
+        // foreach ($currentTagIds as $tagId) {
+        //     $client->tags()->detach($tagId);
+        // }
 
         // Check if a note has been provided
-        if ($request->has('notes') && !empty($request->notes)) {
+        if ($request->has('client_notes') && !empty($request->client_notes)) {
             // Create or update the note
-            $client->note()->updateOrCreate(
+            $client->clientNote()->updateOrCreate(
                 ['client_id' => $client->id],
-                ['content' => $request->notes]
+                ['content' => $request->client_notes]
             );
         }
 
@@ -143,26 +151,86 @@ class ClientController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv,txt',
+            'file' => 'required|mimes:csv,txt|max:2048', // Limit the file size to 2MB
         ]);
 
         $file = $request->file('file');
         $csvData = file_get_contents($file);
-        $rows = array_map("str_getcsv", explode("\n", $csvData));
+        $rows = array_map(function($row) {
+            return array_map('trim', str_getcsv($row, ";")); // Use semicolon as the delimiter and trim white spaces
+        }, array_filter(array_map('trim', explode("\n", $csvData)))); // Trim white spaces from each line and skip empty lines
         $header = array_shift($rows);
 
-        foreach ($rows as $row) {
-            $row = array_combine($header, $row);
-
-            Client::create([
-                'name' => $row['name'],
-                'contact_details' => $row['contact_details'],
-                'status' => $row['status'],
-                'type' => $row['type'],
-                'company_name' => $row['company_name'],
-                'company_size' => $row['company_size'],
+        // Check if the CSV file is empty after the headers
+        if (empty($rows)) {
+            return redirect()->back()->withErrors([
+                'file' => 'The CSV file is empty.',
             ]);
         }
+
+        DB::beginTransaction();
+
+        $invalidRows = [];
+        try {
+            foreach ($rows as $index => $row) {
+                if (count($header) != count($row)) {
+                    $invalidRows[] = $index + 2; // Add 2 to account for 0-indexing and the header row
+                    continue;
+                }
+                $row = array_combine($header, $row);
+
+                // Validate the data
+                $validator = Validator::make($row, [
+                    'name' => 'required',
+                    'email' => 'nullable|email',
+                    // Add more validation rules if necessary
+                ]);
+
+                if ($validator->fails()) {
+                    $invalidRows[] = $index + 2;
+                    $errorMessages[] = 'Row ' . ($index + 2) . ': ' . $validator->errors()->first();
+                    continue;
+                }
+
+            // foreach ($rows as $row) {
+            //     if (count($header) != count($row)) {
+            //         // Print out the header and row for debugging
+            //         echo "Header: ", implode(", ", $header), "\n";
+            //         echo "Row: ", implode(", ", $row), "\n";
+            //     }
+            //     $row = array_combine($header, $row);
+
+                Client::create([
+                    'user_id' => auth()->id(), // assuming the user is authenticated
+                    'name' => $row['name'],
+                    'email' => $row['email'] ?? null,
+                    'cvr' => $row['cvr'] ?? null,
+                    'phone' => $row['phone'] ?? null,
+                    'address' => $row['address'] ?? null,
+                    'country' => 'DK',
+                    'status' => 'lead',
+                ]);
+        }
+
+        if (!empty($invalidRows)) {
+            DB::rollBack();
+
+            return redirect()->back()->withErrors([
+                'file' => 'Invalid data in the following rows: ' . implode('. ', $errorMessages),
+            ]);
+        }
+
+        DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return redirect()->back()->withErrors([
+                'file' => 'An error occurred while importing the clients.',
+            ]);
+        }
+
+        // Flash a success message to the session
+        session()->flash('success', 'Clients imported successfully.');
 
         return redirect()->route('clients.index');
     }
