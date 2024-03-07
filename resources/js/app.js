@@ -5,8 +5,10 @@
  */
 
 import './bootstrap';
+import '../css/app.css';
 import { createApp } from 'vue';
 import TagEditor from './components/TagEditor.vue'; // Import your component
+import TaskCreator from './components/TaskCreator.vue'; // Import your new component
 
 /**
  * Next, we will create a fresh Vue application instance. You may then begin
@@ -17,9 +19,11 @@ import TagEditor from './components/TagEditor.vue'; // Import your component
 const app = createApp({});
 
 app.component('tag-editor', TagEditor); // Register your component
+app.component('task-creator', TaskCreator); // Register your new component
 
 import ExampleComponent from './components/ExampleComponent.vue';
 app.component('example-component', ExampleComponent);
+
 
 /**
  * The following block of code may be used to automatically register your

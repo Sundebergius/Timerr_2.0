@@ -1,7 +1,7 @@
 <x-app-layout>
+    
     <div class="container mx-auto px-4">
         <h1 class="text-2xl font-bold mb-6">Add New Task</h1>
-
         <form action="{{ route('projects.tasks.store', $project) }}" method="POST">
             @csrf
 
@@ -10,7 +10,11 @@
                 <input type="text" id="title" name="title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
             </div>
 
-            <div class="mb-4">
+            <div id="app">
+                <task-creator></task-creator>
+            </div>
+
+            {{-- <div class="mb-4">
                 <label for="start_date" class="block text-gray-700 text-sm font-bold mb-2">Start Date:</label>
                 <input type="date" id="start_date" name="start_date" value="{{ date('Y-m-d') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             </div>
@@ -36,10 +40,10 @@
                     <option value="distance_driven">Distance Driven</option>
                     <option value="other">Other</option>
                 </select>
-            </div>
+            </div> --}}
 
             <div class="flex items-center justify-between">
-                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-96">
                     Add Task
                 </button>
             </div>

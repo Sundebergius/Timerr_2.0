@@ -23,6 +23,9 @@ export default {
             },
             colors: {
             },
+            width: {
+                'currencyWidth': '600px'
+            },
         },
     },
 
