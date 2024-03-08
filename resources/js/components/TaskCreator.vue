@@ -2,7 +2,7 @@
     <div class="container mx-auto px-4">
       <!-- <h1 class="text-2xl font-bold mb-6">Add New Task</h1> -->
   
-      <form @submit.prevent="submitForm">
+      <form @submit.prevent="handleFormSubmission">
         <!-- <div class="mb-4">
           <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Title:</label>
           <input type="text" id="title" v-model="title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
@@ -84,19 +84,29 @@
             <textarea id="description" v-model="description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
         </div>
         
-        <!-- <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
           Add Task
-        </button> -->
+        </button>
       </form>
     </div>
   </template>
   
   <script>
   export default {
+    props: {
+      project: {
+        type: Object,
+        required: true
+      }
+    },
+    mounted() {
+      console.log('Value:', this.project);
+      console.log('Type:', typeof this.project);
+    },
     data() {
       return {
+        type: 'project_based', // set initial value to 'project_based'
         title: '',
-        type: '',
         projectPrice: '',
         currency: 'DKK',
         startDate: new Date().toISOString().substr(0, 10),
@@ -113,11 +123,62 @@
         quantity: '',
         distance: '',
         pricePerKm: '',
+        formSubmitted: false,
+        errorMessage: '',
       };
     },
     methods: {
-      submitForm() {
-        // Handle form submission here
+      handleFormSubmission() {
+        console.log('handleFormSubmission called');
+        let route = '';
+        let data = {};
+
+        switch (this.type) {
+          case 'project_based':
+            route = `/projects/${this.project.id}/tasks/store-project`;
+            data = {
+              title: this.title,
+              type: this.type,
+              projectPrice: this.projectPrice,
+              currency: this.currency,
+              startDate: this.startDate,
+              hasEndDate: this.hasEndDate,
+              endDate: this.endDate,
+              location: this.location,
+            };
+            break;
+          case 'hourly':
+            route = `/projects/${this.project.id}/tasks/store-hourly`;
+            data = {
+              title: this.title,
+              type: this.type,
+              hourlyPrice: this.hourlyPrice,
+              hoursWorked: this.hoursWorked,
+              workDate: this.workDate,
+              note: this.note,
+            };
+            break;
+          // Add other cases for 'product', 'distance', 'other'
+        }
+        axios.post(route, data)
+          .then(response => {
+            // Handle success
+            console.log('Request was successful', response.data);
+            this.formSubmitted = true; // You might set a data property to indicate the form was submitted
+            this.errorMessage = ''; // Clear any previous error messages
+          })
+          .catch(error => {
+            // Handle error
+            console.log('An error occurred', error);
+            this.formSubmitted = false; // Indicate that the form was not submitted
+            if (error.response && error.response.data) {
+              // If the server responded with a specific error message, display it
+              this.errorMessage = error.response.data.message;
+            } else {
+              // If the server did not respond with a specific error message, display a generic one
+              this.errorMessage = 'An error occurred while submitting the form';
+            }
+          });
       },
     },
   };

@@ -86,9 +86,20 @@
                         @csrf
                         <div class="form-group">
                             <p class="text-gray-700 text-sm mb-2">
-                                To import a list of clients, please upload a CSV or a TXT file with the following columns in this exact order: name, email, cvr, phone, address. The first line should be the column names. The 'name' column is the only required field. You can add multiple clients at once by filling out the data for each client on a new line, as long as the 'name' field is on its own line or entry. Please do not add any other headers besides the ones listed. The order of the columns is important and should match the order in the template. You can download a <a href="{{ asset('csv/template.csv') }}" class="text-blue-500 hover:underline">template here</a>.
+                                To import a list of clients, please upload a CSV or a TXT file with the following columns in this exact order: name, email, cvr, phone, address. The first line should be the column names. The 'name' column is the only required field. You can add multiple clients at once by filling out the data for each client on a new line, as long as the 'name' field is on its own line or entry. Please refrain from adding any additional headers besides the ones listed. The order of the columns is crucial and should match the order in the template.</a>.
                             </p>
-                            <label for="file" class="block text-gray-700 text-sm font-bold mb-2">Upload CSV file:</label>
+                            <p>
+                                <strong>Accepted file types:</strong> .csv, .txt
+                            </p>
+                            <p>
+                                <strong>Max file size:</strong> 2MB
+                            </p>
+                            <br>
+                            <p>
+                                You can download a <a href="{{ asset('csv/template.csv') }}" class="text-blue-500 hover:underline">template here</a>
+                            </p>
+                            <br>
+                            <label for="file" class="block text-gray-700 text-sm font-bold mb-2">Upload file:</label>
                             <input type="file" name="file" id="file" accept=".csv,.txt" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                         </div>
                         <button type="submit" class="mt-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
