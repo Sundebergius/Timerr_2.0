@@ -95,13 +95,15 @@
   export default {
     props: {
       project: {
-        type: Object,
-        required: true
+        // type: Object,
+        // required: true
       }
     },
     mounted() {
       console.log('Value:', this.project);
       console.log('Type:', typeof this.project);
+      console.log('Value id:', this.project.id);
+      console.log('Type id:', typeof this.project.id);
     },
     data() {
       return {
@@ -160,6 +162,9 @@
             break;
           // Add other cases for 'product', 'distance', 'other'
         }
+          // Emit the formSubmitted event with the form data as payload
+          this.$emit('formSubmitted', data);
+        
         axios.post(route, data)
           .then(response => {
             // Handle success

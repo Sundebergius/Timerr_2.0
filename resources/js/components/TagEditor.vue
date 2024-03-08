@@ -49,6 +49,10 @@ export default {
     }
   },
   mounted() {
+      console.log('Value:', this.client);
+      console.log('Type:', typeof this.client);
+      console.log('Value id:', this.client.id);
+      console.log('Type id:', typeof this.client.id);
     console.log('Type of client:', typeof this.client);
     this.clientData = JSON.parse(this.client);
     console.log('Client:', this.clientData);

@@ -10,7 +10,7 @@
                 </div>
 
                 <task-creator project="{{ json_encode($project) }}" @formSubmitted="handleFormSubmission"></task-creator>
-
+                
                 <input type="hidden" id="hiddenInput" name="formData">
                 <div class="flex items-center justify-between">
                     <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-96">
@@ -56,8 +56,13 @@
                 // Handle error
                 console.log('An error occurred', error);
             });
+            
         },
+        
       },
+      mounted() {
+                console.log('Hej: ', this.project);
+            },
     });
   </script>
   
