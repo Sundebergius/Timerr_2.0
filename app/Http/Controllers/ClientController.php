@@ -22,6 +22,15 @@ class ClientController extends Controller
         
         $searches = $request->get('search');
         $pageSize = $request->get('pageSize', 10);
+
+         // If the selected value is "All", use the get() method to get all clients
+        if ($pageSize == 'all') {
+            $clients = Client::get();
+        } else {
+            // Otherwise, use the selected number of items per page in the paginate() method
+            $clients = Client::paginate($pageSize);
+        }
+        
         $sortField = $request->get('sortField', 'name');
         $sortDirection = $request->get('sortDirection', 'asc');
     

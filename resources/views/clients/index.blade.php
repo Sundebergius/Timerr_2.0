@@ -256,7 +256,18 @@
                     <!-- Pagination links -->
                     <div class="mt-4">
                         {{ $clients->links() }}
+
+                        <form method="GET" action="{{ route('clients.index') }}">
+                            <select name="pageSize" onchange="this.form.submit()">
+                                <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
+                                <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
+                                <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option> <!-- Add 'all' to the request parameters -->
+                            </select>
+                        </form>
                     </div>
+                    
                 </div>
             </div>
         </div>
