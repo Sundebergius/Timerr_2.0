@@ -115,7 +115,7 @@
                                     <thead class="bg-gray-50">
                                         <tr>
                                             <th
-                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                class="header px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Name
                                             </th>
                                             <th
@@ -135,14 +135,16 @@
                                     <tbody class="bg-white divide-y divide-gray-200">
                                         @foreach ($clients as $client)
                                             <tr class="client-row cursor-pointer flex flex-col md:table-row">
-                                                <td class="px-6 py-4 whitespace-nowrap client-name">{{ $client->name }}</td>
+                                                <td class="header-name px-6 py-4 whitespace-nowrap client-name">{{ $client->name }}</td>
                                                 <div id="client-details-{{ $client->id }}">
                                                     <td class="px-6 py-4 whitespace-nowrap client-details md:table-cell">
                                                         @if ($client->phone)
-                                                            <strong>Phone Number:</strong> {{ $client->phone }}<br>
+                                                            <strong>Phone Number:</strong> <br>
+                                                            {{ $client->phone }} <br>
                                                         @endif
                                                         @if ($client->email)
-                                                            <strong>Email:</strong> {{ $client->email }}
+                                                            <strong>Email:</strong> <br>
+                                                            {{ $client->email }}<br>
                                                         @endif
                                                     </td>
                                                     <td
@@ -236,19 +238,31 @@
         .header {
             width: 100%;
             min-width: 120px;
-            max-width: 300px;
+            max-width: 250px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
+        .header-name {
+            width: 100%;
+            min-width: 80px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;}
+
         .client-details {
             width: 100%;
             min-width: 120px;
-            max-width: 300px;
+            max-width: 400px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        select[name="status"] {
+            width: 130px; /* Adjust as needed */
         }
     
         @media only screen and (max-width: 600px) {
