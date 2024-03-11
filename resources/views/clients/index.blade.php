@@ -119,7 +119,7 @@
                                                 Name
                                             </th>
                                             <th
-                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
+                                                class="header px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                                                 Contact Details
                                             </th>
                                             <th
@@ -127,7 +127,7 @@
                                                 Status
                                             </th>
                                             <th
-                                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                class="header px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                 Tags
                                             </th>
                                         </tr>
@@ -146,7 +146,7 @@
                                                         @endif
                                                     </td>
                                                     <td
-                                                        class="px-6 py-4 whitespace-nowrap client-details">
+                                                        class="px-6 py-4 whitespace-nowrap">
                                                         {{ $client->status }}
                                                         <select name="status" class="form-select block w-full mt-1"
                                                             data-client-id="{{ $client->id }}">
@@ -231,6 +231,35 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .header {
+            width: 100%;
+            min-width: 120px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .client-details {
+            width: 100%;
+            min-width: 120px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    
+        @media only screen and (max-width: 600px) {
+            .header {
+                font-size: 14px;
+            }
+            .client-row {
+                font-size: 14px;
+            }
+        }
+    </style>
 
     <script>
         $(document).ready(function() {

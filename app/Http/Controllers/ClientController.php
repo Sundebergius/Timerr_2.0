@@ -25,7 +25,7 @@ class ClientController extends Controller
         $sortField = $request->get('sortField', 'name');
         $sortDirection = $request->get('sortDirection', 'asc');
     
-        $query = Client::with('tags');
+        $query = Client::with('tags')->where('user_id', auth()->id());
 
         if ($searches) {
             foreach ($searches as $search) {
