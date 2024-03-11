@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
+        // Route::get('/', [ClientController::class, 'filterClients'])->name('clients.filter');
     });
 
     Route::prefix('projects')->group(function () {

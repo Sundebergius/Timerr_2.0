@@ -244,6 +244,20 @@ class ClientController extends Controller
         return response()->json(['message' => 'Status updated successfully.']);
     }
 
+    public function filterClients(Request $request)
+    {
+        $hasEmail = $request->has_email;
+        $hasPhone = $request->has_phone;
+
+        $clients = Client::when($hasEmail, function ($query) {
+            return $query->whereNotNull('email');
+        })->when($hasPhone, function ($query) {
+            return $query->whereNotNull('phone');
+        })->get();
+
+       // return view('clients.index', compact('clients'));
+    }
+
     // public function updateNote(Request $request, Client $client)
     // {
     //     \Log::info('updateNote called');

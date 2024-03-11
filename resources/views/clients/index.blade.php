@@ -36,6 +36,34 @@
                         </div>
                     @enderror
 
+                    {{-- <!-- Search radio form -->
+                    <form method="GET" action="{{ route('clients.filter') }}">
+                        <label>Status:</label>
+                        <div class="radio-group">                    
+                            <div>
+                                <input type="radio" id="hasEmail" name="hasEmail" value="1">
+                                <label for="hasEmail">Has Email</label>
+                            </div>
+                        
+                            <div>
+                                <input type="radio" id="hasPhone" name="hasPhone" value="1">
+                                <label for="hasPhone">Has Phone Number</label>
+                            </div>
+
+                            <div>
+                                <input type="radio" id="status1" name="status" value="status1">
+                                <label for="status1">Status 1</label>
+                            </div>
+
+                            <div>
+                                <input type="radio" id="status2" name="status" value="status2">
+                                <label for="status2">Status 2</label>
+                            </div>
+                        </div>
+                    
+                        {{-- <input type="submit" value="Search"> 
+                    </form> --}}
+
                     <!-- Search form -->
                     <form method="GET" action="{{ route('clients.index') }}" class="mb-3 flex">
                         <input type="text" class="form-input flex-grow mr-3" placeholder="Search clients"
@@ -66,7 +94,7 @@
                     <div class="flex space-x-4">
                     <!-- Add new client form -->
                     <!-- Add new client button -->
-                    <a href="{{ route('clients.create') }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    <a href="{{ route('clients.create') }}" class="inline-block bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                         Add Client
                     </a>
                     {{-- <form method="POST" action="{{ route('clients.store') }}">
@@ -273,6 +301,10 @@
                 font-size: 14px;
             }
         }
+        .radio-group {
+            display: flex;
+            gap: 10px;
+        }
     </style>
 
     <script>
@@ -343,5 +375,71 @@
             $(this).remove(); 
         });
     }, 5000);
+
+    // //radio button search
+    // // Get the radio buttons and the search form
+    // let radios = document.querySelectorAll('.radio-group input[type="radio"]');
+    // let searchForm = document.querySelector('.mb-3.flex');
+
+    // // Function to get URL parameters
+    // function getUrlParams() {
+    //     let params = {};
+    //     window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(str, key, value) {
+    //         params[key] = value;
+    //     });
+    //     return params;
+    // }
+
+    // // Check URL parameters and set corresponding radio buttons as checked
+    // let params = getUrlParams();
+    // radios.forEach(radio => {
+    //     if (params['search[]'] && params['search[]'].includes(radio.value)) {
+    //         radio.checked = true;
+    //     }
+    // });
+
+    // // Add a change event listener to each radio button
+    // radios.forEach(radio => {
+    //     radio.addEventListener('change', function() {
+    //         // If the radio button is selected
+    //         if (this.checked) {
+    //             // Create a new hidden input
+    //             let input = document.createElement('input');
+    //             input.type = 'hidden';
+    //             input.name = 'search[]';
+    //             input.value = this.value;
+    //             input.id = 'input-' + this.id;
+
+    //             // Append the input to the search form
+    //             searchForm.appendChild(input);
+    //         } else {
+    //             // If the radio button is deselected, remove the corresponding hidden input
+    //             let input = document.querySelector('#input-' + this.id);
+    //             searchForm.removeChild(input);
+    //         }
+
+    //         // Submit the form
+    //         searchForm.submit();
+    //     });
+    // });
+    
+    $(document).ready(function(){
+    $('#has_email, #has_phone').change(function(){
+        var hasEmail = $('#has_email').is(':checked') ? 1 : 0;
+        var hasPhone = $('#has_phone').is(':checked') ? 1 : 0;
+
+        $.ajax({
+            url: '/filter-clients',
+            method: 'GET',
+            data: {
+                has_email: hasEmail,
+                has_phone: hasPhone
+            },
+            success: function(data) {
+                $('#client_list').html(data);
+            }
+        });
+    });
+});
     </script>
 </x-app-layout>
