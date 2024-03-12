@@ -76,8 +76,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/', [TaskController::class, 'store'])->name('projects.tasks.store');
             Route::get('/{task}', [TaskController::class, 'show'])->name('projects.tasks.show');
             Route::get('/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
-            Route::post('/store-project', [RegistrationProjectController::class, 'store'])->name('projects.tasks.storeProject');
-            Route::post('/store-hourly', [RegistrationHourlyController::class, 'store'])->name('projects.tasks.storeHourly');
+            Route::post('/store-project', [TaskController::class, 'store'])->name('projects.tasks.storeProject');
+            // Route::post('/store-hourly', [RegistrationController::class, 'store'])->name('projects.tasks.storeHourly');
 
             // Add other task routes here
         });

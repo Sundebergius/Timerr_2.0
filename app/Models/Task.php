@@ -9,6 +9,8 @@ class Task extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['project_id', 'title', 'task_type', 'user_id'];
+
     const TYPE_PROJECT_BASED = 1;
     const TYPE_HOURLY = 2;
     const TYPE_PRODUCT = 3;

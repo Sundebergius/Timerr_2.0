@@ -3,14 +3,15 @@
       <!-- <h1 class="text-2xl font-bold mb-6">Add New Task</h1> -->
   
       <form @submit.prevent="handleFormSubmission">
-        <!-- <div class="mb-4">
+        <div class="mb-4">
+          <p>{{ project.name }}</p>
           <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Title:</label>
           <input type="text" id="title" v-model="title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
-        </div> -->
+        </div>
   
         <div class="mb-4">
-          <label for="type" class="block text-gray-700 text-sm font-bold mb-2">Type:</label>
-          <select id="type" v-model="type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+          <label for="task_type" class="block text-gray-700 text-sm font-bold mb-2">Type:</label>
+          <select id="task_type" v-model="task_type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
             <option value="project_based">Project Based</option>
             <option value="hourly">Hourly</option>
             <option value="product">Product</option>
@@ -19,7 +20,7 @@
           </select>
         </div>
   
-        <div v-if="type === 'project_based'" class="mb-4">
+        <div v-if="task_type === 'project_based'" class="mb-4">
             <label for="projectPrice" class="block text-gray-700 text-sm font-bold mb-2">Project Price:</label>
                 <div class="flex">
                     <select v-model="currency" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ml-2 w-32">
@@ -46,7 +47,7 @@
             <input type="text" id="location" v-model="location" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
 
-        <div v-if="type === 'hourly'" class="mb-4">
+        <div v-if="task_type === 'hourly'" class="mb-4">
             <label for="hourlyPrice" class="block text-gray-700 text-sm font-bold mb-2">Hourly Price:</label>
             <input type="number" id="hourlyPrice" v-model="hourlyPrice" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
 
@@ -60,7 +61,7 @@
             <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
         </div>
 
-        <div v-if="type === 'product'" class="mb-4">
+        <div v-if="task_type === 'product'" class="mb-4">
             <!-- You'll need to fetch the list of products from your database and store it in your component's data -->
             <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
             <select id="product" v-model="product" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
@@ -71,7 +72,7 @@
             <input type="number" id="quantity" v-model="quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
 
-        <div v-if="type === 'distance'" class="mb-4">
+        <div v-if="task_type === 'distance'" class="mb-4">
             <label for="distance" class="block text-gray-700 text-sm font-bold mb-2">Distance (KM):</label>
             <input type="number" id="distance" v-model="distance" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
 
@@ -79,92 +80,177 @@
             <input type="number" id="pricePerKm" v-model="pricePerKm" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
 
-        <div v-if="type === 'other'" class="mb-4">
+        <div v-if="task_type === 'other'" class="mb-4">
             <label for="description" class="block text-gray-700 text-sm font-bold mb-2">Description:</label>
             <textarea id="description" v-model="description" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
         </div>
         
-        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-          Add Task
-        </button>
+        <input type="hidden" id="hiddenInput" v-model="formData">
+          <div class="flex items-center justify-between">
+              <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-96">
+                  Add Task
+              </button>
+          </div>
       </form>
     </div>
   </template>
   
   <script>
+  import axios from 'axios';
+
   export default {
-    props: {
-      project: {
-        // type: Object,
-        // required: true
+    props: ['project'],
+ 
+  // props: {
+  //   project: {
+  //     type: String,
+  //     required: true,
+  // },
+  // },
+  data() {
+    return {
+      // localProject: JSON.parse(this.project),
+      localProject: this.project ? JSON.parse(this.project) : {},
+      task_type: 'project_based',
+      title: '',
+      projectPrice: '',
+      currency: 'DKK',
+      startDate: new Date().toISOString().substr(0, 10),
+      hasEndDate: false,
+      endDate: '',
+      location: '',
+      description: '',
+      hourlyPrice: '',
+      hoursWorked: '',
+      workDate: '',
+      note: '',
+      products: [],
+      product: '',
+      quantity: '',
+      distance: '',
+      pricePerKm: '',
+      formSubmitted: false,
+      errorMessage: '',
+      formData: '',
+    };
+  },
+  watch: {
+    localProject: {
+      handler(newValue) {
+        this.formData = JSON.stringify(newValue);
+      },
+      deep: true,
+    },
+  },
+  mounted() {
+    if (this.project) {
+      try {
+        this.localProject = JSON.parse(this.project);
+      } catch (e) {
+        console.error('Error parsing project prop:', e);
       }
-    },
-    mounted() {
-      console.log('Value:', this.project);
-      console.log('Type:', typeof this.project);
-      console.log('Value id:', this.project.id);
-      console.log('Type id:', typeof this.project.id);
-    },
-    data() {
-      return {
-        type: 'project_based', // set initial value to 'project_based'
-        title: '',
-        projectPrice: '',
-        currency: 'DKK',
-        startDate: new Date().toISOString().substr(0, 10),
-        hasEndDate: false,
-        endDate: '',
-        location: '',
-        description: '',
-        hourlyPrice: '',
-        hoursWorked: '',
-        workDate: '',
-        note: '',
-        products: [], // You'll need to fetch this data from your database
-        product: '',
-        quantity: '',
-        distance: '',
-        pricePerKm: '',
-        formSubmitted: false,
-        errorMessage: '',
-      };
-    },
+      let hiddenInput = document.getElementById('hiddenInput');
+      if (hiddenInput) {
+        console.log('hiddenInput exists. Value:', hiddenInput.value);
+      } else {
+        console.log('hiddenInput does not exist');
+      }
+    }
+    console.log('Project:', this.project);
+    console.log('localProject:', this.localProject);
+    console.log('Type:', typeof this.project);
+    console.log('Type local:', typeof this.localProject);
+    console.log('Value id:', this.localProject.id);
+    console.log('Type id:', typeof this.localProject.id);
+  },
     methods: {
       handleFormSubmission() {
         console.log('handleFormSubmission called');
         let route = '';
         let data = {};
+        let formDataString = this.formData;
+        let formDataObject = null;
+        // Check if formDataString is not empty
+        if (formDataString) {
+          try {
+            formDataObject = JSON.parse(formDataString);
+            console.log('formDataObject:', formDataObject);
+          } catch (error) {
+            console.error('Invalid JSON:', error);
+            return; // If the JSON is invalid, return early
+          }
+        } else {
+          console.error('Empty JSON string. Type:', typeof formDataString, 'Value:', formDataString);
+          return; // If the JSON string is empty, return early
+        }
 
-        switch (this.type) {
+        // Check if this.localProject and this.localProject.id are defined
+        if (this.localProject && this.localProject.id) {
+        switch (this.task_type) {
           case 'project_based':
-            route = `/projects/${this.project.id}/tasks/store-project`;
+            route = `/projects/${this.localProject.id}/tasks/store-project`;
             data = {
               title: this.title,
-              type: this.type,
-              projectPrice: this.projectPrice,
+              task_type: this.task_type,
+              user_id: this.localProject.user_id,
+              project_id: this.localProject.id,
+              name: this.localProject.title,
+              price: this.projectPrice,
               currency: this.currency,
-              startDate: this.startDate,
-              hasEndDate: this.hasEndDate,
-              endDate: this.endDate,
-              location: this.location,
+              start_date: this.startDate,
+              // hasEndDate: this.hasEndDate,
+              end_date: this.endDate,
+              project_location: this.location,
             };
             break;
           case 'hourly':
-            route = `/projects/${this.project.id}/tasks/store-hourly`;
+            route = `/projects/${this.localProject.id}/tasks/store-hourly`;
             data = {
               title: this.title,
-              type: this.type,
+              task_type: this.task_type,
               hourlyPrice: this.hourlyPrice,
               hoursWorked: this.hoursWorked,
               workDate: this.workDate,
               note: this.note,
             };
             break;
+          //   following not implemented yet
+          //   case 'product':
+          //   route = `/projects/${this.localProject.id}/tasks/store-product`;
+          //   data = {
+          //     title: this.title,
+          //     task_type: this.task_type,
+          //     product: this.product,
+          //     quantity: this.quantity,
+          //   };
+          //   break;
+          // case 'distance':
+          //   route = `/projects/${this.localProject.id}/tasks/store-distance`;
+          //   data = {
+          //     title: this.title,
+          //     task_type: this.task_type,
+          //     distance: this.distance,
+          //     pricePerKm: this.pricePerKm,
+          //   };
+          //   break;
+          // case 'other':
+          //   route = `/projects/${this.localProject.id}/tasks/store-other`;
+          //   data = {
+          //     title: this.title,
+          //     task_type: this.task_type,
+          //     description: this.description,
+          //   };
+          //   break;
           // Add other cases for 'product', 'distance', 'other'
         }
-          // Emit the formSubmitted event with the form data as payload
-          this.$emit('formSubmitted', data);
-        
+      } else {
+      console.error('localProject or localProject.id is undefined');
+      return; // If localProject or localProject.id is undefined, return early
+    }
+
+        // Emit the formSubmitted event with the form data as payload
+        this.$emit('formSubmitted', { route, data });
+
         axios.post(route, data)
           .then(response => {
             // Handle success
@@ -173,6 +259,9 @@
             this.errorMessage = ''; // Clear any previous error messages
           })
           .catch(error => {
+            console.log(error.response.data); // Logs the data from the response
+            console.log(error.response.status); // Logs the status code
+            console.log(error.response.headers); // Logs the headers
             // Handle error
             console.log('An error occurred', error);
             this.formSubmitted = false; // Indicate that the form was not submitted
