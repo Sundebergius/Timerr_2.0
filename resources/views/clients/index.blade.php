@@ -177,7 +177,7 @@
                                                     </td>
                                                     <td
                                                         class="px-6 py-4 whitespace-nowrap">
-                                                        {{ $client->status }}
+                                                        {{-- {{ $client->status }} --}}
                                                         <select name="status" class="form-select block w-full mt-1"
                                                             data-client-id="{{ $client->id }}">
                                                             <option value="{{ Client::STATUS_LEAD }}"
