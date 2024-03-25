@@ -13,11 +13,10 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->nullable();
-            $table->bigInteger('client_id')->unsigned()->nullable();
-            $table->bigInteger('project_id')->unsigned()->nullable();
-
             $table->bigInteger('user_id')->unsigned();
+            $table->bigInteger('project_id')->unsigned()->nullable();
+            $table->bigInteger('client_id')->unsigned()->nullable();
+            $table->string('title')->nullable();
             $table->timestamps();
         });
     }

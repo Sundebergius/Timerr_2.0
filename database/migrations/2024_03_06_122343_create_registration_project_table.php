@@ -14,16 +14,12 @@ return new class extends Migration
         Schema::create('registration_projects', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
-            $table->bigInteger('task_id')->unsigned();
-    
-            $table->string('name');
+            //$table->bigInteger('task_id')->unsigned();
+            $table->string('title');
             $table->string('description')->nullable();
-    
             $table->datetime('start_date')->nullable();
             $table->datetime('end_date')->nullable();
-    
             $table->decimal('price')->nullable();
-    
             $table->string('project_location')->nullable();
             $table->timestamps();
         });

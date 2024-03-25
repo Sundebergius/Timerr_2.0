@@ -17,6 +17,8 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->string('title');
             $table->string('task_type');
+            $table->unsignedBigInteger('taskable_id');
+            $table->string('taskable_type');
             $table->timestamps();
         });
     }

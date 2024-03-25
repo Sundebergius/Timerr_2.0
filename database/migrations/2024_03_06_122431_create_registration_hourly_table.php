@@ -14,11 +14,9 @@ return new class extends Migration
         Schema::create('registration_hourly', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
-            $table->bigInteger('task_id')->unsigned();
-    
-            $table->string('name');
-            $table->string('description')->nullable();
-    
+            //$table->bigInteger('task_id')->unsigned();
+            $table->string('title');
+            //$table->string('description')->nullable();
             $table->decimal('hours')->nullable();
             $table->decimal('hourly_rate')->nullable();
             $table->timestamps();
