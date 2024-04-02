@@ -16,6 +16,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->bigInteger('client_id')->unsigned()->nullable();
             $table->string('title');
+            $table->text('description')->nullable();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->string('status')->default('ongoing');
+            $table->string('invoice_status')->default('generated');
             $table->timestamps();
         });
     }

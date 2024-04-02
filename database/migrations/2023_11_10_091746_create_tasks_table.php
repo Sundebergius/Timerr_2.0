@@ -15,11 +15,14 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('user_id');
-            $table->string('title');
-            $table->string('task_type');
             $table->unsignedBigInteger('taskable_id');
             $table->string('taskable_type');
+            $table->string('title');
+            $table->string('task_type');
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('project_id')->references('id')->on('projects');
         });
     }
 

@@ -14,14 +14,18 @@ return new class extends Migration
         Schema::create('registration_projects', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
-            //$table->bigInteger('task_id')->unsigned();
+            $table->bigInteger('task_id')->unsigned();
             $table->string('title');
-            $table->string('description')->nullable();
-            $table->datetime('start_date')->nullable();
-            $table->datetime('end_date')->nullable();
-            $table->decimal('price')->nullable();
-            $table->string('project_location')->nullable();
+            $table->string('type'); // New column to specify the type of registration
+            $table->text('description')->nullable(); // Description of the registration
+            $table->datetime('date')->nullable(); // Date of the registration
+            $table->decimal('amount')->nullable(); // Amount (could be hours, expenses, etc.)
+            $table->string('currency')->default('DKK');
+            $table->string('location')->nullable(); // Location (if applicable)
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('task_id')->references('id')->on('tasks');
         });
     }
 

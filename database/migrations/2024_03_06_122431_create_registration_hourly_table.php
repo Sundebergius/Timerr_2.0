@@ -14,12 +14,16 @@ return new class extends Migration
         Schema::create('registration_hourly', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
-            //$table->bigInteger('task_id')->unsigned();
-            $table->string('title');
-            //$table->string('description')->nullable();
-            $table->decimal('hours')->nullable();
-            $table->decimal('hourly_rate')->nullable();
+            $table->bigInteger('task_hourly_id')->unsigned();
+            $table->bigInteger('task_id')->unsigned(); // New field
+            $table->string('title'); // New field
+            $table->decimal('seconds_worked')->nullable(); // New field
+            $table->decimal('hourly_rate'); // New field
+            $table->decimal('earnings'); // New field
             $table->timestamps();
+
+            // Add a foreign key constraint
+            $table->foreign('task_hourly_id')->references('id')->on('task_hourly');
         });
     }
 
