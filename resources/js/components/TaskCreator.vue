@@ -6,7 +6,7 @@
         <div class="mb-4">
           <p>{{ project.name }}</p>
           <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Title:</label>
-          <input type="text" id="title" v-model="title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
+          <input type="text" id="title" v-model="task_title" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
         </div>
   
         <div class="mb-4">
@@ -48,17 +48,17 @@
         </div>
 
         <div v-if="task_type === 'hourly'" class="mb-4">
-            <label for="hourlyPrice" class="block text-gray-700 text-sm font-bold mb-2">Hourly Price:</label>
-            <input type="number" id="hourlyPrice" v-model="hourlyPrice" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <label for="rate_per_hour" class="block text-gray-700 text-sm font-bold mb-2">Hourly rate:</label>
+            <input type="number" id="rate_per_hour" v-model="rate_per_hour" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
 
-            <label for="hoursWorked" class="block text-gray-700 text-sm font-bold mb-2">Hours Worked:</label>
+            <!-- <label for="hoursWorked" class="block text-gray-700 text-sm font-bold mb-2">Hours Worked:</label>
             <input type="number" id="hoursWorked" v-model="hoursWorked" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
 
             <label for="workDate" class="block text-gray-700 text-sm font-bold mb-2">Date:</label>
             <input type="date" id="workDate" v-model="workDate" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
 
             <label for="note" class="block text-gray-700 text-sm font-bold mb-2">Note:</label>
-            <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+            <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea> -->
         </div>
 
         <div v-if="task_type === 'product'" class="mb-4">
@@ -112,6 +112,8 @@
       // localProject: JSON.parse(this.project),
       localProject: this.project ? JSON.parse(this.project) : {},
       task_type: 'project_based',
+      task_title: '', 
+      project_title: '',
       title: '',
       projectPrice: '',
       currency: 'DKK',
@@ -120,8 +122,8 @@
       endDate: '',
       location: '',
       description: '',
-      hourlyPrice: '',
-      hoursWorked: '',
+      rate_per_hour: '',
+      hourly_rate: '',
       workDate: '',
       note: '',
       products: [],
@@ -190,28 +192,31 @@
           case 'project_based':
             route = `/projects/${this.localProject.id}/tasks/store-project`;
             data = {
-              title: this.title,
-              task_type: this.task_type,
               user_id: this.localProject.user_id,
               project_id: this.localProject.id,
-              name: this.localProject.title,
+              task_title: this.task_title,
+              project_title: this.localProject.title,
               price: this.projectPrice,
               currency: this.currency,
               start_date: this.startDate,
               // hasEndDate: this.hasEndDate,
               end_date: this.endDate,
               project_location: this.location,
+              task_type: 'project_based',
             };
             break;
           case 'hourly':
             route = `/projects/${this.localProject.id}/tasks/store-hourly`;
             data = {
-              title: this.title,
-              task_type: this.task_type,
-              hourlyPrice: this.hourlyPrice,
-              hoursWorked: this.hoursWorked,
-              workDate: this.workDate,
-              note: this.note,
+              user_id: this.localProject.user_id,
+              project_id: this.localProject.id,
+              task_title: this.task_title,
+              project_title: this.localProject.title,
+              //task_type: this.task_type,
+              rate_per_hour: this.rate_per_hour,
+              //workDate: this.workDate,
+              //note: this.note,
+              task_type: 'hourly',
             };
             break;
           //   following not implemented yet
@@ -257,6 +262,9 @@
             console.log('Request was successful', response.data);
             this.formSubmitted = true; // You might set a data property to indicate the form was submitted
             this.errorMessage = ''; // Clear any previous error messages
+
+            // Navigate to the project's tasks page
+            window.location.href = `/projects/${this.localProject.id}`;
           })
           .catch(error => {
             console.log(error.response.data); // Logs the data from the response

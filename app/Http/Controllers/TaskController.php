@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\RegistrationProject;
+use App\Models\TaskProject;
+use App\Models\TaskHourly;
 use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
@@ -67,34 +70,81 @@ class TaskController extends Controller
         $validatedData = Validator::make($data, [
             'user_id' => 'required|integer',
             'project_id' => 'required|integer',
-            'title' => 'required|string',
-            'name' => 'required|string',
+            'task_title' => 'required|string', // Changed from 'title'
+            //'project_title' => 'required|string', // New validation rule
+            //'name' => 'required|string',
             // 'description' => 'nullable|string',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
             'price' => 'nullable|numeric',
+            'currency' => 'nullable|string', // Add validation for 'currency'
             'project_location' => 'nullable|string',
         ])->validate();
+
+        // Create a new TaskProject
+        $taskProject = TaskProject::create([
+            //'user_id' => $validatedData['user_id'],
+            //'task_id' => $task->id,
+            'title' => $validatedData['task_title'],
+            // 'description' => $validatedData['description'],
+            'start_date' => $validatedData['start_date'],
+            'end_date' => $validatedData['end_date'],
+            'price' => $validatedData['price'],
+            'currency' => $validatedData['currency'],
+            'project_location' => $validatedData['project_location'],
+        ]);
 
         // Create a new task
         $task = Task::create([
             'project_id' => $validatedData['project_id'],
             'user_id' => $validatedData['user_id'],
-            'title' => $validatedData['title'],
-            'name' => $validatedData['name'],
-            // 'description' => $validatedData['description'],
-            'start_date' => $validatedData['start_date'],
-            'end_date' => $validatedData['end_date'],
-            'price' => $validatedData['price'],
-            'project_location' => $validatedData['project_location'],
+            'title' => $validatedData['task_title'],
             'task_type' => 'project_based', // Set the task type to project_based
-        ]);
+            'taskable_id' => $taskProject->id,
+            'taskable_type' => TaskProject::class,
+        ]); 
     }
 
     private function createHourlyTask(array $data)
     {
-        // Logic for creating an hourly task
-        // ...
+        // Validate the data
+        $validatedData = Validator::make($data, [
+            'user_id' => 'required|integer',
+            'project_id' => 'required|integer',
+            'task_title' => 'required|string',
+            'rate_per_hour' => 'required|numeric',
+            //'hours' => 'required|numeric',
+        ])->validate();
+
+        // Convert the hourly rate to a rate per minute
+        $ratePerMinute = $validatedData['rate_per_hour'] / 60;
+
+        // Create a new TaskHourly
+        $taskHourly = TaskHourly::create([
+            //'user_id' => $validatedData['user_id'],
+            //'task_id' => $validatedData['task_id'],
+            'title' => $validatedData['task_title'],
+            'rate_per_hour' => $validatedData['rate_per_hour'],
+            'rate_per_minute' => $ratePerMinute, // Changed from 'hourly_rate'
+        ]);
+
+        // // Create a new RegistrationHourly
+        // $registrationHourly = RegistrationHourly::create([
+        //     'user_id' => $validatedData['user_id'],
+        //     'title' => $validatedData['task_title'],
+        //     'rate_per_minute' => $ratePerMinute,
+        //     //'hourly_rate' => $validatedData['rate'],
+        //     //'hours' => $validatedData['hours'],
+        // ]);
+
+        $task = Task::create([
+            'project_id' => $validatedData['project_id'],
+            'user_id' => $validatedData['user_id'],
+            'title' => $validatedData['task_title'],
+            'task_type' => 'hourly', // Set the task type to hourly
+            'taskable_id' => $taskHourly->id,
+            'taskable_type' => TaskHourly::class,
+        ]);
     }
 
     // Other methods for updating, deleting, and retrieving tasks
