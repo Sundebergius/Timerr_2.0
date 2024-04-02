@@ -150,9 +150,9 @@
     </div>
 </x-app-layout>
 <script>
-    $(document).ready(function() {
-        $('.client-select').select2();
-    });
+    // $(document).ready(function() {
+    //     $('.client-select').select2();
+    // });
 
     function updateInvoiceStatus(projectId, status) {
         fetch('/projects/' + projectId + '/update-invoice-status', {

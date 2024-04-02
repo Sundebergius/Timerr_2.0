@@ -28,7 +28,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <!-- Select2 CSS -->
-        <link href="{{ asset('node_modules/select2/dist/css/select2.min.css') }}" rel="stylesheet" />
+        {{-- <link href="{{ asset('node_modules/select2/dist/css/select2.min.css') }}" rel="stylesheet" /> --}}
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -51,5 +51,5 @@
         </div>
     </body>
     <!-- Select2 JS -->
-    <script src="{{ asset('node_modules/select2/dist/js/select2.min.js') }}"></script>
+    {{-- <script src="{{ asset('node_modules/select2/dist/js/select2.min.js') }}"></script> --}}
 </html>
