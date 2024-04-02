@@ -48,6 +48,11 @@ class Client extends Model
         return $this->belongsToMany(Tag::class);
     }
 
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function clientNote()
     {
         return $this->hasOne(clientNote::class);

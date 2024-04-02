@@ -7,20 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Task;
 use App\Models\User;
 
-class RegistrationProject extends Model
+class RegistrationHourly extends Model
 {
     use HasFactory;
+
+    protected $table = 'registration_hourly';
 
     protected $fillable = [
         'user_id',
         'task_id',
+        'task_hourly_id',
         'title',
-        'type',
-        'description',
-        'date',
-        'amount',
-        'currency',
-        'location',
+        'seconds_worked',
+        'hourly_rate',
+        'earnings',
     ];
 
     public function user()
