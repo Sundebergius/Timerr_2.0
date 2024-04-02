@@ -19,5 +19,9 @@
         "tailwindcss": "^3.4.1",
         "vite": "^5.0.0",
         "vue": "^3.2.37"
+    },
+    "dependencies": {
+        "jquery": "^3.7.1",
+        "select2": "^4.1.0-rc.0"
     }
 }

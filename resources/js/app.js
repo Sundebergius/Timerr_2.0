@@ -3,6 +3,13 @@
  * includes Vue and other libraries. It is a great starting point when
  * building robust, powerful web applications using Vue and Laravel.
  */
+import 'select2/dist/css/select2.min.css';
+import 'select2/dist/js/select2.min.js';
+import $ from 'jquery';
+window.$ = window.jQuery = $;
+
+import 'select2';
+import 'select2/dist/css/select2.min.css';
 
 //import './bootstrap';
 import Alpine from 'alpinejs' ;
@@ -13,6 +20,7 @@ import '../css/app.css';
 import { createApp } from 'vue';
 import TagEditor from './components/TagEditor.vue'; // Import your component
 import TaskCreator from './components/TaskCreator.vue'; // Import your new component
+
 
 /**
  * Next, we will create a fresh Vue application instance. You may then begin
