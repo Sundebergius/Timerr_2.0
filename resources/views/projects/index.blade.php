@@ -149,10 +149,20 @@
         </div>
     </div>
 </x-app-layout>
+
+<!-- Load jQuery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+<!-- Load Select2 CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+
+<!-- Load Select2 JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+
 <script>
-    // $(document).ready(function() {
-    //     $('.client-select').select2();
-    // });
+    $(document).ready(function() {
+        $('.client-select').select2();
+    });
 
     function updateInvoiceStatus(projectId, status) {
         fetch('/projects/' + projectId + '/update-invoice-status', {

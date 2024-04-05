@@ -9,6 +9,9 @@ import Alpine from 'alpinejs' ;
 window.Alpine = Alpine;
 Alpine.start();
 
+import $ from 'jquery';
+import 'select2';
+
 import '../css/app.css';
 import { createApp } from 'vue';
 import TagEditor from './components/TagEditor.vue'; // Import your component
