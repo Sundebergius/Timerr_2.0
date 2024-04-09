@@ -78,20 +78,22 @@
                                     Project Earnings: {{ $projectEarnings }} DKK<br>
                                 @endif
                                 @if ($project->tasks->where('taskable_type', 'App\Models\TaskHourly')->isNotEmpty())
-                                    @php
-                                        $secondsWorked = 0;
-                                        $hourlyEarnings = 0;
-                                        foreach ($project->tasks->where('taskable_type', 'App\Models\TaskHourly') as $task) {
-                                            foreach ($task->taskable->registrationHourly as $registration) {
-                                                $secondsWorked += $registration->seconds_worked;
-                                                $hourlyEarnings += $registration->seconds_worked * ($registration->hourly_rate / 3600);
-                                            }
+                                @php
+                                    $secondsWorked = 0;
+                                    $hourlyEarnings = 0;
+                                    foreach ($project->tasks->where('taskable_type', 'App\Models\TaskHourly') as $task) {
+                                        foreach ($task->taskable->registrationHourly as $registration) {
+                                            $secondsWorked += $registration->seconds_worked;
                                         }
-                                        $hoursWorked = floor($secondsWorked / 3600);
-                                        $minutesWorked = floor(($secondsWorked / 60) % 60);
-                                        $timeWorked = sprintf('%02d:%02d', $hoursWorked, $minutesWorked);
-                                        $totalEarnings += $hourlyEarnings;
-                                        @endphp
+                                    }
+                                    $hoursWorked = round($secondsWorked / 3600, 2); // Round to 2 decimal places
+                                    $hourlyEarnings = $hoursWorked * $registration->hourly_rate;
+                                    $totalEarnings += $hourlyEarnings;
+                            
+                                    $hoursWorkedFormatted = floor($secondsWorked / 3600);
+                                    $minutesWorked = floor(($secondsWorked / 60) % 60);
+                                    $timeWorked = sprintf('%02d:%02d', $hoursWorkedFormatted, $minutesWorked);
+                                @endphp
                                     Time Worked: {{ $timeWorked }}<br>
                                     Hourly Earnings: {{ $hourlyEarnings }} DKK<br>
                                 @endif
