@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             //$table->bigInteger('user_id')->unsigned();
             //$table->bigInteger('task_id')->unsigned();
+            $table->bigInteger('client_id')->unsigned()->nullable();
             $table->string('title');
             $table->datetime('start_date')->nullable();
             $table->datetime('end_date')->nullable();

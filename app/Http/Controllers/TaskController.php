@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\RegistrationProject;
 use App\Models\TaskProject;
 use App\Models\TaskHourly;
+use App\Models\TaskDistance;
 use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
@@ -49,6 +50,9 @@ class TaskController extends Controller
             case 'hourly':
                 $this->createHourlyTask($data);
                 break;
+            case 'distance':
+                $this->createDistanceTask($data);
+                break;
         }
 
         // Redirect or return response
@@ -81,6 +85,9 @@ class TaskController extends Controller
             'project_location' => 'nullable|string',
         ])->validate();
 
+        // Fetch the project
+        $project = Project::findOrFail($validatedData['project_id']);
+
         // Create a new TaskProject
         $taskProject = TaskProject::create([
             //'user_id' => $validatedData['user_id'],
@@ -102,6 +109,8 @@ class TaskController extends Controller
             'task_type' => 'project_based', // Set the task type to project_based
             'taskable_id' => $taskProject->id,
             'taskable_type' => TaskProject::class,
+            'client_id' => $project->client_id ?? null, // Assign the same client as the project, or null if the project doesn't have a client
+
         ]); 
     }
 
@@ -115,6 +124,9 @@ class TaskController extends Controller
             'rate_per_hour' => 'required|numeric',
             //'hours' => 'required|numeric',
         ])->validate();
+
+        // Fetch the project
+        $project = Project::findOrFail($validatedData['project_id']);
 
         // Convert the hourly rate to a rate per minute
         $ratePerMinute = $validatedData['rate_per_hour'] / 60;
@@ -144,8 +156,41 @@ class TaskController extends Controller
             'task_type' => 'hourly', // Set the task type to hourly
             'taskable_id' => $taskHourly->id,
             'taskable_type' => TaskHourly::class,
+            'client_id' => $project->client_id ?? null, // Assign the same client as the project, or null if the project doesn't have a client
+
         ]);
     }
+
+    public function createDistanceTask(Request $request)
+    {
+        // Validate the data
+        $validatedData = Validator::make($request->all(), [
+            'title' => 'required|string',
+            'price_per_km' => 'required|numeric',
+        ])->validate();
+
+        // Fetch the project
+        $project = Project::findOrFail($request->project_id);
+
+        // Create a new TaskDistance
+        $taskDistance = TaskDistance::create([
+            'title' => $validatedData['title'],
+            'distance' => $validatedData['distance'] ?? 0, // Set a default value of 0 if distance is not provided
+            'price_per_km' => $validatedData['price_per_km'],
+        ]);
+
+        // Create a new task
+        $task = Task::create([
+            'project_id' => $request->project_id,
+            'user_id' => $request->user_id,
+            'title' => $validatedData['title'],
+            'task_type' => 'distance', // Set the task type to distance
+            'taskable_id' => $taskDistance->id,
+            'taskable_type' => TaskDistance::class,
+            'client_id' => $project->client_id ?? null, // Assign the same client as the project, or null if the project doesn't have a client
+        ]);
+    }
+
 
     // Other methods for updating, deleting, and retrieving tasks
     // ...

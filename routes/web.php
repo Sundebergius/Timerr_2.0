@@ -86,12 +86,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/store-project', [TaskController::class, 'store'])->name('projects.tasks.storeProject');
             Route::post('/store-hourly', [TaskController::class, 'store'])->name('projects.tasks.storeHourly');
             Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
+            Route::post('/store-distance', [TaskController::class, 'createDistanceTask'])->name('projects.tasks.storeDistance');
         });
 
         // registration routes
         Route::prefix('/{project}/tasks/{task}/registrations')->group(function () {
             Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
             Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
+            Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance'); 
             Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
         });
     });

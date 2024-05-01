@@ -9,7 +9,7 @@ class Task extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['project_id', 'title', 'task_type', 'user_id', 'taskable_id', 'taskable_type'];
+    protected $fillable = ['project_id', 'title', 'task_type', 'user_id', 'taskable_id', 'taskable_type', 'client_id'];
 
     const TYPE_PROJECT_BASED = 1;
     const TYPE_HOURLY = 2;
@@ -40,5 +40,10 @@ class Task extends Model
     public function taskHourly()
     {
         return $this->hasOne(TaskHourly::class);
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class);
     }
 }

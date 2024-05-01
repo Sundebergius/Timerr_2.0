@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('client_id')->nullable();
             $table->unsignedBigInteger('taskable_id');
             $table->string('taskable_type');
             $table->string('title');
@@ -23,6 +24,7 @@ return new class extends Migration
 
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('project_id')->references('id')->on('projects');
+            $table->foreign('client_id')->references('id')->on('clients');
         });
     }
 

@@ -73,8 +73,8 @@
         </div>
 
         <div v-if="task_type === 'distance'" class="mb-4">
-            <label for="distance" class="block text-gray-700 text-sm font-bold mb-2">Distance (KM):</label>
-            <input type="number" id="distance" v-model="distance" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <!-- <label for="distance" class="block text-gray-700 text-sm font-bold mb-2">Distance (KM):</label>
+            <input type="number" id="distance" v-model="distance" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"> -->
 
             <label for="pricePerKm" class="block text-gray-700 text-sm font-bold mb-2">Price per KM:</label>
             <input type="number" id="pricePerKm" v-model="pricePerKm" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
@@ -229,15 +229,18 @@
           //     quantity: this.quantity,
           //   };
           //   break;
-          // case 'distance':
-          //   route = `/projects/${this.localProject.id}/tasks/store-distance`;
-          //   data = {
-          //     title: this.title,
-          //     task_type: this.task_type,
-          //     distance: this.distance,
-          //     pricePerKm: this.pricePerKm,
-          //   };
-          //   break;
+          case 'distance':
+            route = `/projects/${this.localProject.id}/tasks/store-distance`;
+            data = {
+              user_id: this.localProject.user_id,
+              project_id: this.localProject.id,
+              task_title: this.task_title,
+              project_title: this.localProject.title,
+              title: this.task_title,
+              price_per_km: this.pricePerKm,
+              task_type: 'distance',
+            };
+            break;
           // case 'other':
           //   route = `/projects/${this.localProject.id}/tasks/store-other`;
           //   data = {

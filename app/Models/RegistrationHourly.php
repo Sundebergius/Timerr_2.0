@@ -32,4 +32,9 @@ class RegistrationHourly extends Model
     {
         return $this->morphOne(Task::class, 'taskable');
     }
+
+    public function taskHourly()
+    {
+        return $this->belongsTo(TaskHourly::class);
+    }
 }

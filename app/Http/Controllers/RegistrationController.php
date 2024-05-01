@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Models\Project;
 use App\Models\RegistrationProject;
 use App\Models\RegistrationHourly;
+use App\Models\RegistrationDistance;
 
 class RegistrationController extends Controller
 {
@@ -71,6 +72,24 @@ class RegistrationController extends Controller
         return redirect()->route('projects.show', ['project' => $task->project_id]);
     }
 
+    public function storeDistanceRegistration(Request $request, $projectId, $taskId)
+    {
+        $validatedData = $request->validate([
+            'distance_driven' => 'required|numeric',
+        ]);
+
+        $task = Task::find($taskId);
+
+        RegistrationDistance::create([
+            'user_id' => $task->user_id,
+            'task_id' => $task->id,
+            'title' => $task->title,
+            'distance' => $validatedData['distance_driven'],
+        ]);
+
+        return redirect()->route('projects.show', ['project' => $projectId]);
+    }
+
     public function createRegistration(Project $project, Task $task)
     {
         // Decide which view to return based on the type of the task
@@ -78,6 +97,8 @@ class RegistrationController extends Controller
             return view('registrations.create_project', compact('project', 'task'));
         } elseif ($task->task_type == 'hourly') {
             return view('registrations.create_hourly', compact('project', 'task'));
+        } elseif ($task->task_type == 'distance') {
+            return view('registrations.create_distance', compact('project', 'task'));
         }
 
         // You can pass the project and task to the view if you need them

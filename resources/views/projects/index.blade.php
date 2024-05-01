@@ -83,6 +83,7 @@
                                 <div class="space-y-2">
                                     @php
                                         $totalEarnings = 0;
+                                        $hourlyEarnings = 0;
                                     @endphp
                                     @if ($project->tasks->where('taskable_type', 'App\Models\TaskProject')->isNotEmpty())
                                         @php
