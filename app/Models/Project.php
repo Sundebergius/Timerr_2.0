@@ -10,11 +10,13 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+        'title',
         'description',
         'start_date',
         'end_date',
         'status',
         'invoice_status',
+        'client_id',
     ];
 
     public function updateStatus()

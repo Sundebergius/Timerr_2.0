@@ -42,13 +42,19 @@ class RegistrationController extends Controller
         $validatedData = $request->validate([
             'hours_worked' => 'required|integer',
             'minutes_worked' => 'required|integer',
+            'seconds_worked' => 'integer',
         ]);
 
         $task = Task::find($taskId);
         $taskHourly = $task->taskable;
 
-        $totalSeconds = $validatedData['hours_worked'] * 3600 + $validatedData['minutes_worked'] * 60;
-        $earnings = $totalSeconds / 3600 * $taskHourly->rate_per_hour;
+        $totalSeconds = $validatedData['hours_worked'] * 3600 + $validatedData['minutes_worked'] * 60 + ($validatedData['seconds_worked'] ?? 0);
+        $totalMinutes = ceil($totalSeconds / 60); // Round up to the nearest minute
+        $earningsPerMinute = $taskHourly->rate_per_hour / 60;
+        $earnings = $totalMinutes * $earningsPerMinute;
+
+        // Round earnings to the nearest whole number
+        $earnings = ceil($earnings);
 
         RegistrationHourly::create([
             'user_id' => $task->user_id,
@@ -56,11 +62,12 @@ class RegistrationController extends Controller
             'task_hourly_id' => $taskHourly->id, // Store the task_hourly_id for reference
             'title' => $task->title,
             'seconds_worked' => $totalSeconds,
-            'hourly_rate' => $taskHourly->rate_per_minute * 60,
+            'hourly_rate' => $taskHourly->rate_per_hour,
             'earnings' => $earnings,
         ]);
 
         \Log::info('Redirecting to project: ' . $task->project_id);
+        \Log::info('Calculated earnings: ' . $earnings);
         return redirect()->route('projects.show', ['project' => $task->project_id]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Client;
+use PDF;
 
 class ProjectController extends Controller
 {
@@ -12,22 +13,23 @@ class ProjectController extends Controller
     {
         $request->validate([
             'title' => 'required',
-            'description' => 'required',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date',
-            'status' => 'required|string',
-            'client_id' => 'exists:clients,id', // Ensure the client ID exists in the clients table
+            // 'description' => 'required',
+            // 'start_date' => 'required|date',
+            // 'end_date' => 'required|date',
+            // 'status' => 'required|string',
+            // 'client_id' => 'exists:clients,id', // Ensure the client ID exists in the clients table
         ]);
 
         $project = new Project;
         $project->fill([
             'title' => $request->title,
-            'description' => $request->description,
-            'start_date' => $request->start_date,
-            'end_date' => $request->end_date,
-            'status' => $request->status,
-            'user_id' => auth()->id(), // Get the currently authenticated user's ID
+            // 'description' => $request->description,
+            // 'start_date' => $request->start_date,
+            // 'end_date' => $request->end_date,
+            // 'status' => $request->status,
+            //'user_id' => auth()->id(), // Get the currently authenticated user's ID
         ]);
+        $project->user_id = auth()->id(); // Get the currently authenticated user's ID
 
         // If a client ID was provided, associate the project with the client
         if ($request->has('client_id')) {
@@ -40,12 +42,17 @@ class ProjectController extends Controller
         return redirect()->route('projects.show', $project);
     }
 
-    public function complete(Project $project)
+    public function toggleCompletion(Project $project)
     {
-        $project->status = 'completed';
+        if ($project->status == 'completed') {
+            $project->status = 'ongoing';
+        } else {
+            $project->status = 'completed';
+        }
+        
         $project->save();
 
-        return redirect()->route('projects.show', $project);
+        return redirect()->route('projects.index', $project);
     }
 
     public function invoice(Project $project)
@@ -79,6 +86,13 @@ class ProjectController extends Controller
         $project->update(['invoice_status' => $request->status]);
 
         return response()->json(['message' => 'Invoice status updated successfully']);
+    }
+
+    public function updateClient(Request $request, Project $project)
+    {
+        $project->update(['client_id' => $request->client_id]);
+
+        return response()->json(['message' => 'Client updated successfully']);
     }
 
     public function index()

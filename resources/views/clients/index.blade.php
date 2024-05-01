@@ -154,16 +154,12 @@
                                                 class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">
                                                 Status
                                             </th>
-                                            <th
-                                                class="header px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Tags
-                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white divide-y divide-gray-200">
                                         @foreach ($clients as $client)
                                             <tr class="client-row cursor-pointer flex flex-col md:table-row">
-                                                <td class="header-name px-6 py-4 whitespace-nowrap client-name">{{ $client->name }}</td>
+                                                <td class="header-name px-6 py-4 whitespace-nowrap client-name font-bold" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ $client->name }}">{{ $client->name }}</td>
                                                 <div id="client-details-{{ $client->id }}">
                                                     <td class="px-6 py-4 whitespace-nowrap client-details md:table-cell">
                                                         @if ($client->phone)
@@ -175,29 +171,18 @@
                                                             {{ $client->email }}<br>
                                                         @endif
                                                     </td>
-                                                    <td
-                                                        class="px-6 py-4 whitespace-nowrap">
-                                                        {{-- {{ $client->status }} --}}
-                                                        <select name="status" class="form-select block w-full mt-1"
-                                                            data-client-id="{{ $client->id }}">
-                                                            <option value="{{ Client::STATUS_LEAD }}"
-                                                                {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>
-                                                                Lead</option>
-                                                            <option value="{{ Client::STATUS_CONTACTED }}"
-                                                                {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>
-                                                                Contacted</option>
-                                                            <option value="{{ Client::STATUS_INTERESTED }}"
-                                                                {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>
-                                                                Interested</option>
-                                                            <option value="{{ Client::STATUS_NEGOTIATION }}"
-                                                                {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>
-                                                                Negotiation</option>
-                                                            <option value="{{ Client::STATUS_DEAL_MADE }}"
-                                                                {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>
-                                                                Deal Made</option>
-                                                        </select>
-                                                    </td>
                                                     <td class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="inline-block relative w-32">
+                                                            <select name="status" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline" data-client-id="{{ $client->id }}">
+                                                                <option value="{{ Client::STATUS_LEAD }}" {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>Lead</option>
+                                                                <option value="{{ Client::STATUS_CONTACTED }}" {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>Contacted</option>
+                                                                <option value="{{ Client::STATUS_INTERESTED }}" {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>Interested</option>
+                                                                <option value="{{ Client::STATUS_NEGOTIATION }}" {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>Negotiation</option>
+                                                                <option value="{{ Client::STATUS_DEAL_MADE }}" {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>Deal Made</option>
+                                                            </select>
+                                                        </div>
+                                                    </td>
+                                                    {{-- <td class="px-6 py-4 whitespace-nowrap">
                                                         @if ($client->tags->isNotEmpty())
                                                             <button
                                                                 class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center"
@@ -205,7 +190,7 @@
                                                                 onclick="toggleTags({{ $client->id }}, event);">
                                                                 Show Tags
                                                             </button>
-                                                            {{-- <!-- Tags section for mobile view, needs rework-->
+                                                            <!-- Tags section for mobile view, needs rework-->
                                                             <div style="display: none" id="tags-{{ $client->id }}" class="sm:hidden">
                                                                 <div style="display: flex; flex-wrap: wrap;">
                                                                     @foreach ($client->tags as $tag)
@@ -213,9 +198,9 @@
                                                                             class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
                                                                     @endforeach
                                                                 </div>
-                                                            </div> --}}
+                                                            </div>
                                                         @endif
-                                                    </td>
+                                                    </td> --}}
                                                     <td class="px-6 py-4 whitespace-nowrap client-details">
                                                         <div
                                                             class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
@@ -237,16 +222,28 @@
                                                     </td>
                                                 </div>
                                             </tr>
-                                            <tr style="display: none" id="tags-{{ $client->id }}" class="md:block">
-                                                <td colspan="5" class="px-6 py-4 whitespace-nowrap">
-                                                    <div style="display: flex; flex-wrap: wrap;">
-                                                        @foreach ($client->tags as $tag)
-                                                            <span
-                                                                class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
-                                                        @endforeach
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                            @if ($client->tags->isNotEmpty())
+                                                <tr id="tags-{{ $client->id }}" class="divide-y divide-gray-200">
+                                                    <td colspan="3" class="px-6 py-4 whitespace-nowrap">
+                                                        <div class="tags-container">
+                                                            <p class="text-lg mb-2">Tags: </p>
+                                                            @foreach ($client->tags->take(5) as $tag)
+                                                                <span class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
+                                                            @endforeach
+                                                            @if ($client->tags->count() > 5)
+                                                                <button id="moreTagsButton-{{ $client->id }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center" type="button" onclick="toggleTags({{ $client->id }}, event);">
+                                                                    +{{ $client->tags->count() - 5 }}
+                                                                </button>
+                                                                <div style="display: none" id="hidden-tags-{{ $client->id }}" class="hidden-tags">
+                                                                    @foreach ($client->tags->slice(5) as $tag)
+                                                                        <span class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
+                                                                    @endforeach
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endif
                                         @endforeach
                                     </tbody>
                                 </table>
@@ -258,13 +255,15 @@
                         {{ $clients->links() }}
 
                         <form method="GET" action="{{ route('clients.index') }}">
-                            <select name="pageSize" onchange="this.form.submit()">
-                                <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
-                                <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option> <!-- Add 'all' to the request parameters -->
-                            </select>
+                            <div class="inline-block relative w-32">
+                                <select name="pageSize" onchange="this.form.submit()" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                                    <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
+                                    <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
+                                    <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option> <!-- Add 'all' to the request parameters -->
+                                </select>
+                            </div>
                         </form>
                     </div>
                     
@@ -368,18 +367,23 @@
         }
 
         function toggleTags(id, event) {
-            var tags = document.getElementById('tags-' + id);
-            if (tags.style.display === "none") {
-                tags.style.display = "table-row";
-            } else {
-                tags.style.display = "none";
-            }
-            event.stopPropagation();
+        var hiddenTags = document.getElementById('hidden-tags-' + id);
+        var moreTagsButton = document.getElementById('moreTagsButton-' + id);
+
+        if (hiddenTags.style.display === "none") {
+            hiddenTags.style.display = "block";
+            moreTagsButton.innerHTML = '−';
+        } else {
+            hiddenTags.style.display = "none";
+            moreTagsButton.innerHTML = '+' + (hiddenTags.children.length);
         }
+        event.stopPropagation();
+    }
         document.getElementById('importButton').addEventListener('click', function() {
         var form = document.getElementById('importForm');
         form.classList.toggle('hidden');
     });
+
     // Automatically dismiss the alert after 5 seconds
     window.setTimeout(function() {
         $(".alert").fadeTo(500, 0).slideUp(500, function(){

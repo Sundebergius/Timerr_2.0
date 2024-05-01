@@ -5,6 +5,14 @@
 
 /* @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'; */
 
+.client-select {
+    display: none;
+}
+
+.hidden-select {
+    visibility: hidden;
+}
+
 .select2-container .select2-selection--single {
     height: 35px; /* Adjust as needed */
     padding: 0.5rem 1rem;

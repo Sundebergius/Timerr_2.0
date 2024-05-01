@@ -56,9 +56,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
         Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-        Route::patch('/{project}/complete', [ProjectController::class, 'complete'])->name('projects.complete');
+        Route::patch('/{project}/toggleCompletion', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
         Route::get('/{project}/invoice', [ProjectController::class, 'invoice'])->name('projects.invoice');
         Route::post('/{project}/update-invoice-status', [ProjectController::class, 'updateInvoiceStatus']);
+        Route::post('/{project}/update-client', [ProjectController::class, 'updateClient']);
 
         //note routes
         Route::prefix('/{project}/notes')->group(function () {
