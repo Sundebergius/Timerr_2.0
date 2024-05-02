@@ -13,13 +13,15 @@ return new class extends Migration
     {
         Schema::create('task_hourly', function (Blueprint $table) {
             $table->id();
-            //$table->bigInteger('user_id')->unsigned();
-            //$table->bigInteger('task_id')->unsigned();
+            $table->bigInteger('task_id')->unsigned();
             $table->bigInteger('client_id')->unsigned()->nullable();
             $table->string('title');
             $table->decimal('rate_per_hour')->nullable();
             $table->decimal('rate_per_minute')->nullable();
             $table->timestamps();
+
+            // Add a foreign key constraint
+            $table->foreign('task_id')->references('id')->on('tasks');
         });
     }
 
