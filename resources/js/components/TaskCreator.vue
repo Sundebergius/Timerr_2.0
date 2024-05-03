@@ -209,13 +209,16 @@
             route = `/projects/${this.localProject.id}/tasks/store-hourly`;
             data = {
               user_id: this.localProject.user_id,
-              project_id: this.localProject.id,
+              task_hourly_id: this.task_hourly_id,
               task_title: this.task_title,
               project_title: this.localProject.title,
-              //task_type: this.task_type,
+              //minutes_worked: this.minutes_worked,
+              earnings: this.earnings,
               rate_per_hour: this.rate_per_hour,
+              rate_per_minute: this.rate_per_minute,
               //workDate: this.workDate,
               //note: this.note,
+              project_id: this.localProject.id,
               task_type: 'hourly',
             };
             break;
@@ -241,14 +244,14 @@
               task_type: 'distance',
             };
             break;
-          // case 'other':
-          //   route = `/projects/${this.localProject.id}/tasks/store-other`;
-          //   data = {
-          //     title: this.title,
-          //     task_type: this.task_type,
-          //     description: this.description,
-          //   };
-          //   break;
+           case 'other':
+             route = `/projects/${this.localProject.id}/tasks/store-other`;
+             data = {
+               title: this.title,
+               task_type: this.task_type,
+               description: this.description,
+             };
+             break;
           // Add other cases for 'product', 'distance', 'other'
         }
       } else {

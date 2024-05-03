@@ -48,9 +48,10 @@ class RegistrationController extends Controller
         $task = Task::find($taskId);
         $taskHourly = $task->taskable;
 
+        //$totalMinutes = $validatedData['hours_worked'] * 60 + $validatedData['minutes_worked'];
         $totalMinutes = $validatedData['hours_worked'] * 60 + $validatedData['minutes_worked'];
-        $earningsPerMinute = $taskHourly->rate_per_hour / 60;
-        $earnings = $totalMinutes * $earningsPerMinute;
+        //$earningsPerMinute = $taskHourly->rate_per_hour / 60;
+        $earnings = $totalMinutes * $taskHourly->rate_per_minute;
         // Round earnings to the nearest whole number
         $earnings = ceil($earnings);
 

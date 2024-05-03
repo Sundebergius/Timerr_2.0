@@ -41,6 +41,12 @@
                 <p class="mb-2"><strong>Total Distance Driven:</strong> {{ $task->taskable->registrationDistances->sum('distance') }} km</p>
             @endif
 
+            @if($task->task_type == 'other')
+                <p class="mb-2"><strong>Title:</strong> {{ $task->taskable->title }}</p>
+                <p class="mb-2"><strong>Description:</strong> {{ \Illuminate\Support\Str::limit($task->taskable->description, 100, $end='...') }}</p>
+                <a href="#" class="text-blue-500 hover:text-blue-700" onclick="alert('{{ $task->taskable->description }}')">Read More</a>
+            @endif
+
             <a href="{{ route('projects.tasks.registrations.create', ['project' => $project->id, 'task' => $task->id]) }}" class="text-blue-500 hover:text-blue-700">
                 <i class="fas fa-plus"></i> Create Registration
             </a>

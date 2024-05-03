@@ -103,6 +103,7 @@
                                         @php
                                             $totalMinutesWorked = 0;
                                             $hourlyEarnings = 0;
+                                            $earningsPerMinute = 0;
                                             foreach (
                                                 $project->tasks->where('taskable_type', 'App\Models\TaskHourly')
                                                 as $task
@@ -111,7 +112,7 @@
                                                     $totalMinutesWorked += $registration->seconds_worked / 60;
                                                 }
                                             }
-                                            $earningsPerMinute = $registration->hourly_rate / 60;
+                                            //$earningsPerMinute = $registration->hourly_rate / 60;
                                             $hourlyEarnings = $totalMinutesWorked * $earningsPerMinute;
 
                                             // Round earnings up to the nearest whole number

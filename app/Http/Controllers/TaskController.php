@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\RegistrationProject;
@@ -55,17 +56,11 @@ class TaskController extends Controller
                 break;
         }
 
-        // Redirect or return response
-        // ...
     }
 
     public function create(Project $project)
     {
-        // Convert $project to a JSON string
-        // $projectJson = json_encode($project->toArray());
-        // return view('tasks.create', ['project' => $projectJson]);
-        return view('tasks.create', ['project' => $project]);
-        
+        return view('tasks.create', ['project' => $project]); 
     }
 
     private function createProjectBasedTask(array $data)
@@ -74,91 +69,83 @@ class TaskController extends Controller
         $validatedData = Validator::make($data, [
             'user_id' => 'required|integer',
             'project_id' => 'required|integer',
-            'task_title' => 'required|string', // Changed from 'title'
-            //'project_title' => 'required|string', // New validation rule
-            //'name' => 'required|string',
-            // 'description' => 'nullable|string',
+            'task_title' => 'required|string', 
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
             'price' => 'nullable|numeric',
-            'currency' => 'nullable|string', // Add validation for 'currency'
+            'currency' => 'nullable|string', 
             'project_location' => 'nullable|string',
         ])->validate();
 
         // Fetch the project
         $project = Project::findOrFail($validatedData['project_id']);
 
-        // Create a new TaskProject
-        $taskProject = TaskProject::create([
-            //'user_id' => $validatedData['user_id'],
-            //'task_id' => $task->id,
-            'title' => $validatedData['task_title'],
-            // 'description' => $validatedData['description'],
-            'start_date' => $validatedData['start_date'],
-            'end_date' => $validatedData['end_date'],
-            'price' => $validatedData['price'],
-            'currency' => $validatedData['currency'],
-            'project_location' => $validatedData['project_location'],
-        ]);
-
-        // Create a new task
-        $task = Task::create([
-            'project_id' => $validatedData['project_id'],
-            'user_id' => $validatedData['user_id'],
-            'title' => $validatedData['task_title'],
-            'task_type' => 'project_based', // Set the task type to project_based
-            'taskable_id' => $taskProject->id,
-            'taskable_type' => TaskProject::class,
-            'client_id' => $project->client_id ?? null, // Assign the same client as the project, or null if the project doesn't have a client
-
-        ]); 
+        DB::transaction(function () use ($validatedData, $project) {
+            // Create a new TaskProject without task_id
+            $taskProject = TaskProject::create([
+                'title' => $validatedData['task_title'],
+                'start_date' => $validatedData['start_date'],
+                'end_date' => $validatedData['end_date'],
+                'price' => $validatedData['price'],
+                'currency' => $validatedData['currency'],
+                'project_location' => $validatedData['project_location'],
+            ]);
+        
+            // Create a new task
+            $task = Task::create([
+                'project_id' => $validatedData['project_id'],
+                'user_id' => $validatedData['user_id'],
+                'title' => $validatedData['task_title'],
+                'task_type' => 'project_based', 
+                'client_id' => $project->client_id ?? null, 
+                'taskable_id' => $taskProject->id, 
+                'taskable_type' => TaskProject::class, 
+            ]);
+        
+            // Update the TaskProject with the task_id
+            $taskProject->update(['task_id' => $task->id]);
+        });
     }
 
     private function createHourlyTask(array $data)
     {
         // Validate the data
         $validatedData = Validator::make($data, [
-            'user_id' => 'required|integer',
             'project_id' => 'required|integer',
             'task_title' => 'required|string',
             'rate_per_hour' => 'required|numeric',
-            //'hours' => 'required|numeric',
+            'user_id' => 'required|integer',
+            //'minutes_worked' => 'required|numeric',
         ])->validate();
 
         // Fetch the project
         $project = Project::findOrFail($validatedData['project_id']);
 
-        // Convert the hourly rate to a rate per minute
-        $ratePerMinute = $validatedData['rate_per_hour'] / 60;
-
-        // Create a new TaskHourly
-        $taskHourly = TaskHourly::create([
-            //'user_id' => $validatedData['user_id'],
-            //'task_id' => $validatedData['task_id'],
-            'title' => $validatedData['task_title'],
-            'rate_per_hour' => $validatedData['rate_per_hour'],
-            'rate_per_minute' => $ratePerMinute, // Changed from 'hourly_rate'
-        ]);
-
-        // // Create a new RegistrationHourly
-        // $registrationHourly = RegistrationHourly::create([
-        //     'user_id' => $validatedData['user_id'],
-        //     'title' => $validatedData['task_title'],
-        //     'rate_per_minute' => $ratePerMinute,
-        //     //'hourly_rate' => $validatedData['rate'],
-        //     //'hours' => $validatedData['hours'],
-        // ]);
-
-        $task = Task::create([
-            'project_id' => $validatedData['project_id'],
-            'user_id' => $validatedData['user_id'],
-            'title' => $validatedData['task_title'],
-            'task_type' => 'hourly', // Set the task type to hourly
-            'taskable_id' => $taskHourly->id,
-            'taskable_type' => TaskHourly::class,
-            'client_id' => $project->client_id ?? null, // Assign the same client as the project, or null if the project doesn't have a client
-
-        ]);
+        // Convert the hourly rate to a rate per minute using bcdiv for precision
+        $ratePerMinute = bcdiv($validatedData['rate_per_hour'], 60, 10);
+        
+        DB::transaction(function () use ($validatedData, $project, $ratePerMinute) {
+            // Create a new TaskHourly without task_id
+            $taskHourly = TaskHourly::create([
+                'title' => $validatedData['task_title'],
+                'rate_per_hour' => $validatedData['rate_per_hour'],
+                'rate_per_minute' => $ratePerMinute,
+            ]);
+    
+            // Create a new task
+            $task = Task::create([
+                'project_id' => $validatedData['project_id'],
+                'user_id' => $validatedData['user_id'],
+                'title' => $validatedData['task_title'],
+                'task_type' => 'hourly',
+                'taskable_id' => $taskHourly->id,
+                'taskable_type' => TaskHourly::class,
+                'client_id' => $project->client_id ?? null,
+            ]);
+    
+            // Update the TaskHourly with the task_id
+            $taskHourly->update(['task_id' => $task->id]);
+        });
     }
 
     public function createDistanceTask(Request $request)
@@ -172,23 +159,62 @@ class TaskController extends Controller
         // Fetch the project
         $project = Project::findOrFail($request->project_id);
 
-        // Create a new TaskDistance
-        $taskDistance = TaskDistance::create([
-            'title' => $validatedData['title'],
-            'distance' => $validatedData['distance'] ?? 0, // Set a default value of 0 if distance is not provided
-            'price_per_km' => $validatedData['price_per_km'],
-        ]);
+        DB::transaction(function () use ($validatedData, $request, $project) {
+            // Create a new TaskDistance without task_id
+            $taskDistance = TaskDistance::create([
+                'title' => $validatedData['title'],
+                'distance' => $validatedData['distance'] ?? 0,
+                'price_per_km' => $validatedData['price_per_km'],
+            ]);
+    
+            // Create a new task
+            $task = Task::create([
+                'project_id' => $request->project_id,
+                'user_id' => $request->user_id,
+                'title' => $validatedData['title'],
+                'task_type' => 'distance',
+                'taskable_id' => $taskDistance->id,
+                'taskable_type' => TaskDistance::class,
+                'client_id' => $project->client_id ?? null,
+            ]);
+    
+            // Update the TaskDistance with the task_id
+            $taskDistance->update(['task_id' => $task->id]);
+        });
+    }
 
-        // Create a new task
-        $task = Task::create([
-            'project_id' => $request->project_id,
-            'user_id' => $request->user_id,
-            'title' => $validatedData['title'],
-            'task_type' => 'distance', // Set the task type to distance
-            'taskable_id' => $taskDistance->id,
-            'taskable_type' => TaskDistance::class,
-            'client_id' => $project->client_id ?? null, // Assign the same client as the project, or null if the project doesn't have a client
-        ]);
+    public function createOtherTask(Request $request)
+    {
+        // Validate the data
+        $validatedData = Validator::make($request->all(), [
+            'title' => 'required|string',
+            'description' => 'required|string',
+        ])->validate();
+
+        // Fetch the project
+        $project = Project::findOrFail($request->project_id);
+
+        DB::transaction(function () use ($validatedData, $request, $project) {
+            // Create a new OtherTask without task_id
+            $otherTask = OtherTask::create([
+                'title' => $validatedData['title'],
+                'description' => $validatedData['description'],
+            ]);
+    
+            // Create a new task
+            $task = Task::create([
+                'project_id' => $request->project_id,
+                'user_id' => $request->user_id,
+                'title' => $validatedData['title'],
+                'task_type' => 'other',
+                'taskable_id' => $taskDistance->id,
+                'taskable_type' => TaskOther::class,
+                'client_id' => $project->client_id ?? null,
+            ]);
+    
+            // Update the TaskDistance with the task_id
+            $taskDistance->update(['task_id' => $task->id]);
+        });
     }
 
 

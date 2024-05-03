@@ -15,11 +15,8 @@ class RegistrationHourly extends Model
 
     protected $fillable = [
         'user_id',
-        'task_id',
         'task_hourly_id',
-        'title',
-        'seconds_worked',
-        'hourly_rate',
+        'minutes_worked',
         'earnings',
     ];
 
