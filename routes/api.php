@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\ProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -22,3 +23,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/tag', [TagController::class, 'store']);
 Route::delete('/tag/{id}', [TagController::class, 'delete']);
 Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
+
+Route::post('/products', [ProductController::class, 'store']);

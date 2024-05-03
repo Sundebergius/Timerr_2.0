@@ -18,10 +18,10 @@
                 <p class="mb-2"><strong>Hourly Wage:</strong> {{ $task->taskable->rate_per_hour }}</p>
                 <p class="mb-2"><strong>Number of Registrations:</strong> {{ $task->taskable->registrationHourly->count() }}</p>
                 @php
-                    $totalSeconds = $task->taskable->registrationHourly->sum('seconds_worked');
-                    $days = floor($totalSeconds / (3600*24));
-                    $hours = floor(($totalSeconds / 3600) % 24);
-                    $minutes = floor(($totalSeconds / 60) % 60);
+                    $totalMinutes = $task->taskable->registrationHourly->sum('minutes_worked');
+                    $days = floor($totalMinutes / (60*24));
+                    $hours = floor(($totalMinutes / 60) % 24);
+                    $minutes = $totalMinutes % 60;
                 @endphp
                 <p class="mb-2"><strong>Total Time:</strong> {{ sprintf("%d days, %02d hours, %02d minutes", $days, $hours, $minutes) }}</p>
             @endif

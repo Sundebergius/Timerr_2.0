@@ -15,9 +15,12 @@ return new class extends Migration
             $table->id();
             $table->bigInteger('user_id')->unsigned();
             $table->string('title');
+            $table->string('category')->nullable();
             $table->string('description')->nullable();
-            $table->decimal('price');
-    
+            $table->string('image')->nullable();
+            $table->decimal('price', 8, 2);
+            $table->integer('quantity')->default(0);
+            $table->boolean('active')->default(true);
             $table->timestamps();
         });
     }

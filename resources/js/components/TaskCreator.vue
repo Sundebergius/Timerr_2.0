@@ -62,14 +62,18 @@
         </div>
 
         <div v-if="task_type === 'product'" class="mb-4">
-            <!-- You'll need to fetch the list of products from your database and store it in your component's data -->
-            <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
-            <select id="product" v-model="product" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            <option v-for="product in products" :value="product.id">{{ product.name }}</option>
-            </select>
+          <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
+            <div class="flex items-center">
+              <button @click="showModal = true" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                <i class="fas fa-plus"></i>
+              </button>
+              <select id="product" v-model="selectedProduct" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
+                <option v-for="product in products" :value="product.id">{{ product.title }}</option>
+              </select>
+            </div>
 
-            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-            <input type="number" id="quantity" v-model="quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+          <input type="number" id="quantity" v-model="quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
 
         <div v-if="task_type === 'distance'" class="mb-4">
@@ -93,12 +97,16 @@
           </div>
       </form>
     </div>
-  </template>
+    <product-modal :projectId="localProject.id" :userId="localProject.user_id" v-if="showModal" @close="showModal = false" @product-created="productCreated"></product-modal>  </template>
   
   <script>
   import axios from 'axios';
+  import productModal from './productModal.vue';
 
   export default {
+    components: {
+      'product-modal': productModal,
+    },
     props: ['project'],
  
   // props: {
@@ -134,6 +142,8 @@
       formSubmitted: false,
       errorMessage: '',
       formData: '',
+      showModal: false,
+      selectedProduct: null,
     };
   },
   watch: {
@@ -166,6 +176,11 @@
     console.log('Type id:', typeof this.localProject.id);
   },
     methods: {
+      productCreated(product) {
+        this.products.push(product);
+        this.selectedProduct = product.id;
+        this.showModal = false;
+      },
       handleFormSubmission() {
         console.log('handleFormSubmission called');
         let route = '';
@@ -222,16 +237,15 @@
               task_type: 'hourly',
             };
             break;
-          //   following not implemented yet
-          //   case 'product':
-          //   route = `/projects/${this.localProject.id}/tasks/store-product`;
-          //   data = {
-          //     title: this.title,
-          //     task_type: this.task_type,
-          //     product: this.product,
-          //     quantity: this.quantity,
-          //   };
-          //   break;
+             case 'product':
+             route = `/projects/${this.localProject.id}/tasks/store-product`;
+             data = {
+               title: this.title,
+               task_type: this.task_type,
+               product: this.product,
+               quantity: this.quantity,
+             };
+             break;
           case 'distance':
             route = `/projects/${this.localProject.id}/tasks/store-distance`;
             data = {
