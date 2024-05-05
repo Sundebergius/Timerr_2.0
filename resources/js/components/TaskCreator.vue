@@ -97,7 +97,8 @@
           </div>
       </form>
     </div>
-    <product-modal :projectId="localProject.id" :userId="localProject.user_id" v-if="showModal" @close="showModal = false" @product-created="productCreated"></product-modal>  </template>
+    <product-modal :projectId="localProject.id" :userId="localProject.user_id" v-if="showModal" @close="showModal = false" @product-created="productCreated"></product-modal>  
+    </template>
   
   <script>
   import axios from 'axios';
@@ -107,7 +108,7 @@
     components: {
       'product-modal': productModal,
     },
-    props: ['project'],
+    props: ['project', 'user_id'],
  
   // props: {
   //   project: {
@@ -118,6 +119,7 @@
   data() {
     return {
       // localProject: JSON.parse(this.project),
+      userId: '',
       localProject: this.project ? JSON.parse(this.project) : {},
       task_type: 'project_based',
       task_title: '', 
@@ -146,6 +148,8 @@
       selectedProduct: null,
     };
   },
+  computed: {
+    },
   watch: {
     localProject: {
       handler(newValue) {
@@ -155,6 +159,15 @@
     },
   },
   mounted() {
+    // Fetch the products
+    axios.get(`/api/products/${this.localProject.user_id}`)
+    .then(response => {
+      console.log('response.data:', response.data); // Check the response data
+      this.products = response.data;
+    })
+    .catch(error => {
+      console.error('Error fetching products:', error);
+    });
     if (this.project) {
       try {
         this.localProject = JSON.parse(this.project);
@@ -240,10 +253,14 @@
              case 'product':
              route = `/projects/${this.localProject.id}/tasks/store-product`;
              data = {
-               title: this.title,
-               task_type: this.task_type,
-               product: this.product,
+               user_id: this.localProject.user_id,
+               title: this.task_title,
+               task_title: this.task_title,
+               project_title: this.localProject.title,
+               project_id: this.localProject.id,
                quantity: this.quantity,
+               product_id: this.selectedProduct,
+               task_type: 'product',
              };
              break;
           case 'distance':
@@ -266,7 +283,6 @@
                description: this.description,
              };
              break;
-          // Add other cases for 'product', 'distance', 'other'
         }
       } else {
       console.error('localProject or localProject.id is undefined');

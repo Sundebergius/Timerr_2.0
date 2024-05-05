@@ -25,3 +25,4 @@ Route::delete('/tag/{id}', [TagController::class, 'delete']);
 Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
 
 Route::post('/products', [ProductController::class, 'store']);
+Route::get('/products/{userId}', [ProductController::class, 'getUserProducts']);

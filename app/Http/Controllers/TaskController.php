@@ -6,10 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Project;
 use App\Models\Task;
+use App\Models\Product;
 use App\Models\RegistrationProject;
 use App\Models\TaskProject;
 use App\Models\TaskHourly;
 use App\Models\TaskDistance;
+use App\Models\TaskProduct;
 use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
@@ -53,6 +55,12 @@ class TaskController extends Controller
                 break;
             case 'distance':
                 $this->createDistanceTask($data);
+                break;
+            case 'product': // added this case
+                $this->createProductTask($data); // call a method to create a product task
+                break;
+            case 'other': // added this case
+                $this->createOtherTask($data); // call a method to create an other task
                 break;
         }
 
@@ -152,6 +160,7 @@ class TaskController extends Controller
     {
         // Validate the data
         $validatedData = Validator::make($request->all(), [
+            'project_id' => 'required|integer',
             'title' => 'required|string',
             'price_per_km' => 'required|numeric',
         ])->validate();
@@ -180,6 +189,55 @@ class TaskController extends Controller
     
             // Update the TaskDistance with the task_id
             $taskDistance->update(['task_id' => $task->id]);
+        });
+    }
+
+    public function createProductTask(Request $request)
+    {
+        // Validate the data
+        $validatedData = Validator::make($request->all(), [
+            'project_id' => 'required|integer',
+            'title' => 'required|string',
+            'product_id' => 'required|integer',
+            'quantity' => 'required|integer',
+        ])->validate();
+
+        // Fetch the product
+        $product = Product::findOrFail($validatedData['product_id']);
+
+        // Check if there is enough stock
+        if ($product->quantity < $validatedData['quantity']) {
+            return response()->json(['error' => 'Not enough stock for this product'], 400);
+        }
+
+        // Fetch the project
+        $project = Project::findOrFail($request->project_id);
+
+        DB::transaction(function () use ($validatedData, $request, $project) {
+            // Create a new TaskProduct without task_id
+            $taskProduct = TaskProduct::create([
+                'title' => $validatedData['title'],
+                'product_id' => $validatedData['product_id'],
+                'quantity' => $validatedData['quantity'],
+            ]);
+    
+            // Create a new task
+            $task = Task::create([
+                'project_id' => $request->project_id,
+                'user_id' => $request->user_id,
+                'title' => $validatedData['title'],
+                'task_type' => 'product',
+                'taskable_id' => $taskProduct->id,
+                'taskable_type' => TaskProduct::class,
+                'client_id' => $project->client_id ?? null,
+            ]);
+    
+            // Update the TaskProduct with the task_id
+            $taskProduct->update(['task_id' => $task->id]);
+
+            // Decrease the product's quantity
+            $product->quantity -= $validatedData['quantity'];
+            $product->save();
         });
     }
 

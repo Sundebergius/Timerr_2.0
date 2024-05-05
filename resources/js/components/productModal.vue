@@ -3,6 +3,8 @@
         <div class="bg-white rounded-lg w-96 p-6 m-4">    
         <!-- ...modal content... -->
   
+        
+
       <form @submit.prevent="createProduct">
         <div class="mb-4">
           <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Title:</label>
@@ -42,7 +44,15 @@
                 Create Product
             </button>
         </div>
+        <div v-if="successMessage" class="alert alert-success mt-4">
+        {{ successMessage }}
+      </div>
+
+      <div v-if="errorMessage" class="alert alert-danger mt-4">
+        {{ errorMessage }}
+      </div>
       </form>
+      
     </div>
     </div>
   </template>
@@ -68,9 +78,15 @@
         description: '',
         price: '',
         quantity: '',
+        successMessage: '',
+        errorMessage: '',
         // ...other data properties...
       };
     },
+    created() {
+  console.log('userId:', this.userId);
+  console.log('projectId:', this.projectId);
+},
   
     methods: {
         closeModal() {
@@ -88,10 +104,12 @@
           // ...other data...
         })
         .then(response => {
-          this.$emit('product-created', response.data);
-        })
+          this.successMessage = response.data.message;
+          this.errorMessage = '';
+          })
         .catch(error => {
-          // Handle errors
+          this.errorMessage = 'An error occurred while creating the product.';
+          this.successMessage = '';
         });
       },
     },

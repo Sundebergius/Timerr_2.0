@@ -7,6 +7,7 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -86,6 +87,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/store-project', [TaskController::class, 'store'])->name('projects.tasks.storeProject');
             Route::post('/store-hourly', [TaskController::class, 'store'])->name('projects.tasks.storeHourly');
             Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
+            Route::post('/store-product', [TaskController::class, 'createProductTask'])->name('projects.tasks.storeProduct');
             Route::post('/store-distance', [TaskController::class, 'createDistanceTask'])->name('projects.tasks.storeDistance');
             Route::post('/store-other', [TaskController::class, 'createOtherTask'])->name('projects.tasks.storeOther');
         });

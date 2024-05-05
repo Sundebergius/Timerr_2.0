@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('task_products', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('task_id')->constrained()->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->string('title'); 
+            $table->integer('quantity');
             $table->timestamps();
         });
     }

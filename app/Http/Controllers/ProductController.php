@@ -15,6 +15,7 @@ class ProductController extends Controller
             'description' => 'required',
             'price' => 'required',
             'quantity' => 'required',
+            'user_id' => 'required',
             //'active' => 'required',
         ]);
 
@@ -24,14 +25,17 @@ class ProductController extends Controller
         $product->description = $request->description;
         $product->price = $request->price;
         $product->quantity = $request->quantity;
-        //$product->active = $request->active;
-
-        // Set the user_id to the ID of the currently logged-in user
-        $product->user_id = auth()->id();
+        $product->user_id = $request->user_id;
+        //$product->active = $request->active;        
 
         $product->save();
 
-        return redirect()->route('projects.tasks.create');      
+        return response()->json(['message' => 'Product created successfully'], 200);
+    }
 
+    public function getUserProducts($userId)
+    {
+        $products = Product::where('user_id', $userId)->get();
+        return response()->json($products);
     }
 }
