@@ -30,6 +30,6 @@ class RegistrationProject extends Model
 
     public function task()
     {
-        return $this->morphOne(Task::class, 'taskable');
+        return $this->belongsTo(Task::class);
     }
 }

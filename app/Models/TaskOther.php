@@ -21,8 +21,13 @@ class TaskOther extends Model
         return $this->belongsTo(User::class);
     }
 
+    // public function task()
+    // {
+    //     return $this->belongsTo(Task::class);
+    // }
+
     public function task()
     {
-        return $this->belongsTo(Task::class);
+        return $this->morphOne(Task::class, 'taskable');
     }
 }

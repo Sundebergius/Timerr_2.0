@@ -15,7 +15,7 @@ class RegistrationHourly extends Model
 
     protected $fillable = [
         'user_id',
-        'task_hourly_id',
+        'task_id',
         'minutes_worked',
         'earnings',
     ];
@@ -27,11 +27,6 @@ class RegistrationHourly extends Model
 
     public function task()
     {
-        return $this->morphOne(Task::class, 'taskable');
-    }
-
-    public function taskHourly()
-    {
-        return $this->belongsTo(TaskHourly::class);
+        return $this->belongsTo(Task::class);
     }
 }

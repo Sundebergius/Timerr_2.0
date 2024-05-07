@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('task_products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('task_id')->constrained()->onDelete('cascade');
+            //$table->foreignId('task_id')->constrained()->onDelete('cascade');
+            $table->bigInteger('client_id')->unsigned()->nullable();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->string('title'); 
             $table->integer('quantity');
             $table->timestamps();
+
+            $table->foreign('client_id')->references('id')->on('clients');
         });
     }
 

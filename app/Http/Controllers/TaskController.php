@@ -109,9 +109,6 @@ class TaskController extends Controller
                 'taskable_id' => $taskProject->id, 
                 'taskable_type' => TaskProject::class, 
             ]);
-        
-            // Update the TaskProject with the task_id
-            $taskProject->update(['task_id' => $task->id]);
         });
     }
 
@@ -150,9 +147,6 @@ class TaskController extends Controller
                 'taskable_type' => TaskHourly::class,
                 'client_id' => $project->client_id ?? null,
             ]);
-    
-            // Update the TaskHourly with the task_id
-            $taskHourly->update(['task_id' => $task->id]);
         });
     }
 
@@ -186,9 +180,6 @@ class TaskController extends Controller
                 'taskable_type' => TaskDistance::class,
                 'client_id' => $project->client_id ?? null,
             ]);
-    
-            // Update the TaskDistance with the task_id
-            $taskDistance->update(['task_id' => $task->id]);
         });
     }
 
@@ -231,9 +222,6 @@ class TaskController extends Controller
                 'taskable_type' => TaskProduct::class,
                 'client_id' => $project->client_id ?? null,
             ]);
-    
-            // Update the TaskProduct with the task_id
-            $taskProduct->update(['task_id' => $task->id]);
 
             // Decrease the product's quantity
             $product->quantity -= $validatedData['quantity'];
@@ -269,9 +257,6 @@ class TaskController extends Controller
                 'taskable_type' => TaskOther::class,
                 'client_id' => $project->client_id ?? null,
             ]);
-    
-            // Update the TaskDistance with the task_id
-            $taskDistance->update(['task_id' => $task->id]);
         });
     }
 

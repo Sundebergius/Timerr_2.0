@@ -10,7 +10,6 @@ class TaskProduct extends Model
     use HasFactory;
 
     protected $fillable = [
-        'task_id',
         'product_id',
         'title',
         'quantity',
@@ -21,9 +20,14 @@ class TaskProduct extends Model
         return $this->belongsTo(User::class);
     }
     
+    // public function task()
+    // {
+    //     return $this->belongsTo(Task::class);
+    // }
+
     public function task()
     {
-        return $this->belongsTo(Task::class);
+        return $this->morphOne(Task::class, 'taskable');
     }
 
     public function product()

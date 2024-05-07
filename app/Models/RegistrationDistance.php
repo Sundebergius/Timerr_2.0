@@ -22,4 +22,9 @@ class RegistrationDistance extends Model
     {
         return $this->belongsTo(TaskDistance::class, 'task_id');
     }
+    
+    public function task()
+    {
+        return $this->belongsTo(Task::class);
+    }
 }

@@ -11,7 +11,6 @@ class TaskProject extends Model
 
     protected $fillable = [
         'user_id',
-        'task_id',
         'title',
         'description',
         'start_date',

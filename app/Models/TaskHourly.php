@@ -15,7 +15,6 @@ class TaskHourly extends Model
         'title',
         'rate_per_hour',
         'rate_per_minute',
-        'task_id',
     ];
     
     public function user()
@@ -23,9 +22,14 @@ class TaskHourly extends Model
         return $this->belongsTo(User::class);
     }
     
+    // public function task()
+    // {
+    //     return $this->belongsTo(Task::class);
+    // }
+
     public function task()
     {
-        return $this->belongsTo(Task::class);
+        return $this->morphOne(Task::class, 'taskable');
     }
 
     public function registrationHourly()
