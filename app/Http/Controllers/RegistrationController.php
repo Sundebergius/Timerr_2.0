@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Task;
 use App\Models\Project;
+use App\Models\Product;
 use App\Models\RegistrationProject;
 use App\Models\RegistrationHourly;
 use App\Models\RegistrationDistance;
+use App\Models\RegistrationProduct;
+use App\Models\TaskProduct;
 
 class RegistrationController extends Controller
 {
@@ -48,22 +51,19 @@ class RegistrationController extends Controller
         $task = Task::find($taskId);
         $taskHourly = $task->taskable;
 
-        //$totalMinutes = $validatedData['hours_worked'] * 60 + $validatedData['minutes_worked'];
         $totalMinutes = $validatedData['hours_worked'] * 60 + $validatedData['minutes_worked'];
-        //$earningsPerMinute = $taskHourly->rate_per_hour / 60;
         $earnings = $totalMinutes * $taskHourly->rate_per_minute;
+
         // Round earnings to the nearest whole number
         $earnings = ceil($earnings);
 
         RegistrationHourly::create([
             'user_id' => $task->user_id,
-            'task_hourly_id' => $taskHourly->id, // Store the task_hourly_id for reference
+            'task_hourly_id' => $taskHourly->id,            
             'minutes_worked' => $totalMinutes,
             'earnings' => $earnings,
         ]);
 
-        \Log::info('Redirecting to project: ' . $task->project_id);
-        \Log::info('Calculated earnings: ' . $earnings);
         return redirect()->route('projects.show', ['project' => $task->project_id]);
     }
 
@@ -74,19 +74,47 @@ class RegistrationController extends Controller
         ]);
 
         $task = Task::find($taskId);
+        $taskDistance = $task->taskable;
 
         RegistrationDistance::create([
             'user_id' => $task->user_id,
-            'task_id' => $task->id,
-            'title' => $task->title,
+            'task_distance_id' => $taskDistance->id,
             'distance' => $validatedData['distance_driven'],
         ]);
 
         return redirect()->route('projects.show', ['project' => $projectId]);
     }
 
+    public function storeProductRegistration(Request $request, $taskId)
+    {
+        $validatedData = $request->validate([
+            'product_id' => 'required|integer',
+            'quantity' => 'required|integer',
+        ]);
+
+        $task = Task::find($taskId);
+        $taskProduct = TaskProduct::where('product_id', $validatedData['product_id'])->first();
+
+        if (!$taskProduct) {
+            return redirect()->back()->with('error', 'Product not found in task products.');
+        }
+
+        RegistrationProduct::create([
+            'user_id' => $task->user_id,
+            'task_product_id' => $taskProduct->id,
+            'quantity' => $validatedData['quantity'],
+        ]);
+
+        return redirect()->route('projects.show', ['project' => $task->project_id]);
+    }
+
     public function createRegistration(Project $project, Task $task)
     {
+        // Abort if the authenticated user is not the owner of the project
+        if ($project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
         // Decide which view to return based on the type of the task
         if ($task->task_type == 'project_based') {
             return view('registrations.create_project', compact('project', 'task'));
@@ -94,6 +122,9 @@ class RegistrationController extends Controller
             return view('registrations.create_hourly', compact('project', 'task'));
         } elseif ($task->task_type == 'distance') {
             return view('registrations.create_distance', compact('project', 'task'));
+        } elseif ($task->task_type == 'product') {
+            $products = Product::where('user_id', auth()->id())->get();
+            return view('registrations.create_product', compact('project', 'task', 'products'));            
         }
 
         // You can pass the project and task to the view if you need them

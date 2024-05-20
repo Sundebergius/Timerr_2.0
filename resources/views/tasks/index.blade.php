@@ -15,8 +15,12 @@
             @endif
 
             @if($task->task_type == 'hourly')
-                <p class="mb-2"><strong>Hourly Wage:</strong> {{ $task->taskable->rate_per_hour }}</p>
-                <p class="mb-2"><strong>Number of Registrations:</strong> {{ $task->taskable->registrationHourly->count() }}</p>
+                @if($task->taskable)
+                    <p class="mb-2"><strong>Hourly Wage:</strong> {{ $task->taskable->rate_per_hour }}</p>
+                @endif
+                @if($task->taskable)
+                    <p class="mb-2"><strong>Number of Registrations:</strong> {{ $task->taskable->registrationHourly->count() }}</p>
+                @endif
                 @php
                     $totalMinutes = $task->taskable->registrationHourly->sum('minutes_worked');
                     $days = floor($totalMinutes / (60*24));
@@ -31,9 +35,11 @@
             @endif --}}
             
 
-            @if($task->type == 'sale_of_products')
-            <p class="mb-2"><strong>Product Sold:</strong> {{ $task->product_sold }}</p>
-            <p class="mb-2"><strong>Total Price:</strong> {{ $task->total_price }}</p>
+            @if($task->task_type == 'product')
+                @foreach($task->taskProduct as $taskProduct)
+                    <p class="mb-2"><strong>Product Sold:</strong> {{ $taskProduct->product->title }}</p>
+                @endforeach
+                {{-- <p class="mb-2"><strong>Total Price:</strong> {{ $task->total_price }}</p> --}}
             @endif
 
             @if($task->task_type == 'distance')
@@ -46,6 +52,16 @@
                 <p class="mb-2"><strong>Description:</strong> {{ \Illuminate\Support\Str::limit($task->taskable->description, 100, $end='...') }}</p>
                 <a href="#" class="text-blue-500 hover:text-blue-700" onclick="alert('{{ $task->taskable->description }}')">Read More</a>
             @endif
+
+            <div class="mt-4">
+                <a href="{{ route('projects.tasks.show', ['project' => $project, 'task' => $task]) }}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">View</a>
+                <a href="{{ route('projects.tasks.edit', ['project' => $project, 'task' => $task]) }}" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">Edit</a>
+                <form action="{{ route('projects.tasks.destroy', ['project' => $project, 'task' => $task]) }}" method="POST" class="inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-700">Delete</button>
+                </form>
+            </div>
 
             <a href="{{ route('projects.tasks.registrations.create', ['project' => $project->id, 'task' => $task->id]) }}" class="text-blue-500 hover:text-blue-700">
                 <i class="fas fa-plus"></i> Create Registration

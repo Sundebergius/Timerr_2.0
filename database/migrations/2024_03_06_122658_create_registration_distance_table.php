@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('registration_distance', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
-            $table->bigInteger('task_id')->unsigned();
-            $table->string('title');
-            $table->decimal('distance', 8, 2)->nullable(); // distance driven in kilometers
+            $table->bigInteger('task_distance_id')->unsigned();
+            $table->decimal('distance', 8, 2)->nullable(); 
             $table->timestamps();
 
-            $table->foreign('task_id')->references('id')->on('task_distances')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('task_distance_id')->references('id')->on('task_distance');
         });
     }
 

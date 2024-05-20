@@ -16,8 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('project_id');
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('client_id')->nullable();
-            $table->unsignedBigInteger('taskable_id');
-            $table->string('taskable_type');
+            $table->unsignedBigInteger('taskable_id')->nullable();
+            $table->string('taskable_type')->nullable();
             $table->string('title');
             $table->string('task_type');
             $table->timestamps();

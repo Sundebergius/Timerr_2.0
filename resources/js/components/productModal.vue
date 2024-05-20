@@ -62,7 +62,7 @@
 
   export default {
     props: {
-      projectId: {
+      project_id: {
         type: Number,
         required: true
       },
@@ -80,12 +80,14 @@
         quantity: '',
         successMessage: '',
         errorMessage: '',
+        products: [],
+        localProject: this.project ? JSON.parse(this.project) : {},
         // ...other data properties...
       };
     },
     created() {
-  console.log('userId:', this.userId);
-  console.log('projectId:', this.projectId);
+  // console.log('userId:', this.userId);
+  // console.log('projectId:', this.projectId);
 },
   
     methods: {
@@ -98,14 +100,17 @@
           category: this.category,
           description: this.description,
           price: this.price,
-          quantity: this.quantity,
-          projectId: this.projectId,
+          quantityInStock: this.quantity,
           user_id: this.userId,
-          // ...other data...
+          image: null, // You need to handle image upload separately
+          active: true, // You can set this to false if you want the product to be inactive by default
         })
         .then(response => {
+          console.log(response.data); 
           this.successMessage = response.data.message;
           this.errorMessage = '';
+          //this.$emit('product-created', response.data.product);
+          //this.$emit('close');
           })
         .catch(error => {
           this.errorMessage = 'An error occurred while creating the product.';

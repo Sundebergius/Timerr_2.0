@@ -13,7 +13,7 @@ class RegistrationProject extends Model
 
     protected $fillable = [
         'user_id',
-        'task_id',
+        'task_project_id',
         'title',
         'type',
         'description',
@@ -28,8 +28,8 @@ class RegistrationProject extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function task()
+    public function taskProject()
     {
-        return $this->belongsTo(Task::class);
+        return $this->belongsTo(TaskProject::class, 'task_project_id');
     }
 }

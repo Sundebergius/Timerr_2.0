@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\Product;
@@ -12,6 +13,10 @@ use App\Models\TaskProject;
 use App\Models\TaskHourly;
 use App\Models\TaskDistance;
 use App\Models\TaskProduct;
+use App\Models\TaskOther;
+use App\Models\CustomField;
+use App\Models\ChecklistSection;
+use App\Models\ChecklistItem;
 use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
@@ -43,6 +48,14 @@ class TaskController extends Controller
 
     public function store(Request $request)
     {
+        // Fetch the project
+        $project = Project::findOrFail($request->project_id);
+
+        // Abort if the authenticated user is not the owner of the project
+        if ($project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
         error_log(print_r($request->all(), true));
         $data = $request->all();
 
@@ -68,6 +81,11 @@ class TaskController extends Controller
 
     public function create(Project $project)
     {
+        // Abort if the authenticated user is not the owner of the project
+        if ($project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
         return view('tasks.create', ['project' => $project]); 
     }
 
@@ -91,7 +109,6 @@ class TaskController extends Controller
         DB::transaction(function () use ($validatedData, $project) {
             // Create a new TaskProject without task_id
             $taskProject = TaskProject::create([
-                'title' => $validatedData['task_title'],
                 'start_date' => $validatedData['start_date'],
                 'end_date' => $validatedData['end_date'],
                 'price' => $validatedData['price'],
@@ -120,7 +137,6 @@ class TaskController extends Controller
             'task_title' => 'required|string',
             'rate_per_hour' => 'required|numeric',
             'user_id' => 'required|integer',
-            //'minutes_worked' => 'required|numeric',
         ])->validate();
 
         // Fetch the project
@@ -132,7 +148,6 @@ class TaskController extends Controller
         DB::transaction(function () use ($validatedData, $project, $ratePerMinute) {
             // Create a new TaskHourly without task_id
             $taskHourly = TaskHourly::create([
-                'title' => $validatedData['task_title'],
                 'rate_per_hour' => $validatedData['rate_per_hour'],
                 'rate_per_minute' => $ratePerMinute,
             ]);
@@ -155,7 +170,7 @@ class TaskController extends Controller
         // Validate the data
         $validatedData = Validator::make($request->all(), [
             'project_id' => 'required|integer',
-            'title' => 'required|string',
+            'task_title' => 'required|string',
             'price_per_km' => 'required|numeric',
         ])->validate();
 
@@ -165,7 +180,6 @@ class TaskController extends Controller
         DB::transaction(function () use ($validatedData, $request, $project) {
             // Create a new TaskDistance without task_id
             $taskDistance = TaskDistance::create([
-                'title' => $validatedData['title'],
                 'distance' => $validatedData['distance'] ?? 0,
                 'price_per_km' => $validatedData['price_per_km'],
             ]);
@@ -174,7 +188,7 @@ class TaskController extends Controller
             $task = Task::create([
                 'project_id' => $request->project_id,
                 'user_id' => $request->user_id,
-                'title' => $validatedData['title'],
+                'title' => $validatedData['task_title'],
                 'task_type' => 'distance',
                 'taskable_id' => $taskDistance->id,
                 'taskable_type' => TaskDistance::class,
@@ -185,56 +199,55 @@ class TaskController extends Controller
 
     public function createProductTask(Request $request)
     {
-        // Validate the data
+        Log::info('Request data: ', $request->all());
+
         $validatedData = Validator::make($request->all(), [
             'project_id' => 'required|integer',
-            'title' => 'required|string',
-            'product_id' => 'required|integer',
-            'quantity' => 'required|integer',
+            'task_title' => 'required|string',
+            'products' => 'required|array',
+            'products.*.product_id' => 'required|integer|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
         ])->validate();
-
-        // Fetch the product
-        $product = Product::findOrFail($validatedData['product_id']);
-
-        // Check if there is enough stock
-        if ($product->quantity < $validatedData['quantity']) {
-            return response()->json(['error' => 'Not enough stock for this product'], 400);
-        }
 
         // Fetch the project
         $project = Project::findOrFail($request->project_id);
 
         DB::transaction(function () use ($validatedData, $request, $project) {
-            // Create a new TaskProduct without task_id
-            $taskProduct = TaskProduct::create([
-                'title' => $validatedData['title'],
-                'product_id' => $validatedData['product_id'],
-                'quantity' => $validatedData['quantity'],
-            ]);
-    
-            // Create a new task
-            $task = Task::create([
-                'project_id' => $request->project_id,
-                'user_id' => $request->user_id,
-                'title' => $validatedData['title'],
-                'task_type' => 'product',
-                'taskable_id' => $taskProduct->id,
-                'taskable_type' => TaskProduct::class,
-                'client_id' => $project->client_id ?? null,
-            ]);
+            try {
+                // Create a new Task
+                $task = Task::create([
+                    'project_id' => $request->project_id,
+                    'user_id' => $request->user_id,
+                    'title' => $validatedData['task_title'],
+                    'task_type' => 'product',
+                    'client_id' => $project->client_id ?? null,
+                    // 'taskable_id' => $taskProduct->id,
+                    'taskable_type' => TaskProduct::class,
+                ]);
 
-            // Decrease the product's quantity
-            $product->quantity -= $validatedData['quantity'];
-            $product->save();
+                // Create TaskProduct entries
+                foreach ($validatedData['products'] as $productData) {
+                    TaskProduct::create([
+                        'task_id' => $task->id,
+                        'product_id' => $productData['product_id'],
+                        'total_sold' => $productData['quantity'],
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to create task and task product: ' . $e->getMessage());
+            }
         });
     }
 
     public function createOtherTask(Request $request)
     {
+        Log::info('createOtherTask method called');
         // Validate the data
         $validatedData = Validator::make($request->all(), [
-            'title' => 'required|string',
+            'task_title' => 'required|string',
             'description' => 'required|string',
+            'customFields' => 'nullable|array',
+            'checklistSections' => 'nullable|array',
         ])->validate();
 
         // Fetch the project
@@ -242,8 +255,7 @@ class TaskController extends Controller
 
         DB::transaction(function () use ($validatedData, $request, $project) {
             // Create a new OtherTask without task_id
-            $otherTask = OtherTask::create([
-                'title' => $validatedData['title'],
+            $taskOther = TaskOther::create([
                 'description' => $validatedData['description'],
             ]);
     
@@ -251,13 +263,101 @@ class TaskController extends Controller
             $task = Task::create([
                 'project_id' => $request->project_id,
                 'user_id' => $request->user_id,
-                'title' => $validatedData['title'],
+                'title' => $validatedData['task_title'],
                 'task_type' => 'other',
-                'taskable_id' => $taskDistance->id,
+                'taskable_id' => $taskOther->id,
                 'taskable_type' => TaskOther::class,
                 'client_id' => $project->client_id ?? null,
             ]);
+
+             // Handle customFields and checklistSections
+            if (isset($validatedData['customFields'])) {
+                $position = 0;
+                foreach ($validatedData['customFields'] as $field) {
+                    $value = $field['value'];
+                    $position = $field['position'];
+
+                    CustomField::create([
+                        'task_id' => $task->id,
+                        'field' => trim($value) !== '' ? $value : null, // Set 'field' to null if it's empty
+                        'position' => $position,
+                    ]);
+            
+                    Log::info('Position: '.$position);
+                    $position++; // Increment the counter for each custom field
+                }
+            }
+
+            if (isset($validatedData['checklistSections'])) {
+                foreach ($validatedData['checklistSections'] as $section) {
+                    if (trim($section['title']) !== '') {
+                        $createdSection = ChecklistSection::create([
+                            'title' => $section['title'],
+                            'task_id' => $task->id,
+                        ]);
+            
+                        // Check if the ChecklistSection was created successfully
+                        if (!$createdSection) {
+                            Log::error('Failed to create ChecklistSection');
+                            continue;
+                        }
+            
+                        $position = 0;
+                        foreach ($section['items'] as $item) {
+                            if (trim($item) !== '') {
+                                $createdItem = ChecklistItem::create([
+                                    'checklist_section_id' => $createdSection->id,
+                                    'item' => $item,
+                                    'position' => $position,
+                                ]);
+            
+                                // Check if the ChecklistItem was created successfully
+                                if (!$createdItem) {
+                                    Log::error('Failed to create ChecklistItem for section: ' . $createdSection->id);
+                                }
+                                $position++;
+                            }
+                        }
+                    }
+                }
+            }
         });
+    }
+
+    public function show(Project $project, Task $task)
+    {
+        // Abort if the authenticated user is not the owner of the project
+        if ($task->project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        return view('tasks.show', ['task' => $task]);
+    }
+
+    public function edit(Project $project, Task $task)
+    {
+        // Abort if the authenticated user is not the owner of the project
+        if ($task->project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        return view('tasks.edit', ['task' => $task]);
+    }
+
+    public function destroy(Project $project, Task $task)
+    {
+        // Abort if the authenticated user is not the owner of the project
+        if ($task->project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Call the deleteWithRegistrations method on the taskable relation
+        $task->taskable->deleteWithRegistrations();
+
+        // Delete the task
+        $task->delete();
+
+        return redirect()->route('projects.show', $task->project);
     }
 
 

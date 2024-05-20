@@ -98,6 +98,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
             Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance'); 
             Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
+            Route::post('/store-product', [RegistrationController::class, 'storeProductRegistration'])->name('projects.tasks.registrations.storeProduct');
         });
     });
 });

@@ -13,18 +13,18 @@ class RegistrationDistance extends Model
 
     protected $fillable = [
         'user_id',
-        'task_id',
+        'task_distance_id',
         'title',
         'distance',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function taskDistance()
     {
-        return $this->belongsTo(TaskDistance::class, 'task_id');
-    }
-    
-    public function task()
-    {
-        return $this->belongsTo(Task::class);
+        return $this->belongsTo(TaskDistance::class, 'task_distance_id');
     }
 }

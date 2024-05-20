@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <!-- Alpine.js -->
-        <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v3.x.x/dist/cdn.min.js"></script>
+        <script src="//unpkg.com/alpinejs" defer></script>
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 

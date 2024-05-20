@@ -13,19 +13,11 @@ return new class extends Migration
     {
         Schema::create('task_projects', function (Blueprint $table) {
             $table->id();
-            //$table->bigInteger('task_id')->unsigned()->nullable();
-            $table->bigInteger('client_id')->unsigned()->nullable();
-            $table->string('title');
             $table->datetime('start_date')->nullable();
             $table->datetime('end_date')->nullable();
             $table->decimal('price')->nullable();
             $table->string('currency')->default('DKK');
             $table->string('project_location')->nullable();
-            $table->timestamps();
-
-            //$table->foreign('task_id')->references('id')->on('tasks');
-            $table->foreign('client_id')->references('id')->on('clients');
-
         });
     }
 

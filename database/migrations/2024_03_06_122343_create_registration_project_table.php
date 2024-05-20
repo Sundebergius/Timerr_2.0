@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('registration_projects', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
-            $table->bigInteger('task_id')->unsigned();
+            $table->bigInteger('task_project_id')->unsigned();
             $table->string('title');
             $table->string('type'); // New column to specify the type of registration
             $table->text('description')->nullable(); // Description of the registration
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('task_id')->references('id')->on('tasks');
+            $table->foreign('task_project_id')->references('id')->on('task_projects');
         });
     }
 

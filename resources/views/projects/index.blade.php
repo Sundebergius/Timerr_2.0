@@ -75,7 +75,8 @@
                                 <ul>
                                     @foreach ($project->tasks as $index => $task)
                                         <li>{{ $index + 1 }}. <strong>{{ $task->title }}</strong>
-                                            ({{ $task->task_type }})</li>
+                                            ({{ $task->task_type }})
+                                        </li>
                                     @endforeach
                                 </ul>
                             </td>
@@ -103,33 +104,42 @@
                                         @php
                                             $totalMinutesWorked = 0;
                                             $hourlyEarnings = 0;
-        foreach ($project->tasks->where('taskable_type', 'App\Models\TaskHourly') as $task) {
-            $earningsPerMinute = $task->taskable->rate_per_hour / 60;
-            foreach ($task->taskable->registrationHourly as $registration) {
-                $totalMinutesWorked += $registration->minutes_worked;
-                $hourlyEarnings += $registration->minutes_worked * $earningsPerMinute;
-            }
-        }
-        // Round earnings up to the nearest whole number
-        $hourlyEarnings = ceil($hourlyEarnings);
+                                            foreach (
+                                                $project->tasks->where('taskable_type', 'App\Models\TaskHourly')
+                                                as $task
+                                            ) {
+                                                $earningsPerMinute = $task->taskable->rate_per_hour / 60;
+                                                foreach ($task->taskable->registrationHourly as $registration) {
+                                                    $totalMinutesWorked += $registration->minutes_worked;
+                                                    $hourlyEarnings +=
+                                                        $registration->minutes_worked * $earningsPerMinute;
+                                                }
+                                            }
+                                            // Round earnings up to the nearest whole number
+                                            $hourlyEarnings = ceil($hourlyEarnings);
 
-        $totalDays = floor($totalMinutesWorked / (60 * 24));
-        $totalHours = floor(($totalMinutesWorked / 60) % 24);
-        $totalMinutes = $totalMinutesWorked % 60;
-        $timeWorked = sprintf('%dd %dh %dm', $totalDays, $totalHours, $totalMinutes);
-    @endphp
-    <div class="flex justify-between">
-        <span>Time Worked:</span>
-        <span>{{ $timeWorked }}</span>
-    </div>
-    <div class="flex justify-between">
-        <span>Hourly Earnings:</span>
-        <span>{{ $hourlyEarnings }} DKK</span>
-    </div>
-@endif
-@php
-    $totalEarnings += $hourlyEarnings;
-@endphp
+                                            $totalDays = floor($totalMinutesWorked / (60 * 24));
+                                            $totalHours = floor(($totalMinutesWorked / 60) % 24);
+                                            $totalMinutes = $totalMinutesWorked % 60;
+                                            $timeWorked = sprintf(
+                                                '%dd %dh %dm',
+                                                $totalDays,
+                                                $totalHours,
+                                                $totalMinutes,
+                                            );
+                                        @endphp
+                                        <div class="flex justify-between">
+                                            <span>Time Worked:</span>
+                                            <span>{{ $timeWorked }}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>Hourly Earnings:</span>
+                                            <span>{{ $hourlyEarnings }} DKK</span>
+                                        </div>
+                                    @endif
+                                    @php
+                                        $totalEarnings += $hourlyEarnings;
+                                    @endphp
                                     @if ($project->tasks->where('taskable_type', 'App\Models\TaskProduct')->isNotEmpty())
                                         @php
                                             $productEarnings = $project->tasks
@@ -142,11 +152,14 @@
                                             <span>{{ $productEarnings }} DKK</span>
                                         </div>
                                     @endif
-                                    @if ($project->tasks->where('taskable_type', 'App\Models\TaskTravel')->isNotEmpty())
+                                    @if ($project->tasks->where('taskable_type', 'App\Models\TaskDistance')->isNotEmpty())
                                         @php
-                                            $travelCosts = $project->tasks
-                                                ->where('taskable_type', 'App\Models\TaskTravel')
-                                                ->sum('taskable.travel_cost');
+                                            $travelCosts = 0;
+                                            foreach ($project->tasks->where('taskable_type', 'App\Models\TaskDistance') as $task) {
+                                                $taskDistance = $task->taskable;
+                                                $totalDistance = $taskDistance->registrationDistances->sum('distance');
+                                                $travelCosts += $taskDistance->price_per_km * $totalDistance;
+                                            }
                                             $totalEarnings += $travelCosts;
                                         @endphp
                                         <div class="flex justify-between">

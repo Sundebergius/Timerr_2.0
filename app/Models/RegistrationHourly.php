@@ -15,7 +15,7 @@ class RegistrationHourly extends Model
 
     protected $fillable = [
         'user_id',
-        'task_id',
+        'task_hourly_id',
         'minutes_worked',
         'earnings',
     ];
@@ -25,8 +25,8 @@ class RegistrationHourly extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function task()
+    public function taskHourly()
     {
-        return $this->belongsTo(Task::class);
+        return $this->belongsTo(TaskHourly::class, 'task_hourly_id');
     }
 }
