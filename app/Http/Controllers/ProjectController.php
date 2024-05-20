@@ -105,8 +105,13 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
+        // Abort if the authenticated user is not the owner of the project
+        if ($project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+    
         $clients = Client::where('user_id', auth()->id())->get(); // Retrieve the clients created by the authenticated user
-        
+    
         return view('projects.show', compact('project', 'clients'));
     }
 
