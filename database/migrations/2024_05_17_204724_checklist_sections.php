@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('task_products', function (Blueprint $table) {
+        Schema::create('checklist_sections', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('task_id');
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->integer('total_sold')->default(0);
-    
+            $table->string('title')->nullable();
+            $table->timestamps();
+
             $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
         });
     }
@@ -26,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('task_products');
+        Schema::dropIfExists('checklist_sections');
     }
 };
