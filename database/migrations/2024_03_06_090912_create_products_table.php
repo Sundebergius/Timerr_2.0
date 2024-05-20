@@ -19,9 +19,12 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->string('image')->nullable();
             $table->decimal('price', 8, 2);
-            $table->integer('quantity')->default(0);
+            $table->integer('quantityInStock')->default(0);
+            $table->integer('quantitySold')->default(0);
             $table->boolean('active')->default(true);
             $table->timestamps();
+
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');        
         });
     }
 

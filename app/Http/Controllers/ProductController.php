@@ -14,9 +14,9 @@ class ProductController extends Controller
             'category' => 'required',
             'description' => 'required',
             'price' => 'required',
-            'quantity' => 'required',
             'user_id' => 'required',
-            //'active' => 'required',
+            'quantityInStock' => 'required',
+            'active' => 'required',
         ]);
 
         $product = new Product;
@@ -24,9 +24,9 @@ class ProductController extends Controller
         $product->category = $request->category;
         $product->description = $request->description;
         $product->price = $request->price;
-        $product->quantity = $request->quantity;
+        $product->quantityInStock = $request->quantityInStock;
         $product->user_id = $request->user_id;
-        //$product->active = $request->active;        
+        $product->active = $request->active;        
 
         $product->save();
 

@@ -16,7 +16,8 @@ class Product extends Model
         'description',
         'image',
         'price',
-        'quantity',
+        'quantityInStock',
+        'quantitySold',
         'active',
     ];
 
@@ -27,6 +28,7 @@ class Product extends Model
 
     public function tasks()
     {
-        return $this->belongsToMany(Task::class)->withPivot('quantity');
+        return $this->belongsToMany(Task::class, 'task_product')
+                    ->withPivot('total_sold');
     }
 }
