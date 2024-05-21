@@ -48,9 +48,41 @@
             @endif
 
             @if($task->task_type == 'other')
-                <p class="mb-2"><strong>Title:</strong> {{ $task->taskable->title }}</p>
-                <p class="mb-2"><strong>Description:</strong> {{ \Illuminate\Support\Str::limit($task->taskable->description, 100, $end='...') }}</p>
-                <a href="#" class="text-blue-500 hover:text-blue-700" onclick="alert('{{ $task->taskable->description }}')">Read More</a>
+                @if(!empty($task->taskable->description))
+                    <p class="mb-2 font-bold">Description:</p>
+                    <p>{{ \Illuminate\Support\Str::limit($task->taskable->description, 100, $end='...') }}</p>
+                    @if(strlen($task->taskable->description) > 100)
+                        <div id="fullDescription{{ $task->id }}" class="hidden">
+                            <p>{{ $task->taskable->description }}</p>
+                        </div>
+                        <a href="#" class="text-blue-500 hover:text-blue-700" onclick="document.getElementById('fullDescription{{ $task->id }}').classList.toggle('hidden'); return false;">Read More</a>
+                    @endif
+                @endif
+
+                @if($task->customFields->count() > 0)
+                    <p class="mb-2 font-bold">Custom Fields:</p>
+                    <ul class="list-disc pl-5">
+                        @foreach($task->customFields as $field)
+                            <li>{{ $field->field }}</li>
+                        @endforeach
+                    </ul>
+                @endif
+
+                @if($task->checklistSections->count() > 0)
+                    <p class="mb-2 font-bold">Checklist Sections:</p>
+                    <div class="pl-5">
+                        @foreach($task->checklistSections as $section)
+                            <p class="font-bold text-lg mb-1">{{ $section->title }}</p>
+                            @if($section->checklistItems->count() > 0)
+                                <ul class="list-disc pl-5">
+                                @foreach($section->checklistItems as $item)
+                                    <li>{{ $item->item }}</li>
+                                @endforeach
+                                </ul>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
             @endif
 
             <div class="mt-4">

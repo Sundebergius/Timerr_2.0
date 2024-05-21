@@ -36,9 +36,9 @@ class TaskOther extends Model
         return $this->hasMany(ChecklistSection::class, 'task_id');
     }
 
-    public function deleteWithCustomFieldsAndChecklistItems()
+    public function deleteWithRegistrations()
     {
-        Log::info('deleteWithCustomFieldsAndChecklistItems called');
+        Log::info('deleteWithRegistrations called');
 
         try {
             DB::transaction(function () {

@@ -180,7 +180,7 @@ class TaskController extends Controller
         DB::transaction(function () use ($validatedData, $request, $project) {
             // Create a new TaskDistance without task_id
             $taskDistance = TaskDistance::create([
-                'distance' => $validatedData['distance'] ?? 0,
+                //'distance' => $validatedData['distance'] ?? 0,
                 'price_per_km' => $validatedData['price_per_km'],
             ]);
     

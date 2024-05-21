@@ -23,7 +23,7 @@
         @include('tasks.index', ['project' => $project])
         
         <!-- Tasks table -->
-        <table class="table-auto w-full">
+        {{-- <table class="table-auto w-full">
             <thead>
                 <tr>
                     <th class="px-4 py-2">Title</th>
@@ -46,6 +46,6 @@
                     </tr>
                 @endforeach
             </tbody>
-        </table>
+        </table> --}}
     </div>
 </x-app-layout>
