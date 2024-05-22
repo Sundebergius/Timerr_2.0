@@ -65,16 +65,20 @@ Route::middleware('auth')->group(function () {
         //note routes
         Route::prefix('/{project}/notes')->group(function () {
             Route::get('/create', [NoteController::class, 'create'])->name('projects.notes.create');
+            Route::post('/', [NoteController::class, 'store'])->name('projects.notes.store');
             Route::get('/{note}', [NoteController::class, 'show'])->name('projects.notes.show');
             Route::get('/{note}/edit', [NoteController::class, 'edit'])->name('projects.notes.edit');
+            Route::put('/{note}', [NoteController::class, 'update'])->name('projects.notes.update');
             Route::delete('/{note}', [NoteController::class, 'destroy'])->name('projects.notes.destroy');
         });
 
         // Contract routes
         Route::prefix('/{project}/contracts')->group(function () {
             Route::get('/create', [ContractController::class, 'create'])->name('projects.contracts.create');
+            Route::post('/', [ContractController::class, 'store'])->name('projects.contracts.store'); // Add this
             Route::get('/{contract}', [ContractController::class, 'show'])->name('projects.contracts.show');
             Route::get('/{contract}/edit', [ContractController::class, 'edit'])->name('projects.contracts.edit');
+            Route::put('/{contract}', [ContractController::class, 'update'])->name('projects.contracts.update'); // And this
             Route::delete('/{contract}', [ContractController::class, 'destroy'])->name('projects.contracts.destroy');
         });
 

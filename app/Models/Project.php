@@ -49,4 +49,14 @@ class Project extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    public function notes()
+    {
+        return $this->hasMany(Note::class);
+    }
+
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class);
+    }
 }

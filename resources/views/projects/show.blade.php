@@ -9,43 +9,41 @@
         </div>
 
         <div class="mb-4">
+            <h2 class="text-xl font-bold mb-4">Notes</h2>
+            @foreach ($project->notes as $note)
+                <div class="mb-2">
+                    <p>{{ $note->content }}</p>
+                    <a href="{{ route('projects.notes.edit', [$project, $note]) }}" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        Edit Note
+                    </a>
+                    <a href="{{ route('projects.notes.show', [$project, $note]) }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        View Note
+                    </a>
+                </div>
+            @endforeach
             <a href="{{ route('projects.notes.create', $project) }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                 Add Note
             </a>
         </div>
 
         <div class="mb-4">
+            <h2 class="text-xl font-bold mb-4">Contracts</h2>
+            @foreach ($project->contracts as $contract)
+                <div class="mb-2">
+                    <p>{{ $contract->title }}</p> <!-- Replace with actual contract property -->
+                    <a href="{{ route('projects.contracts.edit', [$project, $contract]) }}" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        Edit Contract
+                    </a>
+                    <a href="{{ route('projects.contracts.show', [$project, $contract]) }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                        View Contract
+                    </a>
+                </div>
+            @endforeach
             <a href="{{ route('projects.contracts.create', $project) }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                 Add Contract
             </a>
         </div>
 
         @include('tasks.index', ['project' => $project])
-        
-        <!-- Tasks table -->
-        {{-- <table class="table-auto w-full">
-            <thead>
-                <tr>
-                    <th class="px-4 py-2">Title</th>
-                    <th class="px-4 py-2">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($project->tasks as $task)
-                    <tr>
-                        <td class="border px-4 py-2">{{ $task->title }}</td>
-                        <td class="border px-4 py-2">
-                            <a href="{{ route('projects.tasks.show', ['project' => $project, 'task' => $task]) }}" class="text-blue-500 hover:text-blue-700">View</a>
-                            <a href="{{ route('projects.tasks.edit', ['project' => $project, 'task' => $task]) }}" class="text-blue-500 hover:text-blue-700">Edit</a>
-                            <form action="{{ route('projects.tasks.destroy', ['project' => $project, 'task' => $task]) }}" method="POST" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-500 hover:text-red-700">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table> --}}
     </div>
 </x-app-layout>
