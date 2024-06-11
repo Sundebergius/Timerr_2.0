@@ -13,23 +13,19 @@ class ProjectController extends Controller
     {
         $request->validate([
             'title' => 'required',
-            // 'description' => 'required',
-            // 'start_date' => 'required|date',
-            // 'end_date' => 'required|date',
-            // 'status' => 'required|string',
-            // 'client_id' => 'exists:clients,id', // Ensure the client ID exists in the clients table
+            'description' => 'nullable',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         $project = new Project;
         $project->fill([
             'title' => $request->title,
-            // 'description' => $request->description,
-            // 'start_date' => $request->start_date,
-            // 'end_date' => $request->end_date,
-            // 'status' => $request->status,
-            //'user_id' => auth()->id(), // Get the currently authenticated user's ID
+            'description' => $request->description,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'user_id' => auth()->id(),
         ]);
-        $project->user_id = auth()->id(); // Get the currently authenticated user's ID
 
         // If a client ID was provided, associate the project with the client
         if ($request->has('client_id')) {
@@ -92,13 +88,22 @@ class ProjectController extends Controller
     {
         $project->update(['client_id' => $request->client_id]);
 
-        return response()->json(['message' => 'Client updated successfully']);
+        // Update the client_id of all tasks belonging to the project
+        foreach ($project->tasks as $task) {
+            $task->update(['client_id' => $request->client_id]);
+        }
+
+        return response()->json(['message' => 'Client and tasks updated successfully']);
     }
 
     public function index()
     {
         $projects = Project::where('user_id', auth()->id())->get();
         $clients = Client::where('user_id', auth()->id())->get();
+
+        foreach ($projects as $project) {
+            $project->updateStatus();
+        }
 
         return view('projects.index', compact('projects', 'clients'));
     }
@@ -117,6 +122,7 @@ class ProjectController extends Controller
 
     public function create()
     {
-        return view('projects.create');
+        $clients = Client::where('user_id', auth()->id())->get();
+        return view('projects.create', compact('clients'));
     }
 }

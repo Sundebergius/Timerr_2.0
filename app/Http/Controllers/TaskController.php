@@ -59,6 +59,9 @@ class TaskController extends Controller
         error_log(print_r($request->all(), true));
         $data = $request->all();
 
+        // Add the client_id to the data array
+        $data['client_id'] = $project->client_id;
+
         switch ($data['task_type']) {
             case 'project_based':
                 $this->createProjectBasedTask($data);
@@ -225,18 +228,301 @@ class TaskController extends Controller
                     'taskable_type' => TaskProduct::class,
                 ]);
 
+                // Group products by product_id and sum the quantities
+                $groupedProducts = collect($validatedData['products'])->groupBy('product_id')->map(function ($productGroup) {
+                    return [
+                        'product_id' => $productGroup[0]['product_id'],
+                        'quantity' => $productGroup->sum('quantity'),
+                    ];
+                });
+
                 // Create TaskProduct entries
-                foreach ($validatedData['products'] as $productData) {
+                foreach ($groupedProducts as $productData) {
                     TaskProduct::create([
                         'task_id' => $task->id,
                         'product_id' => $productData['product_id'],
                         'total_sold' => $productData['quantity'],
                     ]);
                 }
+
             } catch (\Exception $e) {
                 Log::error('Failed to create task and task product: ' . $e->getMessage());
             }
         });
+    }
+
+    
+
+    public function show(Project $project, Task $task)
+    {
+        // Abort if the authenticated user is not the owner of the project
+        if ($task->project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        return view('tasks.show', ['task' => $task, 'project' => $project]);
+    }
+
+    public function edit(Project $project, Task $task)
+    {
+        // Abort if the authenticated user is not the owner of the project
+        if ($task->project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        // Get the products that belong to the authenticated user
+        $products = Product::where('user_id', auth()->id())->get();
+
+        return view('tasks.edit', ['task' => $task, 'project' => $project, 'products' => $products]);
+    }
+
+    public function update(Request $request, Project $project, Task $task)
+    {
+        \Log::info('Update function called with task type:', ['task_type' => $task->task_type]); // Log the task type
+
+        // Abort if the authenticated user is not the owner of the project
+        if ($task->project->user_id !== auth()->id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $data = $request->all();
+
+        // Get the products that belong to the authenticated user
+        $products = Product::where('user_id', auth()->id())->get();
+        $data['products'] = $products;
+
+        switch ($task->task_type) {
+            case 'project_based':
+                $this->updateProjectBasedTask($data, $task);
+                break;
+            case 'hourly':
+                $this->updateHourlyTask($data, $task);
+                break;
+            case 'distance':
+                \Log::info('Updating distance task with data:', $data); // Log the data for the 'distance' task type
+                $this->updateDistanceTask($data, $task);
+                break;
+            case 'product':
+                $this->updateProductTask($request, $task);
+                break;
+            case 'other':
+                $this->updateOtherTask($data, $task);
+                break;
+        }
+
+        return redirect()->route('projects.show', $project);
+    }
+
+    private function updateProjectBasedTask(array $data, Task $task)
+    {
+        $validator = Validator::make($data, [
+            'user_id' => 'required|integer',
+            'title' => 'required|string',
+            'startDate' => 'nullable|date',
+            'endDate' => 'nullable|date',
+            'price' => 'nullable|numeric',
+            'currency' => 'nullable|string',
+            'location' => 'nullable|string',
+        ]);
+    
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+    
+        $validatedData = $validator->validate();
+    
+        DB::transaction(function () use ($validatedData, $task) {
+            $task->taskable->update([
+                'start_date' => $validatedData['startDate'],
+                'end_date' => $validatedData['endDate'],
+                'price' => $validatedData['price'],
+                'currency' => $validatedData['currency'],
+                'project_location' => $validatedData['location'],
+            ]);
+    
+            $task->update([
+                'user_id' => $validatedData['user_id'],
+                'title' => $validatedData['title'],
+            ]);
+        });
+    }
+
+    private function updateHourlyTask(array $data, Task $task)
+    {
+        try {
+            // Validate the data
+            $validatedData = Validator::make($data, [
+                'title' => 'required|string',
+                'hourly_wage' => 'required|numeric',
+                'user_id' => 'required|integer',
+                'registrations.*.hours' => 'required|integer',
+                'registrations.*.minutes' => 'required|integer',
+                'registrations.*._delete' => 'sometimes|string|in:true', // Add this line
+
+            ])->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validation failed in updateHourlyTask: ', $e->errors());
+            throw $e;
+        }
+        \Log::info('Registrations: ', $validatedData['registrations']);
+
+    
+        // Convert the hourly rate to a rate per minute using bcdiv for precision
+        $ratePerMinute = bcdiv($validatedData['hourly_wage'], 60, 10);
+    
+        DB::transaction(function () use ($validatedData, $task, $ratePerMinute) {
+            // Update the TaskHourly
+            $task->taskable->update([
+                'rate_per_hour' => $validatedData['hourly_wage'],
+                'rate_per_minute' => $ratePerMinute,
+            ]);
+    
+            // Update the task
+            $task->update([
+                'user_id' => $validatedData['user_id'],
+                'title' => $validatedData['title'],
+            ]);
+    
+            // Update or delete the RegistrationHourly models
+            foreach ($validatedData['registrations'] as $id => $registration) {
+                if (isset($registration['_delete'])) {
+                    \Log::info('Attempting to delete registration: ', ['id' => $id]);
+                    app('App\Http\Controllers\RegistrationController')->deleteHourlyRegistration($id);
+                    \Log::info('Registration deleted successfully: ', ['id' => $id]);
+                } else {
+                    $minutesWorked = $registration['hours'] * 60 + $registration['minutes'];
+                    $task->taskable->registrationHourly()->where('id', $id)->update([
+                        'minutes_worked' => $minutesWorked,
+                        'earnings' => $minutesWorked * $ratePerMinute,
+                    ]);
+                    \Log::info('Registration updated successfully: ', ['id' => $id]);
+                }
+            }
+        });
+    }
+
+    private function updateDistanceTask(array $data, Task $task)
+    {
+        // Validate the data
+        $validatedData = Validator::make($data, [
+            'title' => 'required|string',
+            'price_per_km' => 'required|numeric',
+            'registrations.*.distance' => 'required|numeric',
+            'registrations.*._delete' => 'sometimes|string|in:true',
+        ])->validate();
+
+        DB::transaction(function () use ($validatedData, $task) {
+            // Update the TaskDistance
+            $task->taskable->update([
+                'price_per_km' => $validatedData['price_per_km'],
+            ]);
+
+            // Update the task
+            $task->update([
+                'title' => $validatedData['title'],
+            ]);
+
+            // Update or delete the RegistrationDistance models
+            foreach ($validatedData['registrations'] as $id => $registration) {
+                if (isset($registration['_delete'])) {
+                    \Log::info('Attempting to delete registration: ', ['id' => $id]);
+                    app('App\Http\Controllers\RegistrationController')->deleteDistanceRegistration($id);
+                    \Log::info('Registration deleted successfully: ', ['id' => $id]);
+                } else {
+                    $distanceTravelled = $registration['distance'];
+                    $task->taskable->registrationDistances()->where('id', $id)->update([
+                        'distance' => $distanceTravelled,
+                    ]);
+                    \Log::info('Registration updated successfully: ', ['id' => $id]);
+                }
+            }
+        });
+    }
+
+    public function updateProductTask(Request $request, Task $task)
+    {
+        Log::info('Request data: ', $request->all());
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string',
+            'items' => 'array',
+            'new_products' => 'array',
+            'new_products.*.product_id' => 'exists:products,id',
+            'new_products.*.total_sold' => 'integer|min:1',
+        ]);
+
+        $validator->sometimes('items', 'required|array', function ($input) {
+            return empty($input->new_products);
+        });
+
+        if ($request->has('items')) {
+            $validator->sometimes('items.*.product_id', 'required|integer|exists:products,id', function ($input) {
+                return !empty($input->items);
+            });
+
+            $validator->sometimes('items.*.total_sold', 'required|integer|min:1', function ($input) {
+                return !empty($input->items);
+            });
+
+            // Modify the validation rule for _delete field to allow 'true' as a string
+            $validator->sometimes('items.*._delete', 'sometimes|string|in:true,false', function ($input) {
+                return !empty($input->items);
+            });
+        }
+
+        if ($validator->fails()) {
+            Log::info('Validation failed: ', $validator->errors()->all());
+            return response()->json($validator->errors(), 400);
+        }
+
+        $validatedData = $validator->validated();
+
+        Log::info('Validation passed');
+        Log::info('Validated Data: ', $validatedData);
+
+        DB::transaction(function () use ($validatedData, $request, $task) {
+            try {
+                $task->update([
+                    'user_id' => $request->user_id,
+                    'title' => $validatedData['title'],
+                ]);
+        
+                $allProducts = array_merge($validatedData['items'] ?? [], $validatedData['new_products'] ?? []);
+        
+                $groupedProducts = collect($allProducts)->map(function ($product) {
+                    return $product;
+                })->groupBy('product_id')->map(function ($productGroup) {
+                    return [
+                        'product_id' => $productGroup[0]['product_id'],
+                        'total_sold' => $productGroup->sum('total_sold'),
+                        // Convert string "true" to boolean true
+                        '_delete' => isset($productGroup[0]['_delete']) ? ($productGroup[0]['_delete'] === 'true') : null,
+                    ];
+                });
+        
+                if (isset($groupedProducts)) {
+                    $productsToDelete = $groupedProducts->where('_delete', true)->pluck('product_id');
+                    Log::info('Products to delete: ', $productsToDelete->all());
+        
+                    TaskProduct::where('task_id', $task->id)
+                        ->whereIn('product_id', $productsToDelete)
+                        ->delete();
+        
+                    $productsToUpdateOrAdd = $groupedProducts->where('_delete', '<>', true);
+                    foreach ($productsToUpdateOrAdd as $productData) {
+                        TaskProduct::updateOrCreate(
+                            ['task_id' => $task->id, 'product_id' => $productData['product_id']],
+                            ['total_sold' => $productData['total_sold']]
+                        );
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to update task and task product: ' . $e->getMessage());
+                throw $e;
+            }
+        });
+
+        return response()->json(['message' => 'Task updated successfully.']);
     }
 
     public function createOtherTask(Request $request)
@@ -324,25 +610,113 @@ class TaskController extends Controller
         });
     }
 
-    public function show(Project $project, Task $task)
+    private function updateOtherTask(array $data, Task $task)
     {
-        // Abort if the authenticated user is not the owner of the project
-        if ($task->project->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access.');
+        // Validate the data
+        Log::info('updateOtherTask method called');
+
+        $validator = Validator::make($data, [
+            'title' => 'required|string',
+            'description' => 'required|string',
+            'customFields' => 'nullable|array',
+            'checklistSections' => 'nullable|array',
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('Validation failed: ', $validator->errors()->toArray());
+            return;
         }
 
-        return view('tasks.show', ['task' => $task]);
+        $validatedData = $validator->validated();
+        Log::info('Validated Data: '.print_r($validatedData, true));
+
+        DB::transaction(function () use ($validatedData, $task) {
+            // Update the TaskOther
+            $task->taskable->update([
+                'description' => $validatedData['description'],
+            ]);
+
+            // Update the task
+            $task->update([
+                'title' => $validatedData['title'],
+            ]);
+
+        
+
+            // Handle customFields
+            if (isset($validatedData['customFields'])) {
+                foreach ($validatedData['customFields'] as $fieldId => $fieldData) {
+                    if (strpos($fieldId, 'new_') === 0) {
+                        // This is a new custom field
+                        // Get the current maximum position
+                        $maxPosition = CustomField::where('task_id', $task->id)->max('position');
+
+                        // If there are no custom fields yet, start at 0
+                        if ($maxPosition === null) {
+                            $maxPosition = 0;
+                        }
+
+                        // Check if the 'field' value is not empty
+                        if (!empty(trim($fieldData['field']))) {
+                            Log::info('Creating new custom field with task_id: '.$task->id.' and field: '.$fieldData['field']);
+                            CustomField::create([
+                                'task_id' => $task->id,
+                                'field' => $fieldData['field'],
+                                'position' => ++$maxPosition, // Increment the position for the new custom field
+                            ]);
+                        }
+                    } else {
+                        // This is an existing custom field
+                        if (isset($fieldData['_delete']) && $fieldData['_delete'] === 'true') {
+                            CustomField::where('id', $fieldId)->delete();
+                        } else {
+                            CustomField::updateOrCreate(
+                                ['id' => $fieldId, 'task_id' => $task->id],
+                                ['field' => $fieldData['field']]
+                            );
+                        }
+                    }
+                }
+            }
+
+            // Handle checklistSections
+            if (isset($validatedData['checklistSections'])) {
+                foreach ($validatedData['checklistSections'] as $sectionId => $sectionData) {
+                    if (isset($sectionData['_delete']) && $sectionData['_delete'] === 'true') {
+                        ChecklistSection::where('id', $sectionId)->delete();
+                    } else {
+                        $createdSection = ChecklistSection::updateOrCreate(
+                            ['id' => $sectionId, 'task_id' => $task->id],
+                            ['title' => $sectionData['title']] // No 'position' for sections
+                        );
+
+                        if (isset($sectionData['items'])) {
+                            foreach ($sectionData['items'] as $itemId => $itemData) {
+                                if (isset($itemData['_delete']) && $itemData['_delete'] === 'true') {
+                                    ChecklistItem::where('id', $itemId)->delete();
+                                } else {
+                                    // Get the current maximum position for items in this section
+                                    $maxItemPosition = ChecklistItem::where('checklist_section_id', $createdSection->id)->max('position');
+
+                                    // If there are no items yet, start at 0
+                                    if ($maxItemPosition === null) {
+                                        $maxItemPosition = 0;
+                                    }
+
+                                    ChecklistItem::updateOrCreate(
+                                        ['id' => $itemId, 'checklist_section_id' => $createdSection->id],
+                                        ['item' => $itemData['item'], 'position' => ++$maxItemPosition] // Increment the position for the new item
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
-    public function edit(Project $project, Task $task)
-    {
-        // Abort if the authenticated user is not the owner of the project
-        if ($task->project->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access.');
-        }
 
-        return view('tasks.edit', ['task' => $task]);
-    }
 
     public function destroy(Project $project, Task $task)
     {

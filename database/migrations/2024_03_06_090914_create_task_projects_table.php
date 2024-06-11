@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('task_projects', function (Blueprint $table) {
             $table->id();
-            $table->datetime('start_date')->nullable();
-            $table->datetime('end_date')->nullable();
             $table->decimal('price')->nullable();
             $table->string('currency')->default('DKK');
             $table->string('project_location')->nullable();
+            $table->datetime('start_date')->nullable();
+            $table->datetime('end_date')->nullable();
         });
     }
 

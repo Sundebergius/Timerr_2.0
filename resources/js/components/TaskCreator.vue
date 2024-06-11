@@ -6,9 +6,14 @@
       <div class="mb-4">
         <p>{{ project.title }}</p>
         <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Title:</label>
-        <input type="text" id="title" v-model="task_title"
+        <input ref="titleInput" type="text" id="title" v-model="task_title"
           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-        <p v-if="titleError" class="text-red-500 text-xs italic">Please fill out this field.</p>
+          <div v-if="titleError" class="alert alert-danger alert-dismissible fade show" role="alert">
+            Please fill out this field.
+            <button type="button" class="close" @click="titleError = false" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>      
       </div>
 
       <div class="mb-4">
@@ -60,7 +65,7 @@
         <label for="rate_per_hour" class="block text-gray-700 text-sm font-bold mb-2">Hourly rate:</label>
         <input type="number" id="rate_per_hour" v-model="rate_per_hour"
           class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-
+      </div>
         <!-- <label for="hoursWorked" class="block text-gray-700 text-sm font-bold mb-2">Hours Worked:</label>
             <input type="number" id="hoursWorked" v-model="hoursWorked" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
 
@@ -69,7 +74,7 @@
 
             <label for="note" class="block text-gray-700 text-sm font-bold mb-2">Note:</label>
             <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea> -->
-      </div>
+      
 
       <div v-if="task_type === 'product'" class="mb-4">
         <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4">
@@ -228,6 +233,7 @@ export default {
       task_type: 'project_based',
       initialTaskType: 'project_based',
       task_title: '',
+      titleError: false,
       project_title: '',
       title: '',
       projectPrice: '',
@@ -375,6 +381,15 @@ export default {
     },
     handleFormSubmission() {
       console.log('handleFormSubmission called');
+
+      if (!this.task_title) {
+      this.titleError = true;
+      this.$refs.titleInput.focus();
+      return;
+    } else {
+      this.titleError = false;
+    }
+
       let route = '';
       const nonEmptyChecklistSections = this.checklistSections
         .filter(section => section.title.trim() !== '' || section.items.length > 0)

@@ -64,25 +64,82 @@ class RegistrationController extends Controller
             'earnings' => $earnings,
         ]);
 
-        return redirect()->route('projects.show', ['project' => $task->project_id]);
+        // Redirect to the project page after the registration is created which was the initial way of doing it
+        // return redirect()->route('projects.show', ['project' => $task->project_id]);
+
+        // Return a JSON response
+        return response()->json(['success' => true]);
+    }
+
+    public function deleteHourlyRegistration($registrationId)
+    {
+        $registration = RegistrationHourly::find($registrationId);
+
+        if ($registration) {
+            $registration->delete();
+            return response()->json(['message' => 'Registration deleted successfully.'], 200);
+        }
+
+        return response()->json(['message' => 'Registration not found.'], 404);
     }
 
     public function storeDistanceRegistration(Request $request, $projectId, $taskId)
     {
-        $validatedData = $request->validate([
-            'distance_driven' => 'required|numeric',
-        ]);
+        \Log::info('Store Distance Registration Request:', $request->all());
 
-        $task = Task::find($taskId);
-        $taskDistance = $task->taskable;
+        try {
+            // Validate the request data
+            $validatedData = $request->validate([
+                'distance' => 'required|numeric',
+            ]);
 
-        RegistrationDistance::create([
-            'user_id' => $task->user_id,
-            'task_distance_id' => $taskDistance->id,
-            'distance' => $validatedData['distance_driven'],
-        ]);
+            // Find the task
+            $task = Task::find($taskId);
 
-        return redirect()->route('projects.show', ['project' => $projectId]);
+            if (!$task) {
+                \Log::error('Task not found for ID: ' . $taskId);
+                return response()->json(['error' => 'Task not found'], 404);
+            }
+
+            // Find or create the task distance
+            $taskDistance = $task->taskable;
+
+            if (!$taskDistance) {
+                \Log::error('Task distance not found for Task ID: ' . $taskId);
+                return response()->json(['error' => 'Task distance not found'], 404);
+            }
+
+            // Create the registration distance
+            RegistrationDistance::create([
+                'user_id' => $task->user_id,
+                'task_distance_id' => $taskDistance->id,
+                'distance' => $validatedData['distance'],
+            ]);
+
+            // Log success
+            \Log::info('Registration distance created successfully.');
+
+            // Return JSON response
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            // Log the exception
+            \Log::error('Error storing distance registration: ' . $e->getMessage());
+            
+            // Return error response
+            return response()->json(['error' => 'An error occurred while storing distance registration.'], 500);
+        }
+    }
+
+    public function deleteDistanceRegistration($registrationId)
+    {
+        $registration = RegistrationDistance::find($registrationId);
+
+        if ($registration) {
+            $registration->delete();
+            return response()->json(['message' => 'Registration deleted successfully'], 200);
+        } else {
+            return response()->json(['message' => 'Registration not found'], 404);
+        }
     }
 
     public function storeProductRegistration(Request $request, $taskId)

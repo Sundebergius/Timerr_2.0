@@ -10,6 +10,8 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
+        'client_id',
         'title',
         'description',
         'start_date',
@@ -21,14 +23,17 @@ class Project extends Model
 
     public function updateStatus()
     {
-        $today = now();
+        // If the project is completed, do not change the status
+        if ($this->status == 'completed') {
+            return;
+        }
 
+        $today = now();
         if ($this->end_date) {
             $daysToEndDate = $today->diffInDays($this->end_date, false);
-
             if ($daysToEndDate < 0) {
                 $this->status = 'overdue';
-            } elseif ($daysToEndDate <= 7) { // Change this number to define what "nearing completion" means for you
+            } elseif ($daysToEndDate <= 3) { // Change this number to define what "nearing completion" means for you
                 $this->status = 'nearing completion';
             } else {
                 $this->status = 'ongoing';
@@ -36,7 +41,6 @@ class Project extends Model
         } else {
             $this->status = 'ongoing';
         }
-
         $this->save();
     }
 

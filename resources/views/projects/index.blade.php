@@ -78,6 +78,12 @@
                                             ({{ $task->task_type }})
                                         </li>
                                     @endforeach
+                                    @if($project->client)
+                                        <li class="mt-2">
+                                            <i class="fas fa-user-check"></i>
+                                            Client: <strong>{{ $project->client->name }}</strong>
+                                        </li>
+                                    @endif
                                 </ul>
                             </td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
@@ -248,6 +254,7 @@
                                                                     class="client-select hidden-select"
                                                                     style="width: 100%"
                                                                     onchange="updateClient({{ $project->id }}, this.value)">
+                                                                    <option value="" disabled selected>Select a client</option>
                                                                     @foreach ($clients as $client)
                                                                         <option value="{{ $client->id }}">
                                                                             {{ $client->name }}</option>

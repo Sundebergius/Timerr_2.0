@@ -24,6 +24,12 @@ class Contract extends Model
         'additional_terms'
     ];
 
+    protected $dates = [
+        'start_date',
+        'end_date',
+        'due_date'
+    ];
+
     const STATUS_PENDING = 'pending';
     const STATUS_SIGNED = 'signed';
     const STATUS_COMPLETED = 'completed';
