@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Contract;
 use App\Models\Project;
+use App\Models\Client;
 
 class ContractController extends Controller
 {
@@ -22,7 +23,8 @@ class ContractController extends Controller
      */
     public function create(Project $project)
     {
-        return view('projects.contracts.create', ['project' => $project]);
+        $clients = Client::all(); // Assuming you have a Client model
+        return view('projects.contracts.create', ['project' => $project, 'clients' => $clients]);
     }
 
     /**
@@ -58,7 +60,7 @@ class ContractController extends Controller
 
         $contract->save();
 
-        return redirect()->route('projects.show')->with('success', 'Contract created successfully.');
+        return redirect()->route('projects.show', ['project' => $contract->project_id])->with('success', 'Contract created successfully.');
     }
 
     /**
@@ -67,8 +69,9 @@ class ContractController extends Controller
     public function show(string $id)
     {
         $contract = Contract::findOrFail($id);
-        return view('projects.contracts.show', compact('contract'));
-    }
+        $project = $contract->project; // Fetch the project related to the contract
+        $client = $contract->client; // Fetch the client related to the contract
+        return view('projects.contracts.show', compact('contract', 'project', 'client'));    }
 
     /**
      * Show the form for editing the specified resource.
@@ -76,7 +79,9 @@ class ContractController extends Controller
     public function edit(string $id)
     {
         $contract = Contract::findOrFail($id);
-        return view('projects.contracts.edit', compact('contract'));
+        $project = $contract->project; // Fetch the project related to the contract
+        $client = $contract->client; // Fetch the client related to the contract
+        return view('projects.contracts.edit', compact('contract', 'project', 'client'));
     }
 
     /**
@@ -84,7 +89,31 @@ class ContractController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        // Fetch the contract
+        $contract = Contract::findOrFail($id);
+    
+        // Validate the request data
+        $validatedData = $request->validate([
+            'project_id' => 'nullable|exists:projects,id',
+            'client_id' => 'nullable|exists:clients,id',
+            'service_description' => 'nullable|string',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'total_amount' => 'nullable|numeric',
+            'currency' => 'nullable|string',
+            'due_date' => 'nullable|date',
+            'payment_terms' => 'nullable|string',
+            'status' => 'nullable|string',
+            'is_signed' => 'nullable|boolean',
+            'additional_terms' => 'nullable|string',
+        ]);
+    
+        // Update the contract with the validated data
+        $contract->update($validatedData);
+    
+        // Redirect the user back to the contract show page with a success message
+        return redirect()->route('projects.contracts.show', ['project' => $contract->project->id, 'contract' => $contract->id])
+                         ->with('success', 'Contract updated successfully');
     }
 
     /**

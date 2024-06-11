@@ -13,12 +13,16 @@
                         @csrf
                         <div>
                             <label for="project_id" class="block text-sm font-medium text-gray-700">Project</label>
-                            <input id="project_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="number" name="project_id" required autofocus />
+                            <input id="project_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="hidden" name="project_id" value="{{ $project->id }}" required autofocus />
                         </div>
-
+                        
                         <div class="mt-4">
                             <label for="client_id" class="block text-sm font-medium text-gray-700">Client</label>
-                            <input id="client_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="number" name="client_id" required />
+                            <select id="client_id" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" name="client_id" required>
+                                @foreach($clients as $client)
+                                    <option value="{{ $client->id }}" {{ $project->client_id == $client->id ? 'selected' : '' }}>{{ $client->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <div class="mt-4">
@@ -28,12 +32,12 @@
 
                         <div class="mt-4">
                             <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
-                            <input id="start_date" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="date" name="start_date" required />
+                            <input id="start_date" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="date" name="start_date" value="{{ $project->start_date }}" required />
                         </div>
-
+                        
                         <div class="mt-4">
                             <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
-                            <input id="end_date" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="date" name="end_date" />
+                            <input id="end_date" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="date" name="end_date" value="{{ $project->end_date }}" />
                         </div>
 
                         <div class="mt-4">
@@ -41,9 +45,15 @@
                             <input id="total_amount" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="number" step="0.01" name="total_amount" required />
                         </div>
 
+                        <!-- Dropdown for currency selection -->
                         <div class="mt-4">
                             <label for="currency" class="block text-sm font-medium text-gray-700">Currency</label>
-                            <input id="currency" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="text" name="currency" required />
+                            <select id="currency" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" name="currency" required>
+                                <option value="DKK">DKK</option>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                                <!-- Add more options as needed -->
+                            </select>
                         </div>
 
                         <div class="mt-4">
