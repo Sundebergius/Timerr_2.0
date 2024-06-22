@@ -64,7 +64,6 @@
     props: {
       project_id: {
         type: Number,
-        required: true
       },
       userId: {
         type: Number,
@@ -94,6 +93,9 @@
         closeModal() {
             this.$emit('close');
             },
+        addProduct(newProduct) {
+            this.products.push(newProduct);
+          },
       createProduct() {
         axios.post('/api/products', {
           title: this.title,
@@ -107,15 +109,38 @@
         })
         .then(response => {
           console.log(response.data); 
-          this.successMessage = response.data.message;
-          this.errorMessage = '';
+          if (response.data.product) {
+            this.addProduct(response.data.product);
+            this.$emit('product-created', response.data.product);
+          } else {
+            console.error('Product not defined in server response');
+            this.errorMessage = 'An error occurred while creating the product.';
+          }
+
+          // Pass the newly created product to the addProduct() method
+          this.addProduct(response.data.product);
           //this.$emit('product-created', response.data.product);
           //this.$emit('close');
+
+           // Emit an event with the created product
+          this.$emit('product-created', response.data.product);
+
+          // if (response.data.product) {
+          //   this.$emit('product-created', response.data.product);
+          //     } else {
+          //       console.error('Product not defined in server response');
+          //       this.errorMessage = 'An error occurred while creating the product.';
+          //     }
           })
-        .catch(error => {
-          this.errorMessage = 'An error occurred while creating the product.';
-          this.successMessage = '';
-        });
+          .catch(error => {
+            if (error.response.status === 422) {
+              console.log(error.response.data); // Log the validation errors to the console
+              this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
+            } else {
+              this.errorMessage = 'An error occurred while creating the product.';
+            }
+            this.successMessage = '';
+          });
       },
     },
   };

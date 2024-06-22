@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'title' => 'required',
             'category' => 'required',
             'description' => 'required',
@@ -18,6 +19,10 @@ class ProductController extends Controller
             'quantityInStock' => 'required',
             'active' => 'required',
         ]);
+    
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
 
         $product = new Product;
         $product->title = $request->title;
@@ -30,12 +35,58 @@ class ProductController extends Controller
 
         $product->save();
 
-        return response()->json(['message' => 'Product created successfully'], 200);
+        return response()->json(['message' => 'Product created successfully', 'product' => $product], 200);
     }
 
     public function getUserProducts($userId)
     {
         $products = Product::where('user_id', $userId)->get();
         return response()->json($products);
+    }
+
+    public function index(Request $request)
+    {
+        $pageSize = $request->get('pageSize', 10); // Default to 10 if pageSize is not set
+        if ($pageSize === 'all') {
+            $products = Product::all();
+        } else {
+            $products = Product::paginate($pageSize);
+        }
+
+        return view('products.index', ['products' => $products]);
+    }
+
+    public function destroy(Product $product)
+    {
+        $product->delete();
+
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully');
+    }
+
+    public function edit(Product $product)
+    {
+        return view('products.edit', compact('product'));
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            'title' => 'required',
+            'description' => 'required',
+            'price' => 'required',
+            'quantityInStock' => 'required',
+            'quantitySold' => 'required',
+        ]);
+    
+        $product->title = $request->title;
+        $product->description = $request->description;
+        $product->price = $request->price;
+        $product->quantityInStock = $request->quantityInStock;
+        $product->quantitySold = $request->quantitySold;
+        $product->active = $request->has('active') ? 1 : 0;
+    
+        $product->save();
+    
+        return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Client;
+use Illuminate\Support\Facades\Log;
 use PDF;
 
 class ProjectController extends Controller
@@ -61,18 +62,79 @@ class ProjectController extends Controller
         $tasks = $project->tasks;
 
         // Separate project-based and hourly tasks
-        $projectTasks = $tasks->where('taskable_type', 'App\\TaskProject');
-        $hourlyTasks = $tasks->where('taskable_type', 'App\\TaskHourly');
+        $projectTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProject');
+        $hourlyTasks = $tasks->where('taskable_type', 'App\\Models\\TaskHourly');
+        $distanceTasks = $tasks->where('taskable_type', 'App\\Models\\TaskDistance');
+        $productTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProduct');
+        $otherTasks = $tasks->where('taskable_type', 'App\\Models\\TaskOther');
+
+        // Load the related taskable entities
+        $productTasks->load('taskProduct.product');
+
+        // Extract products
+        $products = collect();
+        foreach ($productTasks as $task) {
+            foreach ($task->taskProduct as $taskProduct) {
+                // Assuming 'product' is the correct relationship name within 'TaskProduct' model
+                $products->push($taskProduct->product);
+            }
+        }
 
         // Load the related taskable entities
         $projectTasks->load('taskable');
-        $hourlyTasks->load('taskable.registrations');
+        $hourlyTasks->load('taskable.registrationHourly');
+        $distanceTasks->load('taskable.registrationDistances');
+        $productTasks->load('taskable');
+        $otherTasks->load('taskable');
 
+        // Calculate totals
+        $total = 0;
+        foreach ($projectTasks as $task) {
+            $total += $task->taskable->price;
+        }
+        foreach ($hourlyTasks as $task) {
+            $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
+            $total += $hours * $task->taskable->rate_per_hour;
+        }
+        foreach ($products as $product) {
+            $total += $product->price * $product->quantitySold;
+        }
+        foreach ($distanceTasks as $task) {
+            $distance = $task->taskable->registrationDistances->sum('distance');
+            $total += $distance * $task->taskable->price_per_km;
+        }
+
+        $vat = $total * 0.25;
+        $totalWithVat = $total * 1.25;
+
+        // Generate PDF
         $pdf = PDF::loadView('invoices.show', [
             'project' => $project,
             'projectTasks' => $projectTasks,
             'hourlyTasks' => $hourlyTasks,
+            'distanceTasks' => $distanceTasks,
+            'productTasks' => $productTasks,
+            'products' => $products,
+            'otherTasks' => $otherTasks,
+            'total' => $total,
+            'vat' => $vat,
+            'totalWithVat' => $totalWithVat,
         ]);
+
+        // Save PDF to storage
+        $fileName = 'invoices/invoice_' . $project->id . '_' . time() . '.pdf';
+        Storage::put($fileName, $pdf->output());
+
+        // Save invoice details to database
+        $invoice = new Invoice();
+        $invoice->user_id = auth()->id();
+        $invoice->project_id = $project->id;
+        $invoice->client_id = $project->client->id;
+        $invoice->title = 'Invoice for Project ' . $project->id;
+        $invoice->total = $totalWithVat;
+        $invoice->vat = $vat;
+        $invoice->file_path = $fileName;
+        $invoice->save();
 
         return $pdf->stream($project->id . '_invoice.pdf');
     }

@@ -224,7 +224,7 @@ class TaskController extends Controller
                     'title' => $validatedData['task_title'],
                     'task_type' => 'product',
                     'client_id' => $project->client_id ?? null,
-                    // 'taskable_id' => $taskProduct->id,
+                    //'taskable_id' => $taskProduct->id,
                     'taskable_type' => TaskProduct::class,
                 ]);
 
@@ -243,6 +243,10 @@ class TaskController extends Controller
                         'product_id' => $productData['product_id'],
                         'total_sold' => $productData['quantity'],
                     ]);
+
+                    // Update the quantitySold in the products table
+                    $product = Product::find($productData['product_id']);
+                    $product->increment('quantitySold', $productData['quantity']);
                 }
 
             } catch (\Exception $e) {
@@ -489,33 +493,49 @@ class TaskController extends Controller
         
                 $allProducts = array_merge($validatedData['items'] ?? [], $validatedData['new_products'] ?? []);
         
-                $groupedProducts = collect($allProducts)->map(function ($product) {
-                    return $product;
-                })->groupBy('product_id')->map(function ($productGroup) {
-                    return [
-                        'product_id' => $productGroup[0]['product_id'],
-                        'total_sold' => $productGroup->sum('total_sold'),
-                        // Convert string "true" to boolean true
-                        '_delete' => isset($productGroup[0]['_delete']) ? ($productGroup[0]['_delete'] === 'true') : null,
-                    ];
-                });
-        
-                if (isset($groupedProducts)) {
-                    $productsToDelete = $groupedProducts->where('_delete', true)->pluck('product_id');
-                    Log::info('Products to delete: ', $productsToDelete->all());
-        
-                    TaskProduct::where('task_id', $task->id)
-                        ->whereIn('product_id', $productsToDelete)
-                        ->delete();
-        
-                    $productsToUpdateOrAdd = $groupedProducts->where('_delete', '<>', true);
-                    foreach ($productsToUpdateOrAdd as $productData) {
-                        TaskProduct::updateOrCreate(
-                            ['task_id' => $task->id, 'product_id' => $productData['product_id']],
-                            ['total_sold' => $productData['total_sold']]
-                        );
+                // Retrieve existing TaskProduct entries
+                $existingTaskProducts = TaskProduct::where('task_id', $task->id)->get()->keyBy('product_id');
+
+                foreach ($allProducts as $productData) {
+                    $productID = $productData['product_id'];
+                    $newTotalSold = $productData['total_sold'] ?? 0;
+                    $product = Product::find($productID);
+                
+                    if ($existingTaskProducts->has($productID)) {
+                        $existingTaskProduct = $existingTaskProducts->get($productID);
+                        $currentTotalSold = $existingTaskProduct->total_sold;
+                
+                        if (isset($productData['_delete']) && $productData['_delete'] === 'true') {
+                            // Decrease quantitySold in Product by the current total_sold before deletion
+                            $product->decrement('quantitySold', $currentTotalSold);
+                            $existingTaskProduct->delete();
+                        } else {
+                            // Calculate the difference correctly
+                            $difference = $newTotalSold - $currentTotalSold;
+                            // Adjust quantitySold in Product based on the difference
+                            if ($difference > 0) {
+                                $product->increment('quantitySold', $difference);
+                            } else {
+                                $product->decrement('quantitySold', abs($difference));
+                            }
+                            $existingTaskProduct->update(['total_sold' => $newTotalSold]);
+                        }
+                    } else {
+                        if (!isset($productData['_delete']) || $productData['_delete'] !== 'true') {
+                            // For new TaskProduct, add the new total_sold to quantitySold in Product
+                            TaskProduct::create([
+                                'task_id' => $task->id,
+                                'product_id' => $productID,
+                                'total_sold' => $newTotalSold
+                            ]);
+                            $product->increment('quantitySold', $newTotalSold);
+                        }
                     }
                 }
+
+                // Optionally, handle deletion of TaskProducts not present in the request
+                // This depends on your application's requirements
+
             } catch (\Exception $e) {
                 Log::error('Failed to update task and task product: ' . $e->getMessage());
                 throw $e;
@@ -725,8 +745,10 @@ class TaskController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Call the deleteWithRegistrations method on the taskable relation
-        $task->taskable->deleteWithRegistrations();
+        // Call the deleteWithRegistrations method on the taskable relation if it exists
+        if ($task->taskable) {
+            $task->taskable->deleteWithRegistrations();
+        }
 
         // Delete the task
         $task->delete();

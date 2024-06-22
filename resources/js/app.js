@@ -6,6 +6,7 @@
 
 //import './bootstrap';
 import Alpine from 'alpinejs' ;
+import axios from 'axios';
 window.Alpine = Alpine;
 Alpine.start();
 
@@ -16,6 +17,7 @@ import '../css/app.css';
 import { createApp } from 'vue';
 import TagEditor from './components/TagEditor.vue'; // Import your component
 import TaskCreator from './components/TaskCreator.vue'; // Import your new component
+import ProductModal from './components/productModal.vue'; // Import your new component
 
 /**
  * Next, we will create a fresh Vue application instance. You may then begin
@@ -23,10 +25,98 @@ import TaskCreator from './components/TaskCreator.vue'; // Import your new compo
  * to use in your application's views. An example is included for you.
  */
 
-const app = createApp({});
+const app = createApp({
+    data() {
+        return {
+            showModal: false,
+            products: [],
+            userId: null,
+        };
+    },
+    async created() {
+        console.log('created() called');
+        const appElement = document.querySelector('#app');
+        if (appElement) {
+            this.userId = Number(appElement.getAttribute('data-user-id'));
+            console.log('User ID:', this.userId);
+            if (this.userId) {
+                try {
+                    console.log('Fetching products...');
+                    const response = await axios.get(`/api/products/${this.userId}`);
+                    console.log('Products fetched successfully:', response.data);
+                    this.products = response.data;
+                } catch (error) {
+                    console.error('Error fetching products:', error);
+                }
+            } else {
+                console.error('User ID is null');
+            }
+        } else {
+            console.error('App element not found');
+        }
+    },
+    methods: {
+        handleProductCreated(newProduct) {
+            // Add the newly created product to the products array
+            this.products.push(newProduct);
+            
+            // Fetch updated list of products after a new product is created
+            this.fetchProducts();
+        },
+        fetchProducts() {
+            console.log('Fetching products...');
+            axios.get(`/api/products/${this.userId}`)
+                .then(response => {
+                    console.log('Products fetched successfully:', response.data);
+                    // Filter out any undefined or null values
+                    const validProducts = response.data.filter(product => product != null);
+                    this.products = validProducts;
+                })
+                .catch(error => {
+                    console.error('Error fetching products:', error);
+                });
+        },
+    }
+});
 
 app.component('tag-editor', TagEditor); // Register your component
-app.component('task-creator', TaskCreator); // Register your new component
+
+app.component('task-creator', TaskCreator, {
+    methods: {
+        // Other methods...
+        handleProductCreated(newProduct) {
+            // Add the newly created product to the products array
+            this.products.push(newProduct);
+            
+            // Fetch updated list of products after a new product is created
+            this.fetchProducts();
+        },
+        fetchProducts() {
+            console.log('Fetching products...');
+            axios.get(`/api/products/${this.userId}`)
+                .then(response => {
+                    console.log('Products fetched successfully:', response.data);
+                    // Filter out any undefined or null values
+                    const validProducts = response.data.filter(product => product != null);
+                    this.products = validProducts;
+                })
+                .catch(error => {
+                    console.error('Error fetching products:', error);
+                });
+        },
+    },
+    created() {
+        // Other created lifecycle hook code...
+        this.$on('fetchProducts', this.fetchProducts);
+        this.$on('productCreated', this.handleProductCreated);
+    },
+}); // Register your new component
+
+// Handle the product-created event emitted by the ProductModal component
+app.component('product-modal', ProductModal, {
+    // Register event handler for the product-created event
+    emits: ['product-created']
+});
 
 import ExampleComponent from './components/ExampleComponent.vue';
 app.component('example-component', ExampleComponent);

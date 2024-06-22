@@ -8,6 +8,7 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\InvoiceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,6 +48,24 @@ Route::middleware('auth')->group(function () {
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
         // Route::get('/', [ClientController::class, 'filterClients'])->name('clients.filter');
+    });
+
+    // Product routes
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProductController::class, 'index'])->name('products.index');
+        Route::get('/create', [ProductController::class, 'create'])->name('products.create');
+        Route::post('/', [ProductController::class, 'store'])->name('products.store');
+        Route::get('/{product}', [ProductController::class, 'show'])->name('products.show');
+        Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+        Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+        // Add other product routes here
+    });
+
+    // Invoice routes
+    Route::prefix('invoices')->group(function () {
+        Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
+        // Add other invoice routes here
     });
 
     Route::prefix('projects')->group(function () {

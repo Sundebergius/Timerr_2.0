@@ -205,7 +205,7 @@
     </form>
   </div>
   <product-modal v-if="showModal && localProject" :project_id="localProject.id" :userId="localProject.user_id"
-    @close="showModal = false"></product-modal>
+    @close="showModal = false" @product-created="handleProductEvent"></product-modal>
   <!-- @product-created="updateProductList"   -->
 </template>
 
@@ -341,6 +341,13 @@ export default {
           console.error('Error fetching products:', error);
         });
     },
+    handleProductEvent(newProduct) {
+      this.handleProductCreated(newProduct);
+      this.updateProductList(newProduct);
+    },
+    handleProductCreated(newProduct) {
+      // Handle the new product here
+    },
     updateProductList(newProduct) {
       this.products.push(newProduct);
     },
@@ -366,8 +373,8 @@ export default {
     },
     handleProductCreated(product) {
       console.log(product);
-      this.products.push(product);
-      this.selectedProduct = product.id;
+      // Emit an event to notify the parent component about the creation of the product
+      this.$emit('productCreated', product);
       this.showModal = false;
     },
     validateForm() {

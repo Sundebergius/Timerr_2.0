@@ -17,6 +17,9 @@ return new class extends Migration
             $table->bigInteger('project_id')->unsigned()->nullable();
             $table->bigInteger('client_id')->unsigned()->nullable();
             $table->string('title')->nullable();
+            $table->decimal('total', 10, 2)->nullable();
+            $table->decimal('vat', 10, 2)->nullable();
+            $table->string('file_path')->nullable();
             $table->timestamps();
         });
     }
