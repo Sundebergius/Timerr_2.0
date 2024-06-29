@@ -14,4 +14,5 @@
             </div>
         </div>
     </div>
+    <x-calendar />
 </x-app-layout>
