@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\EventController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,3 +27,9 @@ Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
 
 Route::post('/products', [ProductController::class, 'store']);
 Route::get('/products/{userId}', [ProductController::class, 'getUserProducts']);
+
+//calendar routes
+Route::get('/events', [EventController::class, 'index']);
+Route::post('/events', [EventController::class, 'store']);
+Route::put('/events/{event}', [EventController::class, 'update']);
+Route::delete('/events/{event}', [EventController::class, 'destroy']);

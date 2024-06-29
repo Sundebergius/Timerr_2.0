@@ -1,5 +1,4 @@
 <x-app-layout>
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
     <div class="container mx-auto px-4 py-6">
@@ -12,34 +11,23 @@
             </a>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full leading-normal">
+        <div class="overflow-x-auto bg-white rounded-lg shadow-lg p-4">
+            <table class="w-full leading-normal">
                 <thead>
                     <tr>
-                        <th
-                            class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Name
                         </th>
-                        <th
-                            class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Status
                         </th>
-                        <th
-                            class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Task Summary
                         </th>
-                        <th
-                            class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Quick Stats
                         </th>
-                        {{-- <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Client Information
-                        </th>
-                        <th class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                            Invoice Status
-                        </th> --}}
-                        <th
-                            class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                        <th class="px-6 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                             Actions
                         </th>
                     </tr>
@@ -146,18 +134,36 @@
                                     @php
                                         $totalEarnings += $hourlyEarnings;
                                     @endphp
+
                                     @if ($project->tasks->where('taskable_type', 'App\Models\TaskProduct')->isNotEmpty())
                                         @php
-                                            $productEarnings = $project->tasks
-                                                ->where('taskable_type', 'App\Models\TaskProduct')
-                                                ->sum('taskable.product_price');
-                                            $totalEarnings += $productEarnings;
+                                            $productEarnings = 0;
+                                            $taskProducts = $project->tasks->where('taskable_type', 'App\Models\TaskProduct');
                                         @endphp
+
+                                        @foreach ($taskProducts as $task)
+                                            @php
+                                                $relatedTaskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
+                                            @endphp
+
+                                            @foreach ($relatedTaskProducts as $taskProduct)
+                                                @php
+                                                    // Calculate product earnings for each task product
+                                                    $productEarnings += $taskProduct->product->price * $taskProduct->total_sold;
+                                                @endphp
+                                            @endforeach
+                                        @endforeach
+
+                                        @php
+                                            $totalEarnings += $productEarnings; // Ensure $totalEarnings is defined before this line
+                                        @endphp
+
                                         <div class="flex justify-between">
                                             <span>Product Earnings:</span>
                                             <span>{{ $productEarnings }} DKK</span>
                                         </div>
                                     @endif
+
                                     @if ($project->tasks->where('taskable_type', 'App\Models\TaskDistance')->isNotEmpty())
                                         @php
                                             $travelCosts = 0;
@@ -181,22 +187,16 @@
                             </td>
                             <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                                 <div class="flex items-center space-x-4">
-                                    <a href="{{ route('projects.show', $project) }}"
-                                        class="text-green-600 hover:text-green-700"><i class="fas fa-eye"></i></a>
-                                    <a href="{{ route('projects.edit', $project) }}"
-                                        class="text-blue-500 hover:text-blue-700"><i class="fas fa-edit"></i></a>
-                                    <form action="{{ route('projects.destroy', $project) }}" method="POST"
-                                        class="inline">
+                                    <a href="{{ route('projects.show', $project) }}" class="text-green-600 hover:text-green-700"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('projects.edit', $project) }}" class="text-blue-500 hover:text-blue-700"><i class="fas fa-edit"></i></a>
+                                    <form action="{{ route('projects.destroy', $project) }}" method="POST" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-500 hover:text-red-700"><i
-                                                class="fas fa-trash"></i></button>
+                                        <button type="submit" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                                     </form>
 
-                                    <div class="relative inline-flex" x-data="{ open: false, modalOpen: false, invoiceModalOpen: false }"
-                                        @click.away="open = false">
-                                        <button @click="open = !open"
-                                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                    <div class="relative inline-flex" x-data="{ open: false, modalOpen: false, invoiceModalOpen: false }" @click.away="open = false">
+                                        <button @click="open = !open" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                                             More
                                         </button>
                                         <div x-show="open" x-transition:enter="transition ease-out duration-200"
@@ -205,59 +205,43 @@
                                             x-transition:leave="transition ease-in duration-75"
                                             x-transition:leave-start="opacity-100 scale-100"
                                             x-transition:leave-end="opacity-0 scale-95"
-                                            class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-right end-0"
+                                            class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-right right-0 bg-white ring-1 ring-black ring-opacity-5 max-h-60 overflow-y-auto"
                                             @click="open = false" style="display: none;">
-                                            <div class="rounded-md ring-1 ring-black ring-opacity-5 py-1 bg-white">
-                                                <button @click="modalOpen = true; loadSelect2();"
-                                                    class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                            <div class="py-1">
+                                                <button @click="modalOpen = true; loadSelect2();" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                     Edit Client
                                                 </button>
-                                                <button @click="invoiceModalOpen = true"
-                                                    class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                <button @click="invoiceModalOpen = true" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                     Edit Invoice Status
                                                 </button>
-                                                <a href="{{ route('projects.invoice', $project) }}"
-                                                    class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                <a href="{{ route('projects.invoice', $project) }}" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                     View Invoice
                                                 </a>
-                                                <form method="POST"
-                                                    action="{{ route('projects.toggleCompletion', $project) }}"
-                                                    class="block w-full text-start">
+                                                <form method="POST" action="{{ route('projects.toggleCompletion', $project) }}" class="block w-full text-start">
                                                     @csrf
                                                     @method('PATCH')
-                                                    <button type="submit"
-                                                        class="w-full px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                                    <button type="submit" class="w-full px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                                         {{ $project->status == 'completed' ? 'Mark as ongoing' : 'Mark as completed' }}
                                                     </button>
                                                 </form>
                                             </div>
                                         </div>
                                         <!-- Edit Client Modal -->
-                                        <div x-show="modalOpen"
-                                            class="fixed inset-0 flex items-center justify-center z-50">
+                                        <div x-show="modalOpen" class="fixed inset-0 flex items-center justify-center z-50">
                                             <div class="fixed inset-0 bg-black opacity-50"></div>
                                             <!-- Modal content -->
-                                            <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none"
-                                                id="editClientModal" tabindex="-1" role="dialog"
-                                                aria-labelledby="modal-title" aria-hidden="true">
-                                                <div
-                                                    class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
-                                                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                                                        @click.away="modalOpen = false; unloadSelect2();">
+                                            <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none" id="editClientModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+                                                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
+                                                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.away="modalOpen = false; unloadSelect2();">
                                                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                            <h3 class="text-lg leading-6 font-medium text-gray-900"
-                                                                id="modal-title">
+                                                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                                                                 Edit Client
                                                             </h3>
                                                             <div class="mt-2">
-                                                                <select name="client_id"
-                                                                    class="client-select hidden-select"
-                                                                    style="width: 100%"
-                                                                    onchange="updateClient({{ $project->id }}, this.value)">
+                                                                <select name="client_id" class="client-select hidden-select" style="width: 100%" onchange="updateClient({{ $project->id }}, this.value)">
                                                                     <option value="" disabled selected>Select a client</option>
                                                                     @foreach ($clients as $client)
-                                                                        <option value="{{ $client->id }}">
-                                                                            {{ $client->name }}</option>
+                                                                        <option value="{{ $client->id }}">{{ $client->name }}</option>
                                                                     @endforeach
                                                                 </select>
                                                             </div>
@@ -267,37 +251,23 @@
                                             </div>
                                         </div>
                                         <!-- Edit Invoice Modal -->
-                                        <div x-show="invoiceModalOpen"
-                                            class="fixed inset-0 flex items-center justify-center z-50">
+                                        <div x-show="invoiceModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
                                             <div class="fixed inset-0 bg-black opacity-50"></div>
                                             <!-- Modal content -->
                                             <!-- Edit Invoice Status Modal -->
-                                            <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none"
-                                                id="editInvoiceModal" tabindex="-1" role="dialog"
-                                                aria-labelledby="modal-title" aria-hidden="true">
-                                                <div
-                                                    class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
-                                                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                                                        @click.away="invoiceModalOpen = false">
+                                            <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none" id="editInvoiceModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
+                                                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
+                                                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.away="invoiceModalOpen = false">
                                                         <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                            <h3 class="text-lg leading-6 font-medium text-gray-900"
-                                                                id="modal-title">
+                                                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                                                                 Edit Invoice Status
                                                             </h3>
                                                             <div class="mt-2">
                                                                 <div class="inline-block relative w-64">
-                                                                    <select name="invoice_status"
-                                                                        onchange="updateInvoiceStatus({{ $project->id }}, this.value)"
-                                                                        class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
-                                                                        <option value="generated"
-                                                                            {{ $project->invoice_status == 'generated' ? 'selected' : '' }}>
-                                                                            Generated</option>
-                                                                        <option value="sent"
-                                                                            {{ $project->invoice_status == 'sent' ? 'selected' : '' }}>
-                                                                            Sent</option>
-                                                                        <option value="paid"
-                                                                            {{ $project->invoice_status == 'paid' ? 'selected' : '' }}>
-                                                                            Paid</option>
+                                                                    <select name="invoice_status" onchange="updateInvoiceStatus({{ $project->id }}, this.value)" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                                                                        <option value="generated" {{ $project->invoice_status == 'generated' ? 'selected' : '' }}>Generated</option>
+                                                                        <option value="sent" {{ $project->invoice_status == 'sent' ? 'selected' : '' }}>Sent</option>
+                                                                        <option value="paid" {{ $project->invoice_status == 'paid' ? 'selected' : '' }}>Paid</option>
                                                                     </select>
                                                                 </div>
                                                             </div>
@@ -307,121 +277,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-
-                                    {{-- <div x-data="{ open: false }" @click.away="open = false">
-                                        <button @click="open = !open"
-                                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                            More
-                                        </button>
-
-                                        <div x-data="{ open: false }" @keydown.escape.window="open = false"
-                                            x-init="$watch('open', value => {
-                                                if (value) {
-                                                    loadSelect2();
-                                                } else {
-                                                    unloadSelect2();
-                                                }
-                                            })">
-                                            <button
-                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                                                @click="open = true; loadSelect2();">Edit Client
-                                            </button>
-
-                                            <div x-show="open"
-                                                class="fixed inset-0 flex items-center justify-center z-50">
-                                                <div class="fixed inset-0 bg-black opacity-50"></div>
-                                                <!-- Modal content -->
-                                                <!-- Edit Client Modal -->
-                                                <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none"
-                                                    id="editClientModal" tabindex="-1" role="dialog"
-                                                    aria-labelledby="modal-title" aria-hidden="true">
-                                                    <div
-                                                        class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
-                                                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                                                            @click.away="open = false; unloadSelect2();">
-                                                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                                <h3 class="text-lg leading-6 font-medium text-gray-900"
-                                                                    id="modal-title">
-                                                                    Edit Client
-                                                                </h3>
-                                                                <div class="mt-2">
-                                                                    <select name="client_id"
-                                                                        class="client-select hidden-select"
-                                                                        style="width: 100%"
-                                                                        onchange="updateClient({{ $project->id }}, this.value)">
-                                                                        @foreach ($clients as $client)
-                                                                            <option value="{{ $client->id }}">
-                                                                                {{ $client->name }}</option>
-                                                                        @endforeach
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div x-data="{ open: false }" @keydown.escape.window="open = false">
-                                            <button
-                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                                                @click="open = true">Edit Invoice Status
-                                            </button>
-
-                                            <div x-show="open"
-                                                class="fixed inset-0 flex items-center justify-center z-50">
-                                                <div class="fixed inset-0 bg-black opacity-50"></div>
-                                                <!-- Modal content -->
-                                                <!-- Edit Invoice Status Modal -->
-                                                <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none"
-                                                    id="editInvoiceModal" tabindex="-1" role="dialog"
-                                                    aria-labelledby="modal-title" aria-hidden="true">
-                                                    <div
-                                                        class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
-                                                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
-                                                            @click.away="open = false">
-                                                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                                <h3 class="text-lg leading-6 font-medium text-gray-900"
-                                                                    id="modal-title">
-                                                                    Edit Invoice Status
-                                                                </h3>
-                                                                <div class="mt-2">
-                                                                    <select name="invoice_status"
-                                                                        onchange="updateInvoiceStatus({{ $project->id }}, this.value)">
-                                                                        <option value="generated"
-                                                                            {{ $project->invoice_status == 'generated' ? 'selected' : '' }}>
-                                                                            Generated
-                                                                        </option>
-                                                                        <option value="sent"
-                                                                            {{ $project->invoice_status == 'sent' ? 'selected' : '' }}>
-                                                                            Sent</option>
-                                                                        <option value="paid"
-                                                                            {{ $project->invoice_status == 'paid' ? 'selected' : '' }}>
-                                                                            Paid</option>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        @if ($project->status == 'completed')
-                                            <a href="{{ route('projects.invoice', $project) }}"
-                                                class="underline">View
-                                                Invoice</a>
-                                        @endif
-                                        <form method="POST" action="{{ route('projects.complete', $project) }}">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit"
-                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Mark
-                                                as
-                                                completed</button>
-                                        </form>
-                                    </div> --}}
                                 </div>
                             </td>
                         </tr>
@@ -431,6 +286,9 @@
         </div>
     </div>
 </x-app-layout>
+
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@2.8.2" defer></script>
+
 
 {{-- <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script> --}}
 

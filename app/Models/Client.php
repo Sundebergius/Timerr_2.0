@@ -57,4 +57,9 @@ class Client extends Model
     {
         return $this->hasOne(clientNote::class);
     }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
 }

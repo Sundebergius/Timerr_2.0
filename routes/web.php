@@ -63,9 +63,16 @@ Route::middleware('auth')->group(function () {
     });
 
     // Invoice routes
-    Route::prefix('invoices')->group(function () {
+    Route::prefix('invoices')->middleware(['auth'])->group(function () {
         Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
-        // Add other invoice routes here
+        Route::post('/', [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::get('/{id}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+        Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+        Route::get('/{id}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+        Route::patch('/{id}/updateStatus', [InvoiceController::class, 'updateStatus'])->name('invoices.updateStatus');
+        Route::put('/{id}', [InvoiceController::class, 'update'])->name('invoices.update');
+        Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
     });
 
     Route::prefix('projects')->group(function () {
@@ -77,6 +84,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
         Route::patch('/{project}/toggleCompletion', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
+        //Route::get('/{project}/invoice', [ProjectController::class, 'invoice'])->name('projects.invoice');
         Route::get('/{project}/invoice', [ProjectController::class, 'invoice'])->name('projects.invoice');
         Route::post('/{project}/update-invoice-status', [ProjectController::class, 'updateInvoiceStatus']);
         Route::post('/{project}/update-client', [ProjectController::class, 'updateClient']);

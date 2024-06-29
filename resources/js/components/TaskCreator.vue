@@ -345,12 +345,17 @@ export default {
       this.handleProductCreated(newProduct);
       this.updateProductList(newProduct);
     },
-    handleProductCreated(newProduct) {
-      // Handle the new product here
-    },
+    // handleProductCreated(newProduct) {
+    //   // Handle the new product here
+    // },
     updateProductList(newProduct) {
+    // Check if the product already exists in the list
+    const exists = this.products.some(product => product.id === newProduct.id);
+    if (!exists) {
+      // If the product doesn't exist, add it to the list
       this.products.push(newProduct);
-    },
+    }
+  },
     addProduct(index) {
       console.log('addProduct method called');
       console.log('this.taskProducts[index].selectedProduct:', this.taskProducts[index].selectedProduct);

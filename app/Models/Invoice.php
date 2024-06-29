@@ -14,9 +14,25 @@ class Invoice extends Model
         'project_id',
         'client_id',
         'title',
-        'total',
+        'status',
+        'issue_date',
+        'due_date',
+        'currency',
+        'subtotal',
+        'discount',
         'vat',
+        'total',
+        'payment_terms',
+        'payment_method',
+        'transaction_id',
         'file_path',
+        'last_reminder_sent',
+    ];
+
+    protected $dates = [
+        'issue_date',
+        'due_date',
+        'last_reminder_sent',
     ];
 
     public function user()

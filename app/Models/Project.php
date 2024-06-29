@@ -21,6 +21,11 @@ class Project extends Model
         'client_id',
     ];
 
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+    ];
+
     public function updateStatus()
     {
         // If the project is completed, do not change the status
@@ -62,5 +67,10 @@ class Project extends Model
     public function contracts()
     {
         return $this->hasMany(Contract::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
     }
 }

@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\Project;
 use App\Models\Client;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use App\Models\Invoice;
+use App\Models\TaskProduct;
 use PDF;
 
 class ProjectController extends Controller
@@ -58,6 +61,14 @@ class ProjectController extends Controller
             abort(404); // Or redirect to a different page with an error message
         }
 
+        // Check if an invoice already exists for the project
+        $existingInvoice = $project->invoices->first(); // Assuming a 'invoices' relationship exists on the Project model
+        if ($existingInvoice) {
+            // Redirect or inform the user that an invoice already exists
+            return redirect()->route('invoices.show', $existingInvoice->id)
+                            ->with('warning', 'An invoice for this project already exists.');
+        }
+
         // Fetch tasks related to the project
         $tasks = $project->tasks;
 
@@ -76,9 +87,21 @@ class ProjectController extends Controller
         foreach ($productTasks as $task) {
             foreach ($task->taskProduct as $taskProduct) {
                 // Assuming 'product' is the correct relationship name within 'TaskProduct' model
-                $products->push($taskProduct->product);
+                $products->push([
+                    'product' => $taskProduct->product,
+                    'total_sold' => $taskProduct->total_sold,
+                    'total_price' => $taskProduct->product->price * $taskProduct->total_sold
+                ]);
             }
         }
+
+        // Calculate default issue date and due date
+        $issueDate = now()->toDateString();
+        $dueDate = now()->addDays(30)->toDateString();
+
+        // Calculate days between issue date and due date
+        $daysBetween = \Carbon\Carbon::parse($dueDate)->diffInDays(\Carbon\Carbon::parse($issueDate));
+
 
         // Load the related taskable entities
         $projectTasks->load('taskable');
@@ -97,7 +120,7 @@ class ProjectController extends Controller
             $total += $hours * $task->taskable->rate_per_hour;
         }
         foreach ($products as $product) {
-            $total += $product->price * $product->quantitySold;
+            $total += $product['total_price'];
         }
         foreach ($distanceTasks as $task) {
             $distance = $task->taskable->registrationDistances->sum('distance');
@@ -107,36 +130,56 @@ class ProjectController extends Controller
         $vat = $total * 0.25;
         $totalWithVat = $total * 1.25;
 
-        // Generate PDF
-        $pdf = PDF::loadView('invoices.show', [
-            'project' => $project,
-            'projectTasks' => $projectTasks,
-            'hourlyTasks' => $hourlyTasks,
-            'distanceTasks' => $distanceTasks,
-            'productTasks' => $productTasks,
-            'products' => $products,
-            'otherTasks' => $otherTasks,
-            'total' => $total,
-            'vat' => $vat,
-            'totalWithVat' => $totalWithVat,
-        ]);
+        // Fetch clients
+        $clients = Client::all();
 
-        // Save PDF to storage
-        $fileName = 'invoices/invoice_' . $project->id . '_' . time() . '.pdf';
-        Storage::put($fileName, $pdf->output());
+        return view('invoices.preview', compact('project', 'clients', 'total', 'vat', 'totalWithVat', 'daysBetween'));
 
-        // Save invoice details to database
-        $invoice = new Invoice();
-        $invoice->user_id = auth()->id();
-        $invoice->project_id = $project->id;
-        $invoice->client_id = $project->client->id;
-        $invoice->title = 'Invoice for Project ' . $project->id;
-        $invoice->total = $totalWithVat;
-        $invoice->vat = $vat;
-        $invoice->file_path = $fileName;
-        $invoice->save();
 
-        return $pdf->stream($project->id . '_invoice.pdf');
+        // // Pass data to the view
+        // return view('invoices.edit', [
+        //     'project' => $project,
+        //     'projectTasks' => $projectTasks,
+        //     'hourlyTasks' => $hourlyTasks,
+        //     'distanceTasks' => $distanceTasks,
+        //     'productTasks' => $productTasks,
+        //     'products' => $products,
+        //     'otherTasks' => $otherTasks,
+        //     'total' => $total,
+        //     'vat' => $vat,
+        //     'totalWithVat' => $totalWithVat,
+        // ]);
+
+        // // Generate PDF
+        // $pdf = PDF::loadView('invoices.show', [
+        //     'project' => $project,
+        //     'projectTasks' => $projectTasks,
+        //     'hourlyTasks' => $hourlyTasks,
+        //     'distanceTasks' => $distanceTasks,
+        //     'productTasks' => $productTasks,
+        //     'products' => $products,
+        //     'otherTasks' => $otherTasks,
+        //     'total' => $total,
+        //     'vat' => $vat,
+        //     'totalWithVat' => $totalWithVat,
+        // ]);
+
+        // // Save PDF to storage
+        // $fileName = 'invoices/invoice_' . $project->id . '_' . time() . '.pdf';
+        // Storage::put($fileName, $pdf->output());
+
+        // // Find or create the invoice
+        // $invoice = Invoice::firstOrNew(['project_id' => $project->id]);
+        // $invoice->user_id = auth()->id();
+        // $invoice->project_id = $project->id;
+        // $invoice->client_id = $project->client ? $project->client->id : null;
+        // $invoice->title = 'Invoice for Project ' . $project->id;
+        // $invoice->total = $totalWithVat;
+        // $invoice->vat = $vat;
+        // $invoice->file_path = $fileName;
+        // $invoice->save();
+
+        // return $pdf->stream($project->id . '_invoice.pdf');
     }
 
     public function updateInvoiceStatus(Request $request, Project $project)
@@ -160,13 +203,38 @@ class ProjectController extends Controller
 
     public function index()
     {
-        $projects = Project::where('user_id', auth()->id())->get();
+        $projects = Project::where('user_id', auth()->id())->paginate(10);
         $clients = Client::where('user_id', auth()->id())->get();
-
+    
         foreach ($projects as $project) {
+            // Update project status
             $project->updateStatus();
+    
+            // Iterate over each task of the project
+            foreach ($project->tasks as $task) {
+                \Log::info("Checking taskable relation", [
+                    'task_id' => $task->id,
+                    'taskable_id' => $task->taskable_id,
+                    'taskable_type' => $task->taskable_type
+                ]);
+    
+                // Check if the task type is 'TaskProduct'
+                if ($task->taskable_type === 'App\Models\TaskProduct') {
+                    // Since TaskProduct can include multiple products and doesn't use taskable_id,
+                    // fetch related products manually.
+                    $relatedProducts = TaskProduct::where('task_id', $task->id)->with('product')->get();
+    
+                    // Log task and related product details
+                    foreach ($relatedProducts as $taskProduct) {
+                        \Log::info("Task ID: {$task->id} is of type TaskProduct with related product.", [
+                            'Task Details' => $task->toArray(),
+                            'Product Details' => $taskProduct->product->toArray() ?? 'No product associated'
+                        ]);
+                    }
+                }
+            }
         }
-
+    
         return view('projects.index', compact('projects', 'clients'));
     }
 
@@ -186,5 +254,36 @@ class ProjectController extends Controller
     {
         $clients = Client::where('user_id', auth()->id())->get();
         return view('projects.create', compact('clients'));
+    }
+
+    public function edit($id)
+    {
+        $project = Project::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
+        $clients = Client::where('user_id', auth()->id())->get();
+        return view('projects.edit', compact('project', 'clients'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $project = Project::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
+    
+        $request->validate([
+            'title' => 'required',
+            'description' => 'nullable',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+    
+        $project->fill($request->all());
+    
+        // If a client ID was provided, associate the project with the client
+        if ($request->has('client_id')) {
+            $client = Client::find($request->client_id);
+            $project->client()->associate($client);
+        }
+    
+        $project->save();
+    
+        return redirect()->route('projects.index', $project);
     }
 }
