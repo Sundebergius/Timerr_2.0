@@ -1,33 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import '~select2/dist/css/select2.css';
 
-/* @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'; */
-
-.client-select {
+[x-cloak] {
     display: none;
-}
-
-.hidden-select {
-    visibility: hidden;
-}
-
-.select2-container .select2-selection--single {
-    height: 35px; /* Adjust as needed */
-    padding: 0.5rem 1rem;
-    border-color: #d2d6dc;
-}
-
-.select2-container--default .select2-selection--single .select2-selection__rendered {
-    line-height: 35px; /* Match the height set above */
-    color: #4b5563;
-}
-
-.select2-container--default .select2-selection--single .select2-selection__arrow {
-    height: 35px; /* Match the height set above */
-}
-
-.select2-container--default .select2-selection--single .select2-selection__rendered {
-    transform: translateY(-30%); /* Adjust as needed */
 }
