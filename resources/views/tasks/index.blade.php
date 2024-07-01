@@ -2,7 +2,7 @@
     <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">{{ $project->title }}</h1>
 
     @foreach($project->tasks as $task)
-    <details class="mb-6 p-6 bg-white rounded-lg shadow-md">
+    <details class="mb-6 p-6 bg-white rounded-lg shadow-lg border border-gray-300">
         <summary class="cursor-pointer flex justify-between items-center">
             <div>
                 <h2 class="text-2xl font-semibold mb-1 text-gray-800">{{ $task->title }}</h2>

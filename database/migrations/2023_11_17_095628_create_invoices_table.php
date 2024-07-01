@@ -29,8 +29,8 @@ return new class extends Migration
     
             // Financial details
             $table->decimal('subtotal', 10, 2)->nullable(); // Total before taxes and discounts
-            $table->decimal('discount', 10, 2)->default(0.00); // Discount applied to the invoice
-            $table->decimal('vat', 10, 2)->nullable(); // Value-added tax amount
+            $table->decimal('discount', 5, 2)->default(0.00); // Discount applied to the invoice
+            $table->decimal('vat', 5, 2)->default(25.00)->nullable(); // Value-added tax amount
             $table->decimal('total', 10, 2)->nullable(); // Final amount due including taxes and after discounts
     
             // Payment details

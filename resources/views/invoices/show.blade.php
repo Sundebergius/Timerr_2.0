@@ -104,8 +104,8 @@
             </div>
         </div>
 
+        @if($projectTasks->isNotEmpty())
         <div class="invoice-section">
-            @if($projectTasks->isNotEmpty())
             <h2>Project-Based Tasks</h2>
             @foreach ($projectTasks as $task)
                 <div class="invoice-item">
@@ -113,11 +113,11 @@
                     <p><strong>Price:</strong> {{ number_format($task->taskable->price, 2) }} DKK</p>
                 </div>
             @endforeach
-            @endif
         </div>
+        @endif
 
+        @if($hourlyTasks->isNotEmpty())
         <div class="invoice-section">
-            @if($hourlyTasks->isNotEmpty())
             <h2>Hourly Tasks</h2>
             @foreach ($hourlyTasks as $task)
                 @php 
@@ -130,11 +130,11 @@
                     <p><strong>Rate:</strong> {{ number_format($task->taskable->rate_per_hour, 2) }} DKK</p>
                 </div>
             @endforeach
-            @endif
         </div>
+        @endif
 
+        @if($products->isNotEmpty())
         <div class="invoice-section">
-            @if($products->isNotEmpty())
             <h2>Products Sold</h2>
             @foreach ($products as $product)
                 <div class="invoice-item">
@@ -144,11 +144,11 @@
                     <p><strong>Total Price:</strong> {{ number_format($product['total_price'], 2) }} DKK</p>
                 </div>
             @endforeach
-            @endif
         </div>
+        @endif
 
+        @if($distanceTasks->isNotEmpty())
         <div class="invoice-section">
-            @if($distanceTasks->isNotEmpty())
             <h2>Distance Driven</h2>
             @foreach ($distanceTasks as $task)
                 @php 
@@ -159,21 +159,17 @@
                     <p><strong>Rate:</strong> {{ number_format($task->taskable->price_per_km, 2) }} DKK</p>
                 </div>
             @endforeach
-            @endif
         </div>
+        @endif
 
         <div class="invoice-total">
-            <div>
-                <p><strong>Subtotal:</strong></p>
-                <p><strong>Discount:</strong></p>
-                <p><strong>VAT (25%):</strong></p>
-                <p><strong>Total incl. VAT:</strong></p>
-            </div>
-            <div>
-                <p>{{ number_format($subtotal, 2) }} DKK</p>
-                <p>{{ number_format($discount, 2) }} DKK</p>
-                <p>{{ number_format($vat, 2) }} DKK</p>
-                <p class="text-xl font-bold">{{ number_format($totalWithVat, 2) }} DKK</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p><strong>Subtotal:</strong> {{ number_format($subtotal, 2) }} DKK</p>
+                    <p><strong>Discount ({{ $discountPercentage }}%):</strong> {{ number_format($discountAmount, 2) }} DKK</p>
+                    <p><strong>VAT ({{ $vatPercentage }}%):</strong> {{ number_format($vatAmount, 2) }} DKK</p>
+                    <p class="text-xl font-bold"><strong>Total incl. VAT:</strong> {{ number_format($totalWithVat, 2) }} DKK</p>
+                </div>
             </div>
         </div>
     </div>

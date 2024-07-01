@@ -3,12 +3,13 @@
 @tailwind utilities;
 @import '~select2/dist/css/select2.css';
 
-/* @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css'; */
+@import "~@fullcalendar/core/main.css";
+@import "~@fullcalendar/daygrid/main.css";
+@import "~@fullcalendar/timegrid/main.css";
 
-.client-select {
+[x-cloak] {
     display: none;
 }
-
 .hidden-select {
     visibility: hidden;
 }

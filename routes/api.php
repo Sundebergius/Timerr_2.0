@@ -28,8 +28,9 @@ Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
 Route::post('/products', [ProductController::class, 'store']);
 Route::get('/products/{userId}', [ProductController::class, 'getUserProducts']);
 
-//calendar routes
-Route::get('/events', [EventController::class, 'index']);
-Route::post('/events', [EventController::class, 'store']);
-Route::put('/events/{event}', [EventController::class, 'update']);
-Route::delete('/events/{event}', [EventController::class, 'destroy']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/events', [EventController::class, 'index']);
+    Route::post('/events', [EventController::class, 'store']);
+    Route::put('/events/{event}', [EventController::class, 'update']);
+    Route::delete('/events/{event}', [EventController::class, 'destroy']);
+});

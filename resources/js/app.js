@@ -4,17 +4,24 @@
  * building robust, powerful web applications using Vue and Laravel.
  */
 
+import { Calendar } from '@fullcalendar/core';
+import interactionPlugin from '@fullcalendar/interaction';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+
+import { createApp } from 'vue/dist/vue.esm-bundler.js';
+
 //import './bootstrap';
-import Alpine from 'alpinejs' ;
+//import Alpine from 'alpinejs' ;
 import axios from 'axios';
-window.Alpine = Alpine;
-Alpine.start();
+//window.Alpine = Alpine;
+//Alpine.start();
 
 import $ from 'jquery';
 import 'select2';
 
 import '../css/app.css';
-import { createApp } from 'vue';
+// import { createApp } from 'vue/dist/vue.esm-bundler.js';
 import TagEditor from './components/TagEditor.vue'; // Import your component
 import TaskCreator from './components/TaskCreator.vue'; // Import your new component
 import ProductModal from './components/productModal.vue'; // Import your new component
@@ -54,7 +61,54 @@ const app = createApp({
         } else {
             console.error('App element not found');
         }
+
+        // FullCalendar Initialization
+        var calendarEl = document.getElementById('calendar');
+        if (calendarEl) {
+            var calendar = new Calendar(calendarEl, {
+                plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin],
+                initialView: 'timeGridWeek',
+                events: '/api/events',
+                selectable: true,
+                select: async function(info) {
+                    var title = prompt('Event Title:');
+                    if (title) {
+                        var eventData = {
+                            title: title,
+                            start: info.startStr,
+                            end: info.endStr,
+                        };
+                        
+                        await fetch('/api/events', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify(eventData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            calendar.addEvent({
+                                id: data.id,
+                                title: data.title,
+                                start: data.start,
+                                end: data.end,
+                            });
+                        })
+                        .catch(error => console.error('Error adding event:', error));
+                    }
+                    calendar.unselect();
+                },
+                eventClick: function(info) {
+                    alert('Event: ' + info.event.title);
+                }
+            });
+
+            calendar.render();
+        }
     },
+    
     methods: {
         handleProductCreated(newProduct) {
             // Add the newly created product to the products array

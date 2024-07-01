@@ -37,11 +37,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-                        <input type="text" name="title" id="title" value="{{ $invoice->title }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <input type="text" name="title" id="title" value="{{ $invoice->title }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300" required>
                     </div>
                     <div>
                         <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                        <select name="status" id="status" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <select name="status" id="status" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300" required>
                             <option value="draft" {{ $invoice->status == 'draft' ? 'selected' : '' }}>Draft</option>
                             <option value="sent" {{ $invoice->status == 'sent' ? 'selected' : '' }}>Sent</option>
                             <option value="paid" {{ $invoice->status == 'paid' ? 'selected' : '' }}>Paid</option>
@@ -76,8 +76,8 @@
                 </div>
             </div>
 
-            <!-- Financial Information Section -->
-            <div class="mb-6">
+             <!-- Financial Information Section -->
+             <div class="mb-6">
                 <h2 class="text-xl font-bold mb-2">Financial Information</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -85,16 +85,22 @@
                         <input type="number" name="subtotal" id="subtotal" value="{{ $invoice->subtotal }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                     </div>
                     <div>
-                        <label for="discount" class="block text-sm font-medium text-gray-700">Discount</label>
-                        <input type="number" name="discount" id="discount" value="{{ $invoice->discount }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <label for="discount" class="block text-sm font-medium text-gray-700">Discount (%)</label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="number" name="discount" id="discount" value="{{ $invoice->discount }}" step="1" placeholder="Enter discount as a percentage" class="block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                            <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">%</span>
+                        </div>
                     </div>
                     <div>
-                        <label for="vat" class="block text-sm font-medium text-gray-700">VAT</label>
-                        <input type="number" name="vat" id="vat" value="{{ $invoice->vat }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <label for="vat" class="block text-sm font-medium text-gray-700">VAT (%)</label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="number" name="vat" id="vat" value="{{ $invoice->vat }}" step="0.01" placeholder="Enter VAT as a percentage" class="block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                            <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">%</span>
+                        </div>
                     </div>
                     <div>
                         <label for="total" class="block text-sm font-medium text-gray-700">Total</label>
-                        <input type="number" name="total" id="total" value="{{ $invoice->total }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <input type="number" name="total" id="total" value="{{ $invoice->total }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300" required>
                     </div>
                 </div>
             </div>
@@ -116,10 +122,6 @@
                             <!-- Add more options as needed -->
                         </select>
                     </div>
-                    {{-- <div>
-                        <label for="transaction_id" class="block text-sm font-medium text-gray-700">Transaction ID</label>
-                        <input type="text" name="transaction_id" id="transaction_id" value="{{ $invoice->transaction_id }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
-                    </div> --}}
                     <div>
                         <label for="last_reminder_sent" class="block text-sm font-medium text-gray-700">Last Reminder Sent</label>
                         <input type="date" name="last_reminder_sent" id="last_reminder_sent" value="{{ $invoice->last_reminder_sent }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
@@ -139,32 +141,32 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function updateDueDate() {
+            const issueDateElement = document.getElementById('issue_date');
+            const dueDateElement = document.getElementById('due_date');
+            const relativeDueDateElement = document.getElementById('relative_due_date');
+            const paymentTermsElement = document.getElementById('payment_terms');
+
+            const issueDate = new Date(issueDateElement.value);
+            let dueDate = new Date(issueDate);
+
+            // Calculate due date based on selection
+            const daysToAdd = parseInt(relativeDueDateElement.value, 10);
+            if (!isNaN(daysToAdd)) {
+                dueDate.setDate(issueDate.getDate() + daysToAdd);
+                dueDateElement.valueAsDate = dueDate;
+            }
+
+            // Update payment terms
+            const daysBetween = (dueDate - issueDate) / (1000 * 60 * 60 * 24);
+            if (!isNaN(daysBetween)) {
+                paymentTermsElement.value = `Net ${daysBetween} days`;
+            } else {
+                // Handle default or invalid case
+                paymentTermsElement.value = 'Net 30 days'; // Default or fallback value
+            }
+        }
+    </script>
 </x-app-layout>
-
-<script>
-    function updateDueDate() {
-    const issueDateElement = document.getElementById('issue_date');
-    const dueDateElement = document.getElementById('due_date');
-    const relativeDueDateElement = document.getElementById('relative_due_date');
-    const paymentTermsElement = document.getElementById('payment_terms');
-
-    const issueDate = new Date(issueDateElement.value);
-    let dueDate = new Date(issueDate);
-
-    // Calculate due date based on selection
-    const daysToAdd = parseInt(relativeDueDateElement.value, 10);
-    if (!isNaN(daysToAdd)) {
-        dueDate.setDate(issueDate.getDate() + daysToAdd);
-        dueDateElement.valueAsDate = dueDate;
-    }
-
-    // Update payment terms
-    const daysBetween = (dueDate - issueDate) / (1000 * 60 * 60 * 24);
-    if (!isNaN(daysBetween)) {
-        paymentTermsElement.value = `Net ${daysBetween} days`;
-    } else {
-        // Handle default or invalid case
-        paymentTermsElement.value = 'Net 30 days'; // Default or fallback value
-    }
-}
-</script>

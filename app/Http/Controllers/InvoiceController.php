@@ -38,8 +38,8 @@ class InvoiceController extends Controller
             'due_date' => 'nullable|date',
             'currency' => 'required|string|max:3',
             'subtotal' => 'nullable|numeric',
-            'discount' => 'nullable|numeric', // Allow discount to be nullable and numeric
-            'vat' => 'nullable|numeric',
+            'discount' => 'nullable|numeric|min:0|max:100', // Allow discount to be nullable and numeric
+            'vat' => 'nullable|numeric|min:0|max:100',
             'total' => 'required|numeric',
             'payment_terms' => 'nullable|string',
             'payment_method' => 'nullable|string',
@@ -67,18 +67,19 @@ class InvoiceController extends Controller
         $invoice->currency = $request->currency;
         $invoice->subtotal = $request->subtotal;
 
-        // Calculate and set discount amount if discount percentage is provided
-        if ($request->has('discount') && !is_null($request->discount)) {
-            $discountAmount = ($request->subtotal * $request->discount) / 100;
-            $invoice->discount = $discountAmount;
-        } else {
-            $invoice->discount = 0.00; // Default to 0 if no discount or invalid discount provided
-        }
+        // Store the discount and VAT percentages directly
+        $invoice->discount = $request->discount ?? 0.00;
+        $invoice->vat = $request->vat ?? 25.00;
 
-        $invoice->vat = $request->vat;
+        // Calculate discount amount and total after discount
+        $discountAmount = ($invoice->subtotal * $invoice->discount) / 100;
+        $totalAfterDiscount = $invoice->subtotal - $discountAmount;
 
-        // Calculate total considering subtotal, discount, and VAT
-        $invoice->total = $invoice->subtotal - $invoice->discount + $invoice->vat;
+        // Calculate VAT amount
+        $vatAmount = ($totalAfterDiscount * $invoice->vat) / 100;
+
+        // Calculate total including VAT
+        $invoice->total = $totalAfterDiscount + $vatAmount;
 
         $invoice->payment_terms = $request->payment_terms;
         $invoice->payment_method = $request->payment_method;
@@ -98,12 +99,11 @@ class InvoiceController extends Controller
 
     public function show($id)
     {
-        // Fetch the project using the provided $id
-        $project = Project::findOrFail($id); // Assuming you have a Project model
+        // Fetch the invoice using the provided $id
+        $invoice = Invoice::findOrFail($id);
 
-        if ($project->status != 'completed') {
-            abort(404); // Or redirect to a different page with an error message
-        }
+        // Retrieve the project associated with the invoice
+        $project = $invoice->project;
 
         // Fetch tasks related to the project
         $tasks = $project->tasks;
@@ -155,29 +155,9 @@ class InvoiceController extends Controller
         $discountPercentage = $invoice->discount;
         $discountAmount = ($discountPercentage / 100) * $subtotal;
         $totalAfterDiscount = $subtotal - $discountAmount;
-        $vat = $totalAfterDiscount * 0.25;
-        $totalWithVat = $totalAfterDiscount + $vat;
-
-        // // Calculate totals
-        // $total = 0;
-        // foreach ($projectTasks as $task) {
-        //     $total += $task->taskable->price;
-        // }
-        // foreach ($hourlyTasks as $task) {
-        //     $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
-        //     $total += $hours * $task->taskable->rate_per_hour;
-        // }
-        // foreach ($products as $product) {
-        //     $total += $product['total_price'];
-        // }
-        // foreach ($distanceTasks as $task) {
-        //     $distance = $task->taskable->registrationDistances->sum('distance');
-        //     $total += $distance * $task->taskable->price_per_km;
-        // }
-
-        // // Calculate VAT and total with VAT
-        // $vat = $total * 0.25;
-        // $totalWithVat = $total * 1.25;
+        $vatPercentage = $invoice->vat;
+        $vatAmount = ($vatPercentage / 100) * $totalAfterDiscount;
+        $totalWithVat = $totalAfterDiscount + $vatAmount;
 
         // Generate PDF
         $pdf = PDF::loadView('invoices.show', [
@@ -189,9 +169,11 @@ class InvoiceController extends Controller
             'products' => $products,
             'otherTasks' => $otherTasks,
             'subtotal' => $subtotal,
-            'discount' => $discountAmount,
+            'discountPercentage' => $discountPercentage,
+            'discountAmount' => $discountAmount,
             'totalAfterDiscount' => $totalAfterDiscount,
-            'vat' => $vat,
+            'vatPercentage' => $vatPercentage,
+            'vatAmount' => $vatAmount,
             'totalWithVat' => $totalWithVat,
         ]);
 
@@ -200,17 +182,17 @@ class InvoiceController extends Controller
         Storage::put($fileName, $pdf->output());
 
         // Find or create the invoice
-        $invoice = Invoice::firstOrNew(['project_id' => $project->id]);
-        $invoice->user_id = auth()->id();
-        $invoice->project_id = $project->id;
-        $invoice->client_id = $project->client ? $project->client->id : null;
-        $invoice->title = 'Invoice for Project ' . $project->id;
-        $invoice->subtotal = $subtotal;
-        $invoice->discount = $discountAmount;
-        $invoice->total = $totalWithVat;
-        $invoice->vat = $vat;
-        $invoice->file_path = $fileName;
-        $invoice->save();
+        // $invoice = Invoice::firstOrNew(['project_id' => $project->id]);
+        // $invoice->user_id = auth()->id();
+        // $invoice->project_id = $project->id;
+        // $invoice->client_id = $project->client ? $project->client->id : null;
+        // $invoice->title = 'Invoice for Project ' . $project->id;
+        // $invoice->subtotal = $subtotal;
+        // $invoice->discount = $discountAmount;
+        // $invoice->total = $totalWithVat;
+        // $invoice->vat = $vat;
+        // $invoice->file_path = $fileName;
+        // $invoice->save();
 
         // Stream the PDF for viewing/download
         return $pdf->stream($project->id . '_invoice.pdf');
@@ -226,20 +208,19 @@ class InvoiceController extends Controller
 
     public function update(Request $request, $id)
     {
-        $validatedData = $request->validate([
+        $request->validate([
             'title' => 'required|string|max:255',
             'status' => 'required|string',
             'issue_date' => 'nullable|date',
             'due_date' => 'nullable|date',
             'currency' => 'required|string|max:3',
             'subtotal' => 'nullable|numeric',
-            'discount' => 'nullable|numeric',
-            'vat' => 'nullable|numeric',
+            'discount' => 'nullable|numeric|min:0|max:100', // Allow discount to be nullable and numeric
+            'vat' => 'nullable|numeric|min:0|max:100',
             'total' => 'required|numeric',
             'payment_terms' => 'nullable|string',
             'payment_method' => 'nullable|string',
             'transaction_id' => 'nullable|string',
-            //'file_path' => 'nullable|string',
             'last_reminder_sent' => 'nullable|date',
             'client_id' => 'nullable|exists:clients,id',
             'project_id' => 'nullable|exists:projects,id',

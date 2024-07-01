@@ -84,12 +84,18 @@
                         <input type="number" name="subtotal" id="subtotal" value="{{ old('subtotal', $total) }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
                     </div>
                     <div>
-                        <label for="discount" class="block text-sm font-medium text-gray-700">Discount</label>
-                        <input type="number" name="discount" id="discount" value="{{ old('discount', 0) }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <label for="discount" class="block text-sm font-medium text-gray-700">Discount (%)</label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="number" name="discount" id="discount" value="{{ old('discount', 0) }}" step="1" placeholder="Enter discount as a percentage" class="block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                            <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">%</span>
+                        </div>
                     </div>
                     <div>
-                        <label for="vat" class="block text-sm font-medium text-gray-700">VAT</label>
-                        <input type="number" name="vat" id="vat" value="{{ old('vat', $vat) }}" step="0.01" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                        <label for="vat" class="block text-sm font-medium text-gray-700">VAT (%)</label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="number" name="vat" id="vat" value="{{ old('vat', 25) }}" step="0.01" placeholder="Enter VAT as a percentage" class="block w-full border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-blue-300">
+                            <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">%</span>
+                        </div>
                     </div>
                     <div>
                         <label for="total" class="block text-sm font-medium text-gray-700">Total</label>

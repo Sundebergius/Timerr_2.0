@@ -2,7 +2,17 @@
 <html lang='en'>
 <head>
     <meta charset='utf-8' />
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/core/main.min.css' rel='stylesheet' />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/core/main.min.css' rel='stylesheet' />
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/daygrid/main.min.css' rel='stylesheet' />
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/timegrid/main.min.css' rel='stylesheet' /> --}}
+    <style>
+        /* Ensure the calendar container fits well on small screens */
+        #calendar {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+    </style>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -10,9 +20,12 @@
 
             var calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'timeGridWeek',
-                events: '/api/events', // Adjust the endpoint as needed
-
-                // Handling date/time selection
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                events: '/api/events',
                 selectable: true,
                 select: async function(info) {
                     var title = prompt('Event Title:');
@@ -44,10 +57,26 @@
                     }
                     calendar.unselect();
                 },
-
-                // Optionally, handle event clicks
                 eventClick: function(info) {
                     alert('Event: ' + info.event.title);
+                },
+                windowResize: function(view) {
+                    var isMobile = window.matchMedia("(max-width: 767px)").matches;
+                    if (isMobile) {
+                        calendar.changeView('timeGridDay');
+                        calendar.setOption('headerToolbar', {
+                            left: 'prev,next today',
+                            center: '',
+                            right: 'title'
+                        });
+                    } else {
+                        calendar.changeView('timeGridWeek');
+                        calendar.setOption('headerToolbar', {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                        });
+                    }
                 }
             });
 

@@ -32,7 +32,9 @@ class NoteController extends Controller
     public function store(Request $request, Project $project)
     {
         $note = new Note;
+        $note->title = $request->title;
         $note->content = $request->content;
+        $note->user_id = auth()->id();
         $project->notes()->save($note);
 
         return redirect()->route('projects.notes.show', [$project, $note]);
