@@ -50,7 +50,7 @@
                                 </span>
                             </x-slot>
 
-                            <x-slot name="content">
+                            {{-- <x-slot name="content">
                                 <div class="w-60">
                                     <!-- Team Management -->
                                     <div class="block px-4 py-2 text-xs text-gray-400">
@@ -58,9 +58,11 @@
                                     </div>
 
                                     <!-- Team Settings -->
-                                    <x-dropdown-link href="{{ route('teams.show', Auth::user()->currentTeam->id) }}">
-                                        {{ __('Team Settings') }}
-                                    </x-dropdown-link>
+                                    @if (Auth::check() && Auth::user()->currentTeam)
+                                        <x-dropdown-link href="{{ route('teams.show', Auth::user()->currentTeam->id) }}">
+                                            {{ __('Team Settings') }}
+                                        </x-dropdown-link>
+                                    @endif
 
                                     @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
                                         <x-dropdown-link href="{{ route('teams.create') }}">
@@ -81,7 +83,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                            </x-slot>
+                            </x-slot> --}}
                         </x-dropdown>
                     </div>
                 @endif
@@ -208,7 +210,7 @@
                     </x-responsive-nav-link>
                 </form>
 
-                <!-- Team Management -->
+                {{-- <!-- Team Management -->
                 @if (Laravel\Jetstream\Jetstream::hasTeamFeatures())
                     <div class="border-t border-gray-200"></div>
 
@@ -239,7 +241,7 @@
                             <x-switchable-team :team="$team" component="responsive-nav-link" />
                         @endforeach
                     @endif
-                @endif
+                @endif --}}
             </div>
         </div>
     </div>
