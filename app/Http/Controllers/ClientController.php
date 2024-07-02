@@ -267,6 +267,22 @@ class ClientController extends Controller
        // return view('clients.index', compact('clients'));
     }
 
+    public function addTag(Request $request)
+    {
+        $client = Client::findOrFail($request->client_id);
+        $tag = Tag::firstOrCreate(['name' => $request->tag, 'color' => $request->tag_color]);
+        $client->tags()->attach($tag->id);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function removeTag(Client $client, Tag $tag)
+    {
+        $client->tags()->detach($tag->id);
+
+        return response()->json(['success' => true]);
+    }
+
     // public function updateNote(Request $request, Client $client)
     // {
     //     \Log::info('updateNote called');

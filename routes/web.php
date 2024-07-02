@@ -47,6 +47,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
+        Route::post('/clients/add-tag', [ClientController::class, 'addTag'])->name('clients.add-tag');
+        Route::delete('/clients/remove-tag/{client}/{tag}', [ClientController::class, 'removeTag'])->name('clients.remove-tag');
         // Route::get('/', [ClientController::class, 'filterClients'])->name('clients.filter');
     });
 

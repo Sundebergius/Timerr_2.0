@@ -5,9 +5,9 @@
  */
 
 import { Calendar } from '@fullcalendar/core';
-import interactionPlugin from '@fullcalendar/interaction';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
+// import interactionPlugin from '@fullcalendar/interaction';
+// import dayGridPlugin from '@fullcalendar/daygrid';
+// import timeGridPlugin from '@fullcalendar/timegrid';
 
 import { createApp } from 'vue/dist/vue.esm-bundler.js';
 
@@ -108,7 +108,7 @@ const app = createApp({
             calendar.render();
         }
     },
-    
+
     methods: {
         handleProductCreated(newProduct) {
             // Add the newly created product to the products array
