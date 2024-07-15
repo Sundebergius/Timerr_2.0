@@ -155,7 +155,7 @@
                                                     </td>
                                                     <td class="px-6 py-4 whitespace-nowrap client-details">
                                                         <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                                                            <a href="{{ route('clients.show', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center">View</a>
+                                                            {{-- <a href="{{ route('clients.show', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center">View</a> --}}
                                                             <a href="{{ route('clients.edit', $client) }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full sm:w-auto text-center">Edit</a>
                                                             <form method="POST" action="{{ route('clients.destroy', $client) }}">
                                                                 @csrf
@@ -265,9 +265,9 @@
             var importForm = document.getElementById('importForm');
             if (importForm.classList.contains('hidden')) {
                 importForm.classList.remove('hidden');
-            } else {
-                importForm.classList.add('hidden');
-            }
+             } else {
+                 importForm.classList.add('hidden');
+             }
         });
 
         function toggleTags(clientId, event) {

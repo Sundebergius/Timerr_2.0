@@ -177,13 +177,13 @@
                                 x-transition:leave-end="opacity-0 scale-95"
                                 class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-right right-0 bg-white ring-1 ring-black ring-opacity-5 max-h-60 overflow-y-auto"
                                 @click="open = false" style="display: none;">
-                                {{-- <div class="py-1">
+                                <div class="py-1">
                                     <button @click="modalOpen = true; loadSelect2();" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                         Edit Client
                                     </button>
                                     <button @click="invoiceModalOpen = true" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                         Edit Invoice Status
-                                    </button> --}}
+                                    </button>
                                     @if($project->status == 'completed')
                                         <a href="{{ route('projects.invoice', $project) }}" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
                                             View Invoice
@@ -199,7 +199,7 @@
                                 </div>
                             </div>
                             <!-- Edit Client Modal -->
-                            {{-- <div x-show="modalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+                            <div x-show="modalOpen" class="fixed inset-0 flex items-center justify-center z-50">
                                 <div class="fixed inset-0 bg-black opacity-50"></div>
                                 <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none" id="editClientModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
                                     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
@@ -220,9 +220,9 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div> --}}
+                            </div>
                             <!-- Edit Invoice Modal -->
-                            {{-- <div x-show="invoiceModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
+                            <div x-show="invoiceModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
                                 <div class="fixed inset-0 bg-black opacity-50"></div>
                                 <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none" id="editInvoiceModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
                                     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
@@ -244,7 +244,7 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div> --}}
+                            </div>
                         </div>
                     </div>
                 </div>
