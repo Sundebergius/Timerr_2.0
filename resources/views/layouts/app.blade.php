@@ -7,6 +7,10 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
+        <!-- Set favicon -->
+        <link rel="icon" type="image/svg+xml" href="{{ asset('Timerr_icon.svg') }}">
+
+
         <!-- FullCalendar CSS -->
         {{-- <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/core/main.min.css' rel='stylesheet' />
         <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/daygrid/main.min.css' rel='stylesheet' />

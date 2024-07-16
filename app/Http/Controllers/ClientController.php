@@ -13,47 +13,60 @@ class ClientController extends Controller
 {
     public function index(Request $request)
     {
+        // dd($request->all());
+
         $colorClasses = [
             'rose' => 'bg-rose-100 text-rose-500 hover:bg-rose-200',
             'sky' => 'bg-sky-100 text-sky-500 hover:bg-sky-200',
             'emerald' => 'bg-emerald-100 text-emerald-500 hover:bg-emerald-200',
             'gray' => 'bg-gray-100 text-gray-500 hover:bg-gray-200',
         ];
-        
-        $searches = $request->get('search');
+
+        // Ensure $searches is always an array
+        $searches = (array) $request->input('search', []);
         $pageSize = $request->get('pageSize', 10);
 
-         // If the selected value is "All", use the get() method to get all clients
+        // If the selected value is "All", get all clients
         if ($pageSize == 'all') {
             $clients = Client::get();
         } else {
-            // Otherwise, use the selected number of items per page in the paginate() method
+            // Otherwise, paginate the clients
             $clients = Client::paginate($pageSize);
         }
-        
+
         $sortField = $request->get('sortField', 'name');
         $sortDirection = $request->get('sortDirection', 'asc');
-    
+
         $query = Client::with('tags')->where('user_id', auth()->id());
 
-        if ($searches) {
-            foreach ($searches as $search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('name', 'LIKE', "%{$search}%")
-                        ->orWhere('email', 'LIKE', "%{$search}%")
-                        ->orWhere('phone', 'LIKE', "%{$search}%")
-                        ->orWhere('status', 'LIKE', "%{$search}%")
-                        ->orWhereHas('tags', function ($query) use ($search) {
-                            $query->where('name', 'LIKE', "%{$search}%");
-                        });
-                });
+        $status = null;
+        if (!empty($searches)) {
+            $query->where(function ($query) use ($searches, &$status) {
+                foreach ($searches as $search) {
+                    if (strpos($search, 'status:') === 0) {
+                        // Extract status value
+                        $status = substr($search, 7);
+                    } else {
+                        $query->orWhere('name', 'LIKE', "%{$search}%")
+                            ->orWhere('email', 'LIKE', "%{$search}%")
+                            ->orWhere('phone', 'LIKE', "%{$search}%")
+                            ->orWhereHas('tags', function ($query) use ($search) {
+                                $query->where('name', 'LIKE', "%{$search}%");
+                            });
+                    }
+                }
+            });
+
+            // Apply the status filter if a status is specified
+            if ($status) {
+                $query->where('status', $status);
             }
         }
-    
+
         $clients = $query->orderBy($sortField, $sortDirection)
-            ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
-    
-            return view('clients.index', ['clients' => $clients, 'colorClasses' => $colorClasses]);
+                        ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
+
+        return view('clients.index', ['clients' => $clients, 'colorClasses' => $colorClasses]);
     }
 
     public function store(Request $request)
@@ -250,7 +263,7 @@ class ClientController extends Controller
         $client->status = $request->status;
         $client->save();
 
-        return response()->json(['message' => 'Status updated successfully.']);
+        return redirect()->route('clients.index')->with('success', 'Status updated successfully.');
     }
 
     public function filterClients(Request $request)
