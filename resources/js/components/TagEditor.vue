@@ -32,7 +32,7 @@
   </template>
 
 <script>
-import config from '@/config'; // Adjust the path to match your configuration file
+import config from '../config'; // Adjust relative path from TagEditor.vue to config.js
 
 export default {
   props: {
