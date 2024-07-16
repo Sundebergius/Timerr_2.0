@@ -32,10 +32,13 @@
   </template>
 
 <script>
+import config from '@/config'; // Adjust the path to match your configuration file
+
 export default {
   props: {
     client: {
       type: String,
+      // type: Object, // Adjusted to accept an object as props
       required: true
     }
   },
@@ -58,6 +61,10 @@ export default {
     console.log('Client:', this.clientData);
     this.fetchTags();
   },
+  // mounted() {
+  //   this.clientData = JSON.parse(this.client); // Parse the client data passed as props
+  //   this.fetchTags(); // Fetch initial tags for the client
+  // },
   computed: {
   tagClasses() {
     return this.tags.map(tag => {
@@ -75,74 +82,71 @@ export default {
   }
 },
   methods: {
-    addTag() {
-      fetch('http://timerr_2.0.test/api/tag', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
-        },
-        body: JSON.stringify({ 
-          name: this.newTag, 
-          color: this.newTagColor,
-          client_id: this.clientData.id // use clientData instead of client
-        }),
-      })
-      .then(response => response.json())
-      .then(data => {
+    async addTag() {
+      try {
+        const response = await fetch(`${config[process.env.NODE_ENV].apiUrl}/tag`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          },
+          body: JSON.stringify({ 
+            name: this.newTag, 
+            color: this.newTagColor,
+            client_id: this.clientData.id
+          }),
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
           this.tags.push({ name: this.newTag, color: this.newTagColor });
-          //this.tagColors.push(this.newTagColor);
           this.newTag = '';
           this.newTagColor = 'neutral';
         } else {
           console.error('Error:', data.error);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error:', error);
-      });
+      }
     },
-    removeTag(index) {
+    async removeTag(index) {
       const tag = this.tags[index];
-      fetch(`http://timerr_2.0.test/api/tag/${tag.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
-        },
-      })
-      .then(response => response.json())
-      .then(data => {
+      try {
+        const response = await fetch(`${config[process.env.NODE_ENV].apiUrl}/tag/${tag.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          },
+        });
+        
+        const data = await response.json();
+        
         if (data.success) {
           this.tags.splice(index, 1);
-          this.tagColors.splice(index, 1);
         } else {
           console.error('Error:', data.error);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error:', error);
-      });
+      }
     },
-    fetchTags() {
-      fetch(`http://timerr_2.0.test/api/clients/${this.clientData.id}/tags`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') // For CSRF protection
-        },
-      })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Server response:', data); // Log the server response
-        //this.tags = data.map(tag => tag.name);
-        //this.tagColors = data.map(tag => tag.color);
+    async fetchTags() {
+      try {
+        const response = await fetch(`${config[process.env.NODE_ENV].apiUrl}/clients/${this.clientData.id}/tags`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          },
+        });
+        
+        const data = await response.json();
         this.tags = data;
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Error:', error);
-      });
+      }
     },
     getColorClass(tag) {
       switch (tag.color) {
