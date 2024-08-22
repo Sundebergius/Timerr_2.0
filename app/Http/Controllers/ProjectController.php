@@ -286,4 +286,41 @@ class ProjectController extends Controller
     
         return redirect()->route('projects.index', $project);
     }
+
+    public function sendProjectToDinero(Request $request, $id)
+    {
+        // Retrieve the project by its ID
+        $project = Project::with('tasks')->findOrFail($id);
+
+        // Ensure the project is completed before sending
+        if ($project->status !== 'completed') {
+            return response()->json(['error' => 'Project is not completed yet'], 400);
+        }
+
+        // Format the project and tasks data for Dinero
+        $invoiceData = [
+            "contact_id" => $project->client_id, // Assuming this maps to a Dinero contact
+            "date" => now()->format('Y-m-d'),
+            "lines" => $project->tasks->map(function ($task) {
+                // Customize the mapping based on the task type and Dinero's requirements
+                return [
+                    "description" => $task->title,
+                    "quantity" => 1, // Assuming 1 unit for simplicity; adjust as needed
+                    "unit_price" => $task->taskable->price ?? 0, // Assuming `price` is in the taskable models
+                ];
+            })->toArray(),
+            // Add any additional fields Dinero requires
+        ];
+
+        // Send the data to Dinero
+        $response = Http::withToken($request->input('dinero_api_key'))
+                        ->post('https://api.dinero.dk/v1/invoices', $invoiceData);
+
+        // Handle the response from Dinero
+        if ($response->successful()) {
+            return response()->json(['message' => 'Project data sent to Dinero successfully']);
+        } else {
+            return response()->json(['error' => 'Failed to send project data to Dinero'], $response->status());
+        }
+    }
 }

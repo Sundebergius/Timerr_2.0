@@ -34,3 +34,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
 });
+
+Route::post('/projects/{id}/send-to-dinero', [ProjectController::class, 'sendProjectToDinero']);
