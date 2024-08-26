@@ -18,6 +18,7 @@ class RegistrationHourly extends Model
         'task_hourly_id',
         'minutes_worked',
         'earnings',
+        'comment'
     ];
 
     public function user()

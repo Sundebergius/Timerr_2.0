@@ -16,7 +16,8 @@ return new class extends Migration
             $table->bigInteger('user_id')->unsigned();
             $table->bigInteger('task_hourly_id')->unsigned();
             $table->decimal('minutes_worked', 10, 4)->nullable(); 
-            $table->decimal('earnings', 10, 4); 
+            $table->decimal('earnings', 10, 4);
+            $table->text('comment')->nullable(); 
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users');

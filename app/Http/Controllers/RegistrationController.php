@@ -46,6 +46,7 @@ class RegistrationController extends Controller
         $validatedData = $request->validate([
             'hours_worked' => 'required|integer',
             'minutes_worked' => 'required|integer',
+            'comment' => 'nullable|string',
         ]);
 
         $task = Task::find($taskId);
@@ -62,6 +63,7 @@ class RegistrationController extends Controller
             'task_hourly_id' => $taskHourly->id,            
             'minutes_worked' => $totalMinutes,
             'earnings' => $earnings,
+            'comment' => $validatedData['comment'],
         ]);
 
         // Redirect to the project page after the registration is created which was the initial way of doing it
