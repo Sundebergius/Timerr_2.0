@@ -18,6 +18,8 @@ class ProductController extends Controller
             'user_id' => 'required',
             'quantityInStock' => 'required',
             'active' => 'required',
+            'parent_id' => 'nullable|exists:products,id',
+            'attributes' => 'nullable|array',
         ]);
     
         if ($validator->fails()) {
@@ -31,7 +33,9 @@ class ProductController extends Controller
         $product->price = $request->price;
         $product->quantityInStock = $request->quantityInStock;
         $product->user_id = $request->user_id;
-        $product->active = $request->active;        
+        $product->active = $request->active;
+        $product->parent_id = $request->parent_id;
+        $product->attributes = $request->attributes;        
 
         $product->save();
 
@@ -40,8 +44,14 @@ class ProductController extends Controller
 
     public function getUserProducts($userId)
     {
-        $products = Product::where('user_id', $userId)->get();
-        return response()->json($products);
+        try {
+            // Fetch products for the given user ID
+            $products = Product::where('user_id', $userId)->get();
+            return response()->json(['products' => $products], 200);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching products: '.$e->getMessage());
+            return response()->json(['error' => 'An error occurred while fetching products.'], 500);
+        }
     }
 
     public function index(Request $request)

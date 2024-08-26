@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('user_id')->unsigned();
+            $table->bigInteger('parent_id')->unsigned()->nullable();
             $table->string('title');
             $table->string('category')->nullable();
             $table->string('description')->nullable();
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->integer('quantityInStock')->default(0);
             $table->integer('quantitySold')->default(0);
             $table->boolean('active')->default(true);
+            $table->json('attributes')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');        

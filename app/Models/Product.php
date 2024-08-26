@@ -19,6 +19,12 @@ class Product extends Model
         'quantityInStock',
         'quantitySold',
         'active',
+        'parent_id',
+        'attributes'
+    ];
+
+    protected $casts = [
+        'attributes' => 'array', // To handle JSON attributes as an array
     ];
 
     public function user()
@@ -30,5 +36,17 @@ class Product extends Model
     {
         return $this->belongsToMany(Task::class, 'task_product')
                     ->withPivot('total_sold');
+    }
+
+    // Self-referential relationship to parent product
+    public function parent()
+    {
+        return $this->belongsTo(Product::class, 'parent_id');
+    }
+
+    // Self-referential relationship to child products
+    public function children()
+    {
+        return $this->hasMany(Product::class, 'parent_id');
     }
 }
