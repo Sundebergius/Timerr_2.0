@@ -63,7 +63,7 @@ class RegistrationController extends Controller
             'task_hourly_id' => $taskHourly->id,            
             'minutes_worked' => $totalMinutes,
             'earnings' => $earnings,
-            'comment' => $validatedData['comment'],
+            'comment' => $validatedData['comment'] ?? '',
         ]);
 
         // Redirect to the project page after the registration is created which was the initial way of doing it

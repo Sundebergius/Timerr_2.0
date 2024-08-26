@@ -9,12 +9,23 @@
             <label for="minutes_worked" class="block text-gray-700 text-sm font-bold mb-2">Minutes Worked:</label>
             <input type="number" id="minutes_worked" name="minutes_worked" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
         </div>
+        <div class="mb-4">
+            <label for="comment" class="block text-gray-700 text-sm font-bold mb-2">Comment:</label>
+            <textarea id="comment" name="comment" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+        </div>
     @endif
     @if($task->task_type == 'distance')
         <div class="mb-4">
             <label for="distance" class="block text-gray-700 text-sm font-bold mb-2">Distance Traveled:</label>
             <input type="number" id="distance" name="distance" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
         </div>
+
+        {{-- Comment sektion ikke lavet i model, migration og controller --}}
+        
+        {{-- <div class="mb-4">
+            <label for="comment" class="block text-gray-700 text-sm font-bold mb-2">Comment:</label>
+            <textarea id="comment" name="comment" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+        </div> --}}
     @endif
 
     <div class="flex items-center justify-between">
