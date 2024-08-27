@@ -51,6 +51,12 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // client tag routes
+    // Route::post('/tag', [TagController::class, 'store']);
+    // Route::delete('/tag/{id}', [TagController::class, 'delete']);
+    // Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
+
+
     // Client management routes
     Route::prefix('clients')->group(function () {
         Route::get('/', [ClientController::class, 'index'])->name('clients.index');
