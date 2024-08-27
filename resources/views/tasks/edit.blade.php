@@ -120,6 +120,13 @@
                                                 <button type="button"
                                                     class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
                                             </div>
+                                            <div class="mt-4">
+                                                <label for="registration_comment_{{ $registration->id }}" class="block text-gray-700 text-sm font-bold mb-2">
+                                                    Comment:
+                                                </label>
+                                                <textarea id="registration_comment_{{ $registration->id }}" name="registrations[{{ $registration->id }}][comment]" rows="4"
+                                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">{{ $registration->comment }}</textarea>
+                                            </div>
                                         </div>
                                     @endforeach
                                     <button type="button" onclick="openRegistrationModal()"
