@@ -149,57 +149,63 @@ export default {
       this.attributes.splice(index, 1);
     },
     createProduct() {
-      axios.post('/api/products', {
-        title: this.title,
-        category: this.category,
-        description: this.description,
-        price: this.price,
-        quantityInStock: this.quantity,
-        user_id: this.userId,
-        image: null, // You need to handle image upload separately
-        active: true, // You can set this to false if you want the product to be inactive by default
-        parent_id: this.parent_id, // Include the parent_id
-        attributes: this.attributes.reduce((acc, attribute) => {
-          acc[attribute.key] = attribute.value;
-          return acc;
-        }, {})
-      })
-        .then(response => {
-          console.log(response.data);
-          if (response.data.product) {
-            this.addProduct(response.data.product);
-            this.$emit('product-created', response.data.product);
-            this.resetForm();
-          } else {
-            console.error('Product not defined in server response');
-            this.errorMessage = 'An error occurred while creating the product.';
-          }
+  const productData = {
+    title: this.title,
+    category: this.category,
+    description: this.description,
+    price: this.price,
+    quantityInStock: this.quantity,
+    user_id: this.userId,
+    image: null,
+    active: true,
+    parent_id: this.parent_id,
+    attributes: this.attributes.reduce((acc, attribute) => {
+      acc[attribute.key] = attribute.value;
+      return acc;
+    }, {})
+  };
 
-          // Pass the newly created product to the addProduct() method
-          this.addProduct(response.data.product);
-          //this.$emit('product-created', response.data.product);
-          //this.$emit('close');
+  console.log('Product data being sent:', productData);
 
-          // Emit an event with the created product
-          this.$emit('product-created', response.data.product);
+  axios.post('/api/products', productData)
+    .then(response => {
+      console.log('Full server response:', response);
+      console.log('Server response data:', response.data);
 
-          // if (response.data.product) {
-          //   this.$emit('product-created', response.data.product);
-          //     } else {
-          //       console.error('Product not defined in server response');
-          //       this.errorMessage = 'An error occurred while creating the product.';
-          //     }
-        })
-        .catch(error => {
-          if (error.response.status === 422) {
-            console.log(error.response.data); // Log the validation errors to the console
-            this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
-          } else {
-            this.errorMessage = 'An error occurred while creating the product.';
-          }
-          this.successMessage = '';
-        });
-    },
+      if (response.data && response.data.product) {
+        this.addProduct(response.data.product);
+        this.$emit('product-created', response.data.product);
+        this.resetForm();
+        this.successMessage = 'Product created successfully!';
+        this.errorMessage = '';  // Clear any previous error messages
+      } else {
+        console.error('Product not defined in server response');
+        this.errorMessage = 'An error occurred while creating the product.';
+      }
+    })
+    .catch(error => {
+      console.error('Error caught in catch block:', error);
+      // Error could be due to network issues, etc. Handle it more broadly
+      if (error.response) {
+        if (error.response.status === 422) {
+          console.log('Validation errors:', error.response.data);
+          this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
+        } else {
+          this.errorMessage = 'Error: ' + error.response.status + ' - ' + error.response.data;
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received:', error.request);
+        this.errorMessage = 'No response received from server.';
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error setting up request:', error.message);
+        this.errorMessage = 'An error occurred: ' + error.message;
+      }
+      this.successMessage = '';  // Clear any previous success messages
+    });
+},
+
     resetForm() {
       // Reset the form after successful creation
       this.title = '';
