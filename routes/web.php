@@ -9,6 +9,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -34,6 +35,21 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Event management routes
+    Route::prefix('events')->group(function () {
+        Route::get('/', [EventController::class, 'index'])->name('events.index');
+        Route::post('/', [EventController::class, 'store'])->name('events.store');
+        Route::put('/{id}', [EventController::class, 'update'])->name('events.update');
+        Route::delete('/{id}', [EventController::class, 'destroy'])->name('events.destroy');
+        Route::get('/export', [EventController::class, 'exportToICS'])->name('events.export');
+        Route::post('/import', [EventController::class, 'importFromICS'])->name('events.import');
+        Route::get('/search', [EventController::class, 'search'])->name('events.search');
+        Route::prefix('api')->group(function () {
+            Route::get('/projects', [ProjectController::class, 'fetchProjects'])->name('api.projects');
+            Route::get('/clients', [ClientController::class, 'fetchClients'])->name('api.clients');
+        });
+    });
 
     // Client management routes
     Route::prefix('clients')->group(function () {

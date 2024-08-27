@@ -9,7 +9,7 @@ class Event extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['title', 'description', 'start', 'end', 'project_id', 'task_id', 'client_id', 'user_id'];
+    protected $fillable = ['title', 'description', 'start', 'end', 'color', 'project_id', 'task_id', 'client_id', 'user_id'];
 
     public function project()
     {

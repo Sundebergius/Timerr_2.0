@@ -17,6 +17,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamp('start');
             $table->timestamp('end')->nullable();
+            $table->string('color')->nullable();
             $table->unsignedBigInteger('project_id')->nullable();
             $table->unsignedBigInteger('client_id')->nullable();
             $table->unsignedBigInteger('task_id')->nullable(); 

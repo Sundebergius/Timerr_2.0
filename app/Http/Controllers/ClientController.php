@@ -256,6 +256,12 @@ class ClientController extends Controller
 
         return redirect()->route('clients.index');
     }
+
+    public function fetchClients()
+    {
+        $clients = Client::where('user_id', auth()->id())->get(); // Adjust based on your logic
+        return response()->json($clients);
+    }
     
     public function updateStatus(Request $request, $id)
     {
