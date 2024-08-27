@@ -287,6 +287,12 @@ class ProjectController extends Controller
         return redirect()->route('projects.index', $project);
     }
 
+    public function fetchProjects()
+    {
+        $projects = Project::where('user_id', auth()->id())->get(); // Adjust based on your logic
+        return response()->json($projects);
+    }
+
     public function sendProjectToDinero(Request $request, $id)
     {
         // Retrieve the project by its ID
