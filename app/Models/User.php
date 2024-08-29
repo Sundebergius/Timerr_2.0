@@ -64,4 +64,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function webhooks()
+    {
+        return $this->hasMany(Webhook::class);
+    }
 }
