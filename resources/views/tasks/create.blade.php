@@ -4,7 +4,7 @@
         <div id="app">
             <form id="taskForm" action="{{ route('projects.tasks.store', json_decode($project)->id) }}" method="POST" @submit.prevent="$refs.taskCreator.handleFormSubmission">
                 @csrf
-                <task-creator ref="taskCreator" v-bind:project="JSON.stringify(project)" v-bind:user_id="userId" @formSubmitted></task-creator>
+                <task-creator ref="taskCreator" v-bind:project="JSON.stringify(project)" v-bind:user-id="userId" @formSubmitted></task-creator>
                 <input type="hidden" id="hiddenInput" name="formData">
                 <div class="flex items-center justify-between">
                 </div>
@@ -53,6 +53,7 @@
             console.log('Project:', this.project);
             console.log('Project:', JSON.parse(JSON.stringify(this.project)));
             console.log('Type of project:', typeof this.project);
+            console.log('User ID:', this.userId);
             },
     });
   </script>
