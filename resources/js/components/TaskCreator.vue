@@ -217,7 +217,16 @@ export default {
   components: {
     'product-modal': productModal,
   },
-  props: ['project', 'user_id'],
+  props: {
+    project: {
+      type: String,
+      required: true
+    },
+    userId: {
+      type: Number,
+      required: true
+    }
+  },
 
   // props: {
   //   project: {
@@ -228,7 +237,7 @@ export default {
   data() {
     return {
       // localProject: JSON.parse(this.project),
-      userId: '',
+      // userId: this.userId,
       localProject: this.project ? JSON.parse(this.project) : {},
       task_type: 'project_based',
       initialTaskType: 'project_based',
@@ -287,21 +296,30 @@ export default {
     // },
   },
   mounted() {
+    console.log('User ID in TaskCreator:', this.userId);;
     // Fetch the products
-    this.fetchProducts();
     if (this.project) {
-      try {
-        this.localProject = JSON.parse(this.project);
-      } catch (e) {
-        console.error('Error parsing project prop:', e);
-      }
-      let hiddenInput = document.getElementById('hiddenInput');
-      if (hiddenInput) {
-        console.log('hiddenInput exists. Value:', hiddenInput.value);
+    try {
+      this.localProject = JSON.parse(this.project);
+      console.log('Parsed Project in TaskCreator:', this.localProject);
+
+      // Fetch the products only after localProject is initialized
+      if (this.localProject && this.localProject.user_id) {
+        this.fetchProducts(); // Moved inside after successful parsing
       } else {
-        console.log('hiddenInput does not exist');
+        console.warn('User ID is not available in the project data');
       }
+    } catch (e) {
+      console.error('Error parsing project prop:', e);
     }
+  }
+
+  let hiddenInput = document.getElementById('hiddenInput');
+  if (hiddenInput) {
+    console.log('hiddenInput exists. Value:', hiddenInput.value);
+  } else {
+    console.log('hiddenInput does not exist');
+  }
     // console.log('Project:', this.project);
     // console.log('localProject:', this.localProject);
     // console.log('Type:', typeof this.project);
@@ -333,13 +351,19 @@ export default {
     },
     fetchProducts() {
       this.initialTaskType = 'product';
-      axios.get(`/api/products/${this.localProject.user_id}`)
-        .then(response => {
-          this.products = response.data;
-        })
-        .catch(error => {
-          console.error('Error fetching products:', error);
-        });
+      if (this.localProject && this.localProject.user_id) {
+        axios.get(`/api/products/${this.localProject.user_id}`)
+          .then(response => {
+            console.log('Full response:', response);
+            this.products = response.data.products;
+            console.log('Products fetched successfully:', this.products);
+          })
+          .catch(error => {
+            console.error('Error fetching products:', error);
+          });
+      } else {
+        console.error('Cannot fetch products because user_id is not available');
+      }
     },
     handleProductEvent(newProduct) {
       this.handleProductCreated(newProduct);
