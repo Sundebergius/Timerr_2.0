@@ -9,7 +9,7 @@ class Client extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'country', 'status'];
+    protected $fillable = ['user_id', 'name', 'email', 'cvr', 'phone', 'address', 'city', 'zip_code', 'country', 'status'];
 
     // protected $casts = [
     //     'tag_colors' => 'array',
