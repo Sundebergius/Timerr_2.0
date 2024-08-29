@@ -4,11 +4,6 @@
  * building robust, powerful web applications using Vue and Laravel.
  */
 
-import { Calendar } from '@fullcalendar/core';
-import interactionPlugin from '@fullcalendar/interaction';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-
 import { createApp } from 'vue/dist/vue.esm-bundler.js';
 
 //import './bootstrap';
@@ -17,11 +12,10 @@ import axios from 'axios';
 //window.Alpine = Alpine;
 //Alpine.start();
 
-import $ from 'jquery';
 import 'select2';
-
 import '../css/app.css';
-// import { createApp } from 'vue/dist/vue.esm-bundler.js';
+
+// import vue components
 import TagEditor from './components/TagEditor.vue'; // Import your component
 import TaskCreator from './components/TaskCreator.vue'; // Import your new component
 import ProductModal from './components/productModal.vue'; // Import your new component
@@ -33,104 +27,60 @@ import ProductModal from './components/productModal.vue'; // Import your new com
  */
 
 const app = createApp({
-    data() {
-        return {
-            showModal: false,
-            products: [],
+     data() {
+         return {
+             showModal: false,
+         // products: [],
             userId: null,
-        };
-    },
+         };
+     },
     async created() {
-        console.log('created() called');
+        console.log('created() called from app.js');
         const appElement = document.querySelector('#app');
         if (appElement) {
             this.userId = Number(appElement.getAttribute('data-user-id'));
-            console.log('User ID:', this.userId);
+            console.log('User ID from app.js:', this.userId);
             if (this.userId) {
                 try {
-                    console.log('Fetching products...');
+                    console.log('Fetching products from app.js...');
                     const response = await axios.get(`/api/products/${this.userId}`);
-                    console.log('Products fetched successfully:', response.data);
+                    console.log('Products fetched successfully from app.js:', response.data);
                     this.products = response.data;
                 } catch (error) {
-                    console.error('Error fetching products:', error);
+                    console.error('Error fetching products from app.js:', error);
                 }
             } else {
-                console.error('User ID is null');
+                console.error('User ID is null from app.js');
             }
         } else {
-            console.error('App element not found');
+            console.error('App element not found from app.js');
         }
 
-        // FullCalendar Initialization
-        var calendarEl = document.getElementById('calendar');
-        if (calendarEl) {
-            var calendar = new Calendar(calendarEl, {
-                plugins: [interactionPlugin, dayGridPlugin, timeGridPlugin],
-                initialView: 'timeGridWeek',
-                events: '/api/events',
-                selectable: true,
-                select: async function(info) {
-                    var title = prompt('Event Title:');
-                    if (title) {
-                        var eventData = {
-                            title: title,
-                            start: info.startStr,
-                            end: info.endStr,
-                        };
-                        
-                        await fetch('/api/events', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify(eventData)
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            calendar.addEvent({
-                                id: data.id,
-                                title: data.title,
-                                start: data.start,
-                                end: data.end,
-                            });
-                        })
-                        .catch(error => console.error('Error adding event:', error));
-                    }
-                    calendar.unselect();
-                },
-                eventClick: function(info) {
-                    alert('Event: ' + info.event.title);
-                }
-            });
-
-            calendar.render();
-        }
     },
     
-    methods: {
-        handleProductCreated(newProduct) {
-            // Add the newly created product to the products array
-            this.products.push(newProduct);
+     methods: {
+        
+         handleProductCreated(newProduct) {
+        //     // Add the newly created product to the products array
+        //     this.products.push(newProduct);
             
-            // Fetch updated list of products after a new product is created
-            this.fetchProducts();
-        },
-        fetchProducts() {
-            console.log('Fetching products...');
+        //     // Fetch updated list of products after a new product is created
+        //     this.fetchProducts();
+         },
+         fetchProducts() {
+            console.log('Fetching products from app.js...');
             axios.get(`/api/products/${this.userId}`)
                 .then(response => {
-                    console.log('Products fetched successfully:', response.data);
+                    console.log('Products fetched successfully from app.js:', response.data);
                     // Filter out any undefined or null values
                     const validProducts = response.data.filter(product => product != null);
                     this.products = validProducts;
                 })
                 .catch(error => {
-                    console.error('Error fetching products:', error);
+                    console.error('Error fetching products from app.js:', error);
                 });
-        },
-    }
+         },
+     }
 });
 
 app.component('tag-editor', TagEditor); // Register your component
@@ -146,16 +96,16 @@ app.component('task-creator', TaskCreator, {
             this.fetchProducts();
         },
         fetchProducts() {
-            console.log('Fetching products...');
+            console.log('Fetching products from app.js...');
             axios.get(`/api/products/${this.userId}`)
                 .then(response => {
-                    console.log('Products fetched successfully:', response.data);
+                    console.log('Products fetched successfully from app.js:', response.data);
                     // Filter out any undefined or null values
                     const validProducts = response.data.filter(product => product != null);
                     this.products = validProducts;
                 })
                 .catch(error => {
-                    console.error('Error fetching products:', error);
+                    console.error('Error fetching products from app.js:', error);
                 });
         },
     },
@@ -169,7 +119,7 @@ app.component('task-creator', TaskCreator, {
 // Handle the product-created event emitted by the ProductModal component
 app.component('product-modal', ProductModal, {
     // Register event handler for the product-created event
-    emits: ['product-created']
+    // emits: ['product-created']
 });
 
 import ExampleComponent from './components/ExampleComponent.vue';
