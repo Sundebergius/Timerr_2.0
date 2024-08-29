@@ -8,7 +8,9 @@ use App\Models\Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Invoice;
+use Illuminate\Support\Facades\Http;
 use App\Models\TaskProduct;
+use App\Models\Webhook;
 use PDF;
 
 class ProjectController extends Controller
@@ -39,20 +41,80 @@ class ProjectController extends Controller
 
         $project->save();
 
+        // Trigger webhook after project creation if any active webhook exists
+        $this->triggerProjectCreatedWebhook($project);
+
         return redirect()->route('projects.show', $project);
+    }
+
+    protected function triggerProjectCreatedWebhook(Project $project)
+    {
+        // Find all active webhooks for the 'project_created' event that belong to the current user
+        $webhooks = Webhook::where('event', 'project_created')
+                            ->where('active', true) // Check if the webhook is active
+                            ->where('user_id', auth()->id()) // Ensure the webhook belongs to the current user
+                            ->get();
+
+        foreach ($webhooks as $webhook) {
+            // Prepare the data payload for the webhook
+            $payload = [
+                'project_id' => $project->id,
+                'title' => $project->title,
+                'description' => $project->description,
+                'start_date' => $project->start_date,
+                'end_date' => $project->end_date,
+                'created_at' => $project->created_at->toDateTimeString(),
+            ];
+
+            // Trigger the webhook by sending an HTTP POST request
+            $this->sendWebhookNotification($webhook, $payload);
+        }
+    }
+
+    protected function sendWebhookNotification(Webhook $webhook, array $payload)
+    {
+        // Send an HTTP POST request to the webhook URL with the payload data
+        $response = Http::post($webhook->url, $payload);
+
+        if (!$response->successful()) {
+            // Log the failure to send the webhook
+            \Log::error('Failed to send webhook notification', [
+                'webhook_url' => $webhook->url,
+                'response_status' => $response->status(),
+                'response_body' => $response->body(),
+            ]);
+        }
     }
 
     public function toggleCompletion(Project $project)
     {
-        if ($project->status == 'completed') {
-            $project->status = 'ongoing';
-        } else {
-            $project->status = 'completed';
-        }
-        
+        // Store the previous status for comparison
+        $previousStatus = $project->status;
+
+        // Toggle the project status
+        $project->status = $previousStatus === 'completed' ? 'ongoing' : 'completed';
         $project->save();
 
-        return redirect()->route('projects.index', $project);
+        // Check if status changed to 'completed' and handle accordingly
+        if ($project->status === 'completed' && $previousStatus !== 'completed') {
+            // Ensure webhooks are configured for the event
+            $webhooks = auth()->user()->webhooks()->where('event', 'project_completed')->get();
+
+            if ($webhooks->isEmpty()) {
+                \Log::info('No webhooks configured for event "send_project_data".', ['project_id' => $project->id]);
+                // Optionally notify the user or handle the absence of webhooks
+            } else {
+                // Trigger webhook if the status has changed to 'completed'
+                try {
+                    app('App\Http\Controllers\WebhookController')->handleProjectStatusChange($project->id);
+                } catch (\Exception $e) {
+                    \Log::error('Error triggering webhook for project ' . $project->id, ['error' => $e->getMessage()]);
+                }
+            }
+        }
+
+        // Redirect back to the projects index
+        return redirect()->route('projects.index');
     }
 
     public function invoice(Project $project)

@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\ProjectController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +22,15 @@ use App\Http\Controllers\EventController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::post('/webhooks/project-completed', [WebhookController::class, 'handleProjectCompleted']);
+Route::post('/projects/{project}/send-webhook', [WebhookController::class, 'sendWebhook'])->name('projects.sendWebhook');
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/webhooks', [WebhookController::class, 'index'])->name('webhooks.index');
+    Route::post('/webhooks', [WebhookController::class, 'store'])->name('webhooks.store');
+    Route::delete('/webhooks/{webhook}', [WebhookController::class, 'destroy'])->name('webhooks.destroy');
 });
 
 Route::post('/tag', [TagController::class, 'store']);

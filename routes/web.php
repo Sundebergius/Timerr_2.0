@@ -10,6 +10,7 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -51,6 +52,24 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Integrations Routes
+    Route::prefix('integrations')->name('integrations.')->group(function () {
+        // Webhooks Routes
+        Route::prefix('webhooks')->name('webhooks.')->group(function () {
+            Route::get('/', [WebhookController::class, 'index'])->name('index');
+            Route::post('/', [WebhookController::class, 'store'])->name('store');
+            Route::delete('/{webhook}', [WebhookController::class, 'destroy'])->name('destroy');
+            Route::post('/trigger', [WebhookController::class, 'triggerWebhook'])->name('trigger');
+            Route::post('/{webhook}/toggle', [WebhookController::class, 'toggleActive'])->name('toggle');
+            Route::post('/client-status-updated', [WebhookController::class, 'handleClientStatusUpdated'])->name('client_status_updated');
+            Route::post('/project-created', [WebhookController::class, 'handleProjectCreated'])->name('project_created');
+            Route::post('/project-completed', [WebhookController::class, 'handleProjectCompleted'])->name('project_completed');
+            Route::post('/task-created', [WebhookController::class, 'handleTaskCreated'])->name('task_created');
+            Route::post('/task-completed', [WebhookController::class, 'handleTaskCompleted'])->name('task_completed');
+
+        });
+    });
+
     // client tag routes
     // Route::post('/tag', [TagController::class, 'store']);
     // Route::delete('/tag/{id}', [TagController::class, 'delete']);
@@ -66,7 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{client}', [ClientController::class, 'show'])->name('clients.show');
         // Route::put('/{client}/edit/notes', [ClientController::class, 'updateNote'])->name('clients.notes.update');
         Route::delete('/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
-        Route::post('/{id}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
+        Route::post('/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
         Route::post('/clients/add-tag', [ClientController::class, 'addTag'])->name('clients.add-tag');

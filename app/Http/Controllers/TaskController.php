@@ -17,6 +17,8 @@ use App\Models\TaskOther;
 use App\Models\CustomField;
 use App\Models\ChecklistSection;
 use App\Models\ChecklistItem;
+use App\Models\Webhook;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
@@ -62,24 +64,104 @@ class TaskController extends Controller
         // Add the client_id to the data array
         $data['client_id'] = $project->client_id;
 
+        // Initialize $task variable
+        $task = null;
+
         switch ($data['task_type']) {
             case 'project_based':
-                $this->createProjectBasedTask($data);
+                $task = $this->createProjectBasedTask($data);
                 break;
             case 'hourly':
-                $this->createHourlyTask($data);
+                $task = $this->createHourlyTask($data);
                 break;
             case 'distance':
-                $this->createDistanceTask($data);
+                $task = $this->createDistanceTask($data);
                 break;
-            case 'product': // added this case
-                $this->createProductTask($data); // call a method to create a product task
+            case 'product':
+                $task = $this->createProductTask($data);
                 break;
-            case 'other': // added this case
-                $this->createOtherTask($data); // call a method to create an other task
+            case 'other':
+                $task = $this->createOtherTask($data);
                 break;
         }
 
+       // Trigger webhook after task creation
+        if ($task) {
+            $this->triggerTaskCreatedWebhook($task);
+        } else {
+            error_log('Task creation failed or task type was invalid.');
+        }
+    }
+
+    protected function triggerTaskCreatedWebhook(Task $task)
+    {
+        \Log::info('Triggering webhook for task created', ['task_id' => $task->id]);
+
+        $webhooks = Webhook::where('event', 'task_created')
+                            ->where('active', true)
+                            ->where('user_id', auth()->id())
+                            ->get();
+
+        foreach ($webhooks as $webhook) {
+            $payload = $this->prepareTaskData($task);
+            $this->sendWebhookNotification($webhook, $payload);
+        }
+    }
+
+    protected function prepareTaskData(Task $task)
+    {
+        return [
+            'task_id' => $task->id,
+            'project_id' => $task->project_id,
+            'user_id' => $task->user_id,
+            'client_id' => $task->client_id,
+            'taskable_id' => $task->taskable_id,
+            'taskable_type' => $task->taskable_type,
+            'title' => $task->title,
+            'task_type' => $task->task_type,
+            'created_at' => $task->created_at->toDateTimeString(),
+            'updated_at' => $task->updated_at->toDateTimeString(),
+        ];
+    }
+
+    public function completeTask(Request $request, $id)
+    {
+        $task = Task::findOrFail($id);
+
+        // Perform the task completion logic
+        $task->status = 'completed'; // Assuming you have a status field
+        $task->save();
+
+        // Trigger webhook after task completion
+        $this->triggerTaskCompletedWebhook($task);
+
+        return redirect()->route('tasks.show', $task);
+    }
+
+    protected function triggerTaskCompletedWebhook(Task $task)
+    {
+        $webhooks = Webhook::where('event', 'task_completed')
+                            ->where('active', true)
+                            ->where('user_id', auth()->id())
+                            ->get();
+
+        foreach ($webhooks as $webhook) {
+            $payload = $this->prepareTaskData($task);
+            $this->sendWebhookNotification($webhook, $payload);
+        }
+    }
+
+    protected function sendWebhookNotification(Webhook $webhook, array $payload)
+    {
+        $response = Http::post($webhook->url, $payload);
+
+        if (!$response->successful()) {
+            \Log::error('Failed to send webhook notification', [
+                'webhook_url' => $webhook->url,
+                'response_status' => $response->status(),
+                'response_body' => $response->body(),
+            ]);
+        }
     }
 
     public function create(Project $project)
@@ -109,7 +191,7 @@ class TaskController extends Controller
         // Fetch the project
         $project = Project::findOrFail($validatedData['project_id']);
 
-        DB::transaction(function () use ($validatedData, $project) {
+        return DB::transaction(function () use ($validatedData, $project) {
             // Create a new TaskProject without task_id
             $taskProject = TaskProject::create([
                 'start_date' => $validatedData['start_date'],
@@ -129,6 +211,8 @@ class TaskController extends Controller
                 'taskable_id' => $taskProject->id, 
                 'taskable_type' => TaskProject::class, 
             ]);
+
+            return $task;
         });
     }
 

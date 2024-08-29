@@ -6,7 +6,10 @@ use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Models\Tag;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use App\Models\Webhook;
+
 use Illuminate\Support\Facades\Validator;
 
 class ClientController extends Controller
@@ -71,14 +74,32 @@ class ClientController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'cvr' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'zip_code' => 'nullable|string|max:20',
+            'country' => 'nullable|string|max:255',
+            'status' => 'nullable|string|in:lead,contacted,interested,negotiation,deal_made', // Validate status
+            // 'tags' => 'array',
+            // 'tags.*' => 'string',
+            // 'tag_colors' => 'array',
+            // 'tag_colors.*' => 'string',
+        ]);
+
         $data = $request->all();
         $data['user_id'] = auth()->id(); // set user_id to the ID of the currently authenticated user
-        $data['country'] = 'DK'; // set default country to 'DK'
-        $data['status'] = Client::STATUS_LEAD; // set default status to 'lead'
-    
+
+        // Set default country and status if not provided
+        $data['country'] = $data['country'] ?? 'DK';
+        $data['status'] = $data['status'] ?? Client::STATUS_LEAD;
+
         $client = Client::create($data);
 
-         // Handle the tags
+        // Handle the tags
         if ($request->has('tags')) {
             $tags = $request->input('tags');
             $tag_colors = $request->input('tag_colors');
@@ -88,9 +109,41 @@ class ClientController extends Controller
                 $client->tags()->attach($tag->id);
             }
         }
+
+        // Trigger the "client created" webhook event
+        $this->triggerWebhookEvent('client_created', [
+            'client_id' => $client->id,
+            'name' => $client->name,
+            'email' => $client->email,
+        ]);
     
         return redirect()->route('clients.index');
     }
+
+    protected function triggerWebhookEvent($event, $payload)
+    {
+        // Fetch all webhooks related to this event
+        $webhooks = Webhook::where('event', $event)->get();
+
+        foreach ($webhooks as $webhook) {
+            $this->sendWebhookNotification($webhook, $payload);
+        }
+    }
+
+    // protected function sendWebhookNotification(Webhook $webhook, array $payload)
+    // {
+    //     // Send an HTTP POST request to the webhook URL with the payload data
+    //     $response = Http::post($webhook->url, $payload);
+
+    //     if (!$response->successful()) {
+    //         // Log the failure to send the webhook
+    //         \Log::error('Failed to send webhook notification', [
+    //             'webhook_url' => $webhook->url,
+    //             'response_status' => $response->status(),
+    //             'response_body' => $response->body(),
+    //         ]);
+    //     }
+    // }
 
     public function show(Client $client)
     {
@@ -266,10 +319,55 @@ class ClientController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $client = Client::find($id);
+
+        if (!$client) {
+            return response()->json(['error' => 'Client not found.'], 404);
+        }
+
         $client->status = $request->status;
         $client->save();
 
-        return redirect()->route('clients.index')->with('success', 'Status updated successfully.');
+        // Trigger webhook after status update if any active webhook exists
+        $this->triggerClientStatusUpdatedWebhook($client);
+
+        // Return the updated status or other relevant data
+        return response()->json([
+            'message' => 'Status updated successfully.',
+            'newStatus' => $client->status // Return the new status to update the UI
+        ]);
+    }
+
+    protected function triggerClientStatusUpdatedWebhook(Client $client)
+    {
+        // Find all active webhooks for the 'client_status_updated' event that belong to the current user
+        $webhooks = Webhook::where('event', 'client_status_updated')
+                            ->where('active', true) // Check if the webhook is active
+                            ->where('user_id', auth()->id()) // Ensure the webhook belongs to the current user
+                            ->get();
+
+        foreach ($webhooks as $webhook) {
+            // Prepare the data payload for the webhook
+            $payload = [
+                'client_id' => $client->id,
+                'status' => $client->status,
+                'updated_at' => $client->updated_at->toDateTimeString(),
+            ];
+
+            // Trigger the webhook by sending an HTTP POST request
+            $this->sendWebhookNotification($webhook, $payload);
+        }
+    }
+
+    protected function sendWebhookNotification(Webhook $webhook, array $payload)
+    {
+        // Send an HTTP POST request to the webhook URL
+        $response = Http::post($webhook->url, $payload);
+
+        if ($response->successful()) {
+            \Log::info('Webhook notification sent successfully.', ['webhook' => $webhook->id, 'response' => $response->body()]);
+        } else {
+            \Log::error('Failed to send webhook notification.', ['webhook' => $webhook->id, 'response' => $response->body()]);
+        }
     }
 
     public function filterClients(Request $request)
