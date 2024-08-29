@@ -13,20 +13,20 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->bigInteger('user_id')->unsigned();
-            $table->bigInteger('parent_id')->unsigned()->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('parent_id')->nullable()->constrained('products')->onDelete('set null');
             $table->string('title');
             $table->string('category')->nullable();
             $table->string('description')->nullable();
             $table->string('image')->nullable();
             $table->decimal('price', 8, 2);
-            $table->integer('quantityInStock')->default(0);
-            $table->integer('quantitySold')->default(0);
+            $table->integer('quantity_in_stock')->default(0);
+            $table->integer('quantity_sold')->default(0);
             $table->boolean('active')->default(true);
             $table->json('attributes')->nullable();
             $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');        
+            // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');        
         });
     }
 

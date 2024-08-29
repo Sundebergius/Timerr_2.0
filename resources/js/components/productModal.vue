@@ -105,6 +105,7 @@ export default {
   },
   data() {
     return {
+      showModal: false,
       title: '',
       category: '',
       description: '',
@@ -154,7 +155,7 @@ export default {
     category: this.category,
     description: this.description,
     price: this.price,
-    quantityInStock: this.quantity,
+    quantity_in_stock: this.quantity,
     user_id: this.userId,
     image: null,
     active: true,
@@ -184,26 +185,28 @@ export default {
       }
     })
     .catch(error => {
-      console.error('Error caught in catch block:', error);
-      // Error could be due to network issues, etc. Handle it more broadly
-      if (error.response) {
-        if (error.response.status === 422) {
-          console.log('Validation errors:', error.response.data);
-          this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
-        } else {
-          this.errorMessage = 'Error: ' + error.response.status + ' - ' + error.response.data;
-        }
-      } else if (error.request) {
-        // The request was made but no response was received
-        console.error('No response received:', error.request);
-        this.errorMessage = 'No response received from server.';
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        console.error('Error setting up request:', error.message);
-        this.errorMessage = 'An error occurred: ' + error.message;
-      }
-      this.successMessage = '';  // Clear any previous success messages
-    });
+  console.error('Error caught in catch block:', error);
+
+  if (error.response) {
+    if (error.response.status === 422) {
+      // Validation errors
+      console.log('Validation errors:', error.response.data);
+      this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
+    } else {
+      this.errorMessage = 'Error: ' + error.response.status + ' - ' + error.response.data;
+    }
+  } else if (error.request) {
+    // No response received
+    console.error('No response received:', error.request);
+    this.errorMessage = 'No response received from server.';
+  } else {
+    // Request setup error
+    console.error('Error setting up request:', error.message);
+    this.errorMessage = 'An error occurred: ' + error.message;
+  }
+
+  this.successMessage = '';  // Clear any previous success messages
+});
 },
 
     resetForm() {
