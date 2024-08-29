@@ -165,6 +165,17 @@
                             <button type="submit" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                         </form>
 
+                        @if($project->status == 'completed')
+                            <!-- Webhook button -->
+                            <form method="POST" action="{{ route('projects.sendWebhook', $project) }}" class="inline">
+                                @csrf
+                                <input type="text" name="webhook_url" placeholder="Enter webhook URL" class="w-64 px-4 py-2 text-sm leading-5 text-gray-700 border border-gray-300 rounded-md" required>
+                                <button type="submit" class="px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
+                                    Send to Webhook
+                                </button>
+                            </form>
+                        @endif
+
                         <div class="relative inline-flex" x-data="{ open: false, modalOpen: false, invoiceModalOpen: false }" @click.away="open = false">
                             <button @click="open = !open" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                                 More
@@ -190,12 +201,12 @@
                                         </a>
 
                                         <!-- Dinero button - test purposes -->
-                                        <form method="POST" action="{{ route('projects.sendToDinero', $project) }}" class="block w-full text-start">
+                                        {{-- <form method="POST" action="{{ route('projects.sendToDinero', $project) }}" class="block w-full text-start">
                                             @csrf
                                             <button type="submit" class="w-full px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out text-left">
                                                 Send to Dinero
                                             </button>
-                                        </form>
+                                        </form> --}}
                                         <!-- Dinero button - test purposes -->
                                         
                                     @endif

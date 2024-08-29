@@ -89,8 +89,8 @@
                                     </div>
                                 </div>
     
-                                <!-- Tags -->
-                                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                <!-- Tags - currently innactive  -->
+                                {{-- <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
                                     <label for="tags" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
                                         Tags
                                     </label>
@@ -101,7 +101,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    </div> --}}
+                                    
                                         <!-- Hidden form fields to actually submit the tags -->
                                         <div id="hidden-fields">
                                             @if ($client->tags)
