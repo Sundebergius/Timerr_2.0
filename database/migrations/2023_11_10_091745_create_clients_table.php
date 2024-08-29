@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('cvr')->nullable();
             $table->string('phone')->nullable();
             $table->string('address')->nullable();
+            $table->string('city')->nullable(); // New field for city
+            $table->string('zip_code')->nullable(); // New field for zip code
             $table->string('country')->default('DK');
             $table->string('status')->default('lead');
             $table->timestamps();

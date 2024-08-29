@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('taskable_type')->nullable();
             $table->string('title');
             $table->string('task_type');
+            $table->enum('status', ['pending', 'completed'])->default('pending'); // Status of the task
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users');
