@@ -14,7 +14,6 @@
 
                         <div class="mb-4">
                             <label for="client_type" class="block text-sm font-bold mb-2">{{ __('Client Type') }}</label>
-
                             <select name="client_type" id="client_type" onchange="clientTypeChange(this)" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                 <option value="individual">Individual</option>
                                 <option value="company">Company</option>
@@ -32,16 +31,12 @@
                         </div>
 
                         <div id="company_info">
-                            {{-- <div class="mb-4">
-                                <label for="company" class="block text-sm font-bold mb-2">{{ __('Company') }}</label>
-                                <input id="company" type="text" name="company" value="{{ old('company') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                            </div> --}}
-
                             <div class="mb-4">
                                 <label for="cvr" class="block text-sm font-bold mb-2">{{ __('CVR') }}</label>
                                 <input id="cvr" type="text" name="cvr" value="{{ old('cvr') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                             </div>
                         </div>
+
                         <!-- Additional Information -->
                         <div class="mb-4" x-data="{ open: false }">
                             <button @click="open = !open" class="text-white font-bold py-2 px-4 rounded border border-blue-500 bg-gray-300 hover:bg-gray-600 transition" type="button">
@@ -58,8 +53,24 @@
                                         <input id="address" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="address" value="{{ old('address') }}" />
                                     </div>
                                     <div class="mb-4">
+                                        <label for="city" class="block text-sm font-bold mb-2">{{ __('City') }}</label>
+                                        <input id="city" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="city" value="{{ old('city') }}" />
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="zip_code" class="block text-sm font-bold mb-2">{{ __('Zip Code') }}</label>
+                                        <input id="zip_code" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="zip_code" value="{{ old('zip_code') }}" />
+                                    </div>
+                                    <div class="mb-4">
                                         <label for="country" class="block text-sm font-bold mb-2">{{ __('Country') }}</label>
                                         <input id="country" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="country" value="{{ old('country') }}" />
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="status" class="block text-sm font-bold mb-2">{{ __('Status') }}</label>
+                                        <select id="status" name="status" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                            @foreach(App\Models\Client::statuses() as $status)
+                                                <option value="{{ $status }}" {{ old('status') == $status ? 'selected' : '' }}>{{ ucfirst($status) }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
                             </div>
