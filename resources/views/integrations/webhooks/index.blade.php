@@ -53,7 +53,7 @@
                     <label for="event" class="block text-sm font-medium text-gray-700">Event</label>
                     <select id="event" name="event" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50" required>
                         <option value="">Select Event</option>
-                        <option value="send_project_data" {{ old('event') == 'send_project_data' ? 'selected' : '' }}>Send Project Data</option>
+                        {{-- <option value="send_project_data" {{ old('event') == 'send_project_data' ? 'selected' : '' }}>Send Project Data</option> --}}
                         <option value="task_created" {{ old('event') == 'task_created' ? 'selected' : '' }}>Task Created</option>
                         <option value="task_completed" {{ old('event') == 'task_completed' ? 'selected' : '' }}>Task Completed</option>
                         <option value="project_created" {{ old('event') == 'project_created' ? 'selected' : '' }}>Project Created</option>
