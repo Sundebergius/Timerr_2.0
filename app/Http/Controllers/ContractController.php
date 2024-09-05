@@ -32,36 +32,26 @@ class ContractController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validatedData = $request->validate([
             'project_id' => 'required|exists:projects,id',
             'client_id' => 'required|exists:clients,id',
+            'title' => 'nullable|string|max:255',
             'service_description' => 'required',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date',
-            'total_amount' => 'required|numeric',
-            'currency' => 'required',
-            'due_date' => 'required|date',
-            'payment_terms' => 'required',
+            'total_amount' => 'nullable|numeric',
+            'currency' => 'nullable|string',
+            'due_date' => 'nullable|date',
+            'payment_terms' => 'nullable',
             'additional_terms' => 'nullable',
         ]);
 
-        $contract = new Contract([
-            'project_id' => $request->get('project_id'),
-            'client_id' => $request->get('client_id'),
-            'service_description' => $request->get('service_description'),
-            'start_date' => $request->get('start_date'),
-            'end_date' => $request->get('end_date'),
-            'total_amount' => $request->get('total_amount'),
-            'currency' => $request->get('currency'),
-            'due_date' => $request->get('due_date'),
-            'payment_terms' => $request->get('payment_terms'),
-            'additional_terms' => $request->get('additional_terms'),
-        ]);
+        $contract = Contract::create($validatedData);
 
-        $contract->save();
-
-        return redirect()->route('projects.show', ['project' => $contract->project_id])->with('success', 'Contract created successfully.');
+        return redirect()->route('projects.show', ['project' => $contract->project_id])
+            ->with('success', 'Contract created successfully.');
     }
+
 
     /**
      * Display the specified resource.
@@ -119,8 +109,11 @@ class ContractController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Project $project, Contract $contract)
     {
-        //
+        $contract->delete();
+
+        return redirect()->route('projects.show', $project)
+            ->with('success', 'Contract deleted successfully!');
     }
 }

@@ -13,6 +13,11 @@
                         @csrf
                         @method('PUT')
 
+                        <div>
+                            <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
+                            <input id="title" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" type="text" name="title" value="{{ $contract->title }}" required />
+                        </div>
+
                         <div class="mt-4">
                             <label for="service_description" class="block text-sm font-medium text-gray-700">Service Description</label>
                             <textarea id="service_description" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" name="service_description" required>{{ $contract->service_description }}</textarea>
