@@ -117,6 +117,10 @@
                         @endforeach
                     </div>
 
+
+
+
+                    {{-- Test delete 2 tags  --}}
                     @if (request('status'))
                         <span class="tag bg-gray-400 text-white px-2 py-1 m-1 rounded">
                             Status: {{ ucfirst(request('status')) }}
@@ -125,6 +129,9 @@
                     @endif
                 </div>
 
+
+
+                
                 <div class="flex space-x-4 mb-6">
                     <!-- Add new client button -->
                     <a href="{{ route('clients.create') }}"
@@ -481,6 +488,7 @@
                 // Get all existing search tags
                 let searchTags = Array.from(document.querySelectorAll('input[name="search[]"]'))
                     .map(input => input.value);
+                    
                 // Remove any existing status tags
                 searchTags = searchTags.filter(tag => !tag.startsWith('status:'));
 
@@ -491,8 +499,7 @@
                 }
 
                 // Remove all existing search inputs
-                document.querySelectorAll('input[name="search[]"]').forEach(input => input
-                    .remove());
+                document.querySelectorAll('input[name="search[]"]').forEach(input => input.remove());
 
                 // Add all search tags back as hidden inputs
                 searchTags.forEach(tag => {
@@ -506,6 +513,32 @@
                 // Submit the form
                 searchForm.submit();
             });
+        });
+
+        // Handle adding multiple search terms
+        searchForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            const newSearch = searchInput.value.trim();
+
+            if (newSearch) {
+                // Check if the new search term already exists
+                let existingInputs = document.querySelectorAll('input[name="search[]"]');
+                let alreadyExists = Array.from(existingInputs).some(input => input.value === newSearch);
+
+                if (!alreadyExists) {
+                    // Create a new hidden input for the new search term
+                    const newHiddenInput = document.createElement('input');
+                    newHiddenInput.type = 'hidden';
+                    newHiddenInput.name = 'search[]';
+                    newHiddenInput.value = newSearch;
+
+                    // Append the new hidden input to the form
+                    searchForm.appendChild(newHiddenInput);
+                }
+            }
+
+            // Submit the form after adding the search term
+            searchForm.submit();
         });
 
         // //radio button search
