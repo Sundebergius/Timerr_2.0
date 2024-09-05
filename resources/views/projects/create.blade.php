@@ -51,6 +51,13 @@
                 @enderror
             </div>
 
+            {{-- <div class="mb-4">
+                <label for="add_to_calendar" class="inline-flex items-center">
+                    <input id="add_to_calendar" type="checkbox" name="add_to_calendar" class="form-checkbox">
+                    <span class="ml-2">Add to Calendar</span>
+                </label>
+            </div> --}}
+
             <div class="flex items-center justify-between">
                 <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
                     Create Project
