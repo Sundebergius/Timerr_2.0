@@ -2,266 +2,274 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
     <div class="container mx-auto px-4 py-6">
-        <h1 class="text-3xl font-bold mb-6 text-blue-500">Projects</h1>
-
-        <div class="mb-4">
+        <!-- Flash Messages -->
+        <div x-data="{ showAlert: false, alertType: '', alertMessage: '' }" x-init="
+            @if (session('success'))
+                showAlert = true;
+                alertType = 'success';
+                alertMessage = '{{ session('success') }}';
+            @elseif (session('error'))
+                showAlert = true;
+                alertType = 'error';
+                alertMessage = '{{ session('error') }}';
+            @endif
+        ">
+            <template x-if="showAlert">
+                <div :class="{'bg-green-100 border border-green-400 text-green-700': alertType === 'success', 'bg-red-100 border border-red-400 text-red-700': alertType === 'error'}"
+                     class="px-4 py-3 rounded relative" role="alert">
+                    <span class="block sm:inline" x-text="alertMessage"></span>
+                    <button type="button" class="absolute top-0 bottom-0 right-0 px-4 py-3" @click="showAlert = false">
+                        <svg class="h-6 w-6" :class="{'text-green-500': alertType === 'success', 'text-red-500': alertType === 'error'}" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <title>Close</title>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </template>
+        </div>
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-500 mb-4">Projects</h1>
             <a href="{{ route('projects.create') }}"
-                class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-500 ease-in-out">
+                class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
                 Create Project
             </a>
         </div>
 
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="flex flex-wrap justify-center gap-6">
             @foreach ($projects as $project)
-                <div class="bg-white rounded-lg shadow-lg p-4">
-                    <h2 class="text-xl font-bold mb-2">{{ $project->title }}</h2>
-                    <p class="mb-2">
-                        <span
-                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            {{ $project->status == 'ongoing'
-                                ? 'bg-green-100 text-green-800'
-                                : ($project->status == 'nearing completion'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : ($project->status == 'overdue'
-                                        ? 'bg-red-100 text-red-800'
-                                        : ($project->status == 'completed'
-                                            ? 'bg-gray-100 text-gray-800'
-                                            : 'bg-blue-100 text-blue-800'))) }}">
-                            {{ ucfirst($project->status) }}
-                        </span>
-                    </p>
-                    <div class="mb-4">
-                        <h3 class="text-sm font-semibold">Task Summary:</h3>
-                        <ul>
-                            @foreach ($project->tasks as $index => $task)
-                                <li>{{ $index + 1 }}. <strong>{{ $task->title }}</strong>
-                                    ({{ $task->task_type }})
-                                </li>
-                            @endforeach
-                            @if($project->client)
-                                <li class="mt-2">
-                                    <i class="fas fa-user-check"></i>
-                                    Client: <strong>{{ $project->client->name }}</strong>
-                                </li>
-                            @endif
-                        </ul>
-                    </div>
-                    <div class="mb-4">
-                        <h3 class="text-sm font-semibold">Quick Stats:</h3>
-                        <div class="space-y-2">
+            <div class="bg-white rounded-lg shadow-lg p-4 w-80 max-w-xs flex flex-col">
+                <h2 class="text-xl font-bold mb-2">{{ $project->title }}</h2>
+                <p class="mb-2">
+                    <span
+                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        {{ $project->status == 'ongoing'
+                            ? 'bg-green-100 text-green-800'
+                            : ($project->status == 'nearing completion'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : ($project->status == 'overdue'
+                                    ? 'bg-red-100 text-red-800'
+                                    : ($project->status == 'completed'
+                                        ? 'bg-gray-100 text-gray-800'
+                                        : 'bg-blue-100 text-blue-800'))) }}">
+                        {{ ucfirst($project->status) }}
+                    </span>
+                </p>
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold">Task Summary:</h3>
+                    <ul class="list-disc pl-5">
+                        @foreach ($project->tasks as $index => $task)
+                            <li>{{ $index + 1 }}. <strong>{{ $task->title }}</strong>
+                                ({{ $task->task_type }})
+                            </li>
+                        @endforeach
+                        @if($project->client)
+                            <li class="mt-2">
+                                <i class="fas fa-user-check"></i>
+                                Client: <strong>{{ $project->client->name }}</strong>
+                            </li>
+                        @endif
+                    </ul>
+                </div>
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold">Quick Stats:</h3>
+                    <div class="space-y-2">
+                        @php
+                            $totalEarnings = 0;
+                            $hourlyEarnings = 0;
+                        @endphp
+                        @if ($project->tasks->where('taskable_type', 'App\Models\TaskProject')->isNotEmpty())
                             @php
-                                $totalEarnings = 0;
-                                $hourlyEarnings = 0;
+                                $projectEarnings = $project->tasks
+                                    ->where('taskable_type', 'App\Models\TaskProject')
+                                    ->sum(function ($task) {
+                                        return $task->taskable->price;
+                                    });
+                                $totalEarnings += $projectEarnings;
                             @endphp
-                            @if ($project->tasks->where('taskable_type', 'App\Models\TaskProject')->isNotEmpty())
-                                @php
-                                    $projectEarnings = $project->tasks
-                                        ->where('taskable_type', 'App\Models\TaskProject')
-                                        ->sum(function ($task) {
-                                            return $task->taskable->price;
-                                        });
-                                    $totalEarnings += $projectEarnings;
-                                @endphp
-                                <div class="flex justify-between">
-                                    <span>Project Earnings:</span>
-                                    <span>{{ $projectEarnings }} DKK</span>
-                                </div>
-                            @endif
-                            @if ($project->tasks->where('taskable_type', 'App\Models\TaskHourly')->isNotEmpty())
-                                @php
-                                    $totalMinutesWorked = 0;
-                                    $hourlyEarnings = 0;
-                                    foreach (
-                                        $project->tasks->where('taskable_type', 'App\Models\TaskHourly')
-                                        as $task
-                                    ) {
-                                        $earningsPerMinute = $task->taskable->rate_per_hour / 60;
-                                        foreach ($task->taskable->registrationHourly as $registration) {
-                                            $totalMinutesWorked += $registration->minutes_worked;
-                                            $hourlyEarnings +=
-                                                $registration->minutes_worked * $earningsPerMinute;
-                                        }
-                                    }
-                                    $hourlyEarnings = ceil($hourlyEarnings);
-
-                                    $totalDays = floor($totalMinutesWorked / (60 * 24));
-                                    $totalHours = floor(($totalMinutesWorked / 60) % 24);
-                                    $totalMinutes = $totalMinutesWorked % 60;
-                                    $timeWorked = sprintf(
-                                        '%dd %dh %dm',
-                                        $totalDays,
-                                        $totalHours,
-                                        $totalMinutes,
-                                    );
-                                @endphp
-                                <div class="flex justify-between">
-                                    <span>Time Worked:</span>
-                                    <span>{{ $timeWorked }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span>Hourly Earnings:</span>
-                                    <span>{{ $hourlyEarnings }} DKK</span>
-                                </div>
-                            @endif
-                            @php
-                                $totalEarnings += $hourlyEarnings;
-                            @endphp
-
-                            @if ($project->tasks->where('taskable_type', 'App\Models\TaskProduct')->isNotEmpty())
-                                @php
-                                    $productEarnings = 0;
-                                    $taskProducts = $project->tasks->where('taskable_type', 'App\Models\TaskProduct');
-                                @endphp
-
-                                @foreach ($taskProducts as $task)
-                                    @php
-                                        $relatedTaskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
-                                    @endphp
-
-                                    @foreach ($relatedTaskProducts as $taskProduct)
-                                        @php
-                                            $productEarnings += $taskProduct->product->price * $taskProduct->total_sold;
-                                        @endphp
-                                    @endforeach
-                                @endforeach
-
-                                @php
-                                    $totalEarnings += $productEarnings;
-                                @endphp
-
-                                <div class="flex justify-between">
-                                    <span>Product Earnings:</span>
-                                    <span>{{ $productEarnings }} DKK</span>
-                                </div>
-                            @endif
-
-                            @if ($project->tasks->where('taskable_type', 'App\Models\TaskDistance')->isNotEmpty())
-                                @php
-                                    $travelCosts = 0;
-                                    foreach ($project->tasks->where('taskable_type', 'App\Models\TaskDistance') as $task) {
-                                        $taskDistance = $task->taskable;
-                                        $totalDistance = $taskDistance->registrationDistances->sum('distance');
-                                        $travelCosts += $taskDistance->price_per_km * $totalDistance;
-                                    }
-                                    $totalEarnings += $travelCosts;
-                                @endphp
-                                <div class="flex justify-between">
-                                    <span>Travel Costs:</span>
-                                    <span>{{ $travelCosts }} DKK</span>
-                                </div>
-                            @endif
-                            <div class="mt-4 flex justify-between font-bold">
-                                <span>Total Earnings:</span>
-                                <span>{{ $totalEarnings }} DKK</span>
+                            <div class="flex justify-between">
+                                <span>Project Earnings:</span>
+                                <span>{{ $projectEarnings }} DKK</span>
                             </div>
+                        @endif
+                        @if ($project->tasks->where('taskable_type', 'App\Models\TaskHourly')->isNotEmpty())
+                            @php
+                                $totalMinutesWorked = 0;
+                                $hourlyEarnings = 0;
+                                foreach (
+                                    $project->tasks->where('taskable_type', 'App\Models\TaskHourly')
+                                    as $task
+                                ) {
+                                    $earningsPerMinute = $task->taskable->rate_per_hour / 60;
+                                    foreach ($task->taskable->registrationHourly as $registration) {
+                                        $totalMinutesWorked += $registration->minutes_worked;
+                                        $hourlyEarnings +=
+                                            $registration->minutes_worked * $earningsPerMinute;
+                                    }
+                                }
+                                $hourlyEarnings = ceil($hourlyEarnings);
+
+                                $totalDays = floor($totalMinutesWorked / (60 * 24));
+                                $totalHours = floor(($totalMinutesWorked / 60) % 24);
+                                $totalMinutes = $totalMinutesWorked % 60;
+                                $timeWorked = sprintf(
+                                    '%dd %dh %dm',
+                                    $totalDays,
+                                    $totalHours,
+                                    $totalMinutes,
+                                );
+                            @endphp
+                            <div class="flex justify-between">
+                                <span>Time Worked:</span>
+                                <span>{{ $timeWorked }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Hourly Earnings:</span>
+                                <span>{{ $hourlyEarnings }} DKK</span>
+                            </div>
+                        @endif
+                        @php
+                            $totalEarnings += $hourlyEarnings;
+                        @endphp
+
+                        @if ($project->tasks->where('taskable_type', 'App\Models\TaskProduct')->isNotEmpty())
+                            @php
+                                $productEarnings = 0;
+                                $taskProducts = $project->tasks->where('taskable_type', 'App\Models\TaskProduct');
+                            @endphp
+
+                            @foreach ($taskProducts as $task)
+                                @php
+                                    $relatedTaskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
+                                @endphp
+
+                                @foreach ($relatedTaskProducts as $taskProduct)
+                                    @php
+                                        $productEarnings += $taskProduct->product->price * $taskProduct->total_sold;
+                                    @endphp
+                                @endforeach
+                            @endforeach
+
+                            @php
+                                $totalEarnings += $productEarnings;
+                            @endphp
+
+                            <div class="flex justify-between">
+                                <span>Product Earnings:</span>
+                                <span>{{ $productEarnings }} DKK</span>
+                            </div>
+                        @endif
+
+                        @if ($project->tasks->where('taskable_type', 'App\Models\TaskDistance')->isNotEmpty())
+                            @php
+                                $travelCosts = 0;
+                                foreach ($project->tasks->where('taskable_type', 'App\Models\TaskDistance') as $task) {
+                                    $taskDistance = $task->taskable;
+                                    $totalDistance = $taskDistance->registrationDistances->sum('distance');
+                                    $travelCosts += $taskDistance->price_per_km * $totalDistance;
+                                }
+                                $totalEarnings += $travelCosts;
+                            @endphp
+                            <div class="flex justify-between">
+                                <span>Travel Costs:</span>
+                                <span>{{ $travelCosts }} DKK</span>
+                            </div>
+                        @endif
+                        <div class="mt-4 flex justify-between font-bold">
+                            <span>Total Earnings:</span>
+                            <span>{{ $totalEarnings }} DKK</span>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="{{ route('projects.show', $project) }}" class="text-green-600 hover:text-green-700"><i class="fas fa-eye"></i></a>
-                        <a href="{{ route('projects.edit', $project) }}" class="text-blue-500 hover:text-blue-700"><i class="fas fa-edit"></i></a>
-                        <form action="{{ route('projects.destroy', $project) }}" method="POST" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
-                        </form>
+                </div>
+                <div class="mt-auto flex items-center space-x-4">
+                    <a href="{{ route('projects.show', $project) }}" class="text-green-600 hover:text-green-700"><i class="fas fa-eye"></i></a>
+                    <form action="{{ route('projects.destroy', $project) }}" method="POST" class="inline" onsubmit="return confirmDeletion()">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                    </form>
+                    <div class="relative inline-flex" x-data="{ open: false }" @click.away="open = false">
+                        <button @click="open = !open" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            More
+                        </button>
+                        <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 scale-95"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-75"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-95"
+                            class="absolute z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 max-h-60 overflow-y-auto">
+                            <div class="py-1">
+                                <a href="{{ route('projects.edit', $project) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+                                    Edit Project
+                                </a>
+                                <button @click="modalOpen = true" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out w-full text-left">
+                                    Edit Client
+                                </button>
 
-                        <div class="relative inline-flex" x-data="{ open: false, modalOpen: false, invoiceModalOpen: false }" @click.away="open = false">
-                            <button @click="open = !open" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                More
-                            </button>
-                            <div x-show="open" x-transition:enter="transition ease-out duration-200"
-                                x-transition:enter-start="opacity-0 scale-95"
-                                x-transition:enter-end="opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="opacity-100 scale-100"
-                                x-transition:leave-end="opacity-0 scale-95"
-                                class="absolute z-50 mt-2 w-48 rounded-md shadow-lg origin-top-right right-0 bg-white ring-1 ring-black ring-opacity-5 max-h-60 overflow-y-auto"
-                                @click="open = false" style="display: none;">
-                                <div class="py-1">
-                                    <button @click="modalOpen = true; loadSelect2();" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                        Edit Client
-                                    </button>
-                                    <button @click="invoiceModalOpen = true" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                        Edit Invoice Status
-                                    </button>
-                                    @if($project->status == 'completed')
-                                        <a href="{{ route('projects.invoice', $project) }}" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out">
-                                            View Invoice
-                                        </a>
+                                <!-- Add to Calendar Button with Alpine.js modal -->
+<div x-data="calendarComponent()">
+    <!-- Trigger Add to Calendar Modal -->
+    <button @click="openModal({{ $project->id }}, '{{ $project->title }}', '{{ $project->start_date ? $project->start_date->format('Y-m-d\TH:i') : 'N/A' }}', '{{ $project->end_date ? $project->end_date->format('Y-m-d\TH:i') : 'N/A' }}')"
+            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out w-full text-left">
+        Add to Calendar
+    </button>
 
-                                        <!-- Dinero button - test purposes -->
-                                        {{-- <form method="POST" action="{{ route('projects.sendToDinero', $project) }}" class="block w-full text-start">
-                                            @csrf
-                                            <button type="submit" class="w-full px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out text-left">
-                                                Send to Dinero
-                                            </button>
-                                        </form> --}}
-                                        <!-- Dinero button - test purposes -->
-                                        
-                                    @endif
-                                    <form method="POST" action="{{ route('projects.toggleCompletion', $project) }}" class="block w-full text-start">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" class="w-full px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100 transition duration-150 ease-in-out text-left">
-                                            {{ $project->status == 'completed' ? 'Mark as ongoing' : 'Mark as completed' }}
-                                        </button>
-                                    </form>
+    <!-- Add to Calendar Confirmation Modal -->
+    <div x-show="showAddToCalendarModal" class="fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="closeModal"></div>
+
+        <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
+            <h2 class="text-xl font-bold mb-4">Confirm Add to Calendar</h2>
+            <p class="mb-6">Do you want to add this project to the calendar?</p>
+
+            <div class="flex justify-end space-x-4">
+                <!-- Cancel button -->
+                <button @click="closeModal" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">
+                    Cancel
+                </button>
+
+                <!-- Confirm Add to Calendar button -->
+                <button @click="confirmAddToCalendar()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
                                 </div>
-                            </div>
-                            <!-- Edit Client Modal -->
-                            <div x-show="modalOpen" class="fixed inset-0 flex items-center justify-center z-50">
-                                <div class="fixed inset-0 bg-black opacity-50"></div>
-                                <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none" id="editClientModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
-                                    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
-                                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.away="modalOpen = false; unloadSelect2();">
-                                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                                    Edit Client
-                                                </h3>
-                                                <div class="mt-2">
-                                                    <select name="client_id" class="client-select hidden-select" style="width: 100%" onchange="updateClient({{ $project->id }}, this.value)">
-                                                        <option value="" disabled selected>Select a client</option>
-                                                        @foreach ($clients as $client)
-                                                            <option value="{{ $client->id }}">{{ $client->name }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Edit Invoice Modal -->
-                            <div x-show="invoiceModalOpen" class="fixed inset-0 flex items-center justify-center z-50">
-                                <div class="fixed inset-0 bg-black opacity-50"></div>
-                                <div class="fixed z-10 inset-0 overflow-y-auto pointer-events-none" id="editInvoiceModal" tabindex="-1" role="dialog" aria-labelledby="modal-title" aria-hidden="true">
-                                    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 pointer-events-auto">
-                                        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.away="invoiceModalOpen = false">
-                                            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                                    Edit Invoice Status
-                                                </h3>
-                                                <div class="mt-2">
-                                                    <div class="inline-block relative w-64">
-                                                        <select name="invoice_status" onchange="updateInvoiceStatus({{ $project->id }}, this.value)" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
-                                                            <option value="generated" {{ $project->invoice_status == 'generated' ? 'selected' : '' }}>Generated</option>
-                                                            <option value="sent" {{ $project->invoice_status == 'sent' ? 'selected' : '' }}>Sent</option>
-                                                            <option value="paid" {{ $project->invoice_status == 'paid' ? 'selected' : '' }}>Paid</option>
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
+
+                                {{-- Invoice implementation - not applicable until later and properly tested
+                                <button @click="invoiceModalOpen = true" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out w-full text-left">
+                                    Edit Invoice Status
+                                </button>
+                                @if($project->status == 'completed')
+                                    <a href="{{ route('projects.invoice', $project) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out">
+                                        View Invoice
+                                    </a>
+                                @endif --}}
+                                <form method="POST" action="{{ route('projects.toggleCompletion', $project) }}" class="block text-start">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out w-full text-left">
+                                        {{ $project->status == 'completed' ? 'Mark as ongoing' : 'Mark as completed' }}
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
             @endforeach
+        </div>
+
+        <!-- Pagination Links -->
+        <div class="mt-6">
+            {{ $projects->links() }}
         </div>
     </div>
 </x-app-layout>
+
 
 
 
@@ -370,4 +378,58 @@
         $('head').find('script[src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"]')
             .remove();
     }
+
+    function confirmDeletion() {
+        return confirm('Are you sure you want to delete this project? This action cannot be undone.');
+    }
+
+    function calendarComponent() {
+            return {
+                showAddToCalendarModal: false,
+                projectId: null,
+                title: '',
+                start: '',
+                end: '',
+                openModal(projectId, title, start, end) {
+                    this.projectId = projectId;
+                    this.title = title;
+                    this.start = start;
+                    this.end = end;
+                    this.showAddToCalendarModal = true;
+                },
+                closeModal() {
+                    this.showAddToCalendarModal = false;
+                },
+                confirmAddToCalendar() {
+                    fetch('/events', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            title: this.title,
+                            start: this.start,
+                            end: this.end,
+                            project_id: this.projectId
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error("Failed to add to calendar: " + data.error);
+                        } else {
+                            console.log("Project added to calendar successfully!");
+                        }
+                        // Close modal
+                        this.closeModal();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        // Close modal
+                        this.closeModal();
+                    });
+                }
+            }
+        }
 </script>
