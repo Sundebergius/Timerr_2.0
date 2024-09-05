@@ -114,7 +114,7 @@
 
             <div class="mt-6 flex space-x-3">
                 {{-- <a href="{{ route('projects.tasks.show', ['project' => $project, 'task' => $task]) }}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">View</a> --}}
-                <a href="{{ route('projects.tasks.edit', ['project' => $project, 'task' => $task]) }}" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">Edit</a>
+                <a href="{{ route('projects.tasks.edit', ['project' => $project, 'task' => $task]) }}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Edit</a>
                 <form action="{{ route('projects.tasks.destroy', ['project' => $project, 'task' => $task]) }}" method="POST" class="inline">
                     @csrf
                     @method('DELETE')
