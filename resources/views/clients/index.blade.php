@@ -184,8 +184,8 @@
                 <!-- Client cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach ($clients as $client)
-                        <div class="bg-white shadow-md rounded-lg overflow-hidden">
-                            <div class="px-6 py-4">
+                        <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
+                            <div class="px-6 py-4 flex-grow">
                                 <div class="mb-2">
                                     <h2 class="text-lg font-semibold text-gray-800">{{ $client->name }}</h2>
                                 </div>
@@ -205,14 +205,16 @@
                                 <!-- Client tags -->
                                 @if ($client->tags->isNotEmpty())
                                     <div class="tags-container mt-2">
-                                        <p class="text-lg mb-2">Tags: </p>
-                                        @foreach ($client->tags->take(5) as $tag)
-                                            <span
-                                                class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
-                                        @endforeach
+                                        <p class="text-lg mb-2">Tags:</p>
+                                        <div class="flex flex-wrap mb-2">
+                                            @foreach ($client->tags->take(5) as $tag)
+                                                <span
+                                                    class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
+                                            @endforeach
+                                        </div>
                                         @if ($client->tags->count() > 5)
                                             <button id="moreTagsButton-{{ $client->id }}"
-                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mb-2"
                                                 type="button" onclick="toggleTags({{ $client->id }}, event);">
                                                 +{{ $client->tags->count() - 5 }}
                                             </button>
@@ -229,52 +231,79 @@
                             </div>
 
                             <!-- Dropdown for changing status -->
-                            <div class="px-6 py-2 border-t border-gray-200 flex items-center justify-between">
+                            <div class="px-6 py-2 border-t border-gray-200 flex items-center bg-gray-100">
                                 <div class="status-dropdown flex-grow mr-4">
                                     <form method="POST" action="{{ route('clients.updateStatus', $client) }}">
                                         @csrf
                                         <select name="status"
                                             class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                                             data-client-id="{{ $client->id }}">
-                                            
                                             <option value="{{ Client::STATUS_LEAD }}"
                                                 {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>Lead
                                             </option>
                                             <option value="{{ Client::STATUS_CONTACTED }}"
-                                                {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>
-                                                Contacted</option>
+                                                {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>Contacted
+                                            </option>
                                             <option value="{{ Client::STATUS_INTERESTED }}"
-                                                {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>
-                                                Interested</option>
+                                                {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>Interested
+                                            </option>
                                             <option value="{{ Client::STATUS_NEGOTIATION }}"
-                                                {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>
-                                                Negotiation</option>
+                                                {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>Negotiation
+                                            </option>
                                             <option value="{{ Client::STATUS_DEAL_MADE }}"
-                                                {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>
-                                                Deal Made</option>
+                                                {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>Deal Made
+                                            </option>
                                         </select>
                                     </form>
                                 </div>
 
                                 <!-- Edit and Delete buttons -->
-                                <div class="flex items-center">
-                                    <a href="{{ route('clients.edit', $client) }}"
-                                        class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit</a>
-                                    <form method="POST" action="{{ route('clients.destroy', $client) }}"
-                                        onsubmit="return confirm('Are you sure you want to delete this item?');"
-                                        class="ml-2">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit"
-                                            class="inline-block bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
-                                    </form>
+                                <!-- Wrapper for Alpine.js state -->
+                                <div x-data="{ showDeleteModal: false }">
+                                    <!-- Edit and Delete buttons -->
+                                    <div class="flex items-center space-x-2">
+                                        <a href="{{ route('clients.edit', $client) }}"
+                                        class="inline-flex items-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                        Edit
+                                        </a>
+
+                                        <!-- Trigger for the delete confirmation modal -->
+                                        <button @click="showDeleteModal = true"
+                                                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                            Delete
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete confirmation modal -->
+                                    <div x-show="showDeleteModal" class="fixed inset-0 flex items-center justify-center z-50">
+                                        <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="showDeleteModal = false"></div>
+
+                                        <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
+                                            <h2 class="text-xl font-bold mb-4">Confirm Deletion</h2>
+                                            <p class="mb-6">Are you sure you want to delete this client? This action cannot be undone.</p>
+
+                                            <div class="flex justify-end space-x-4">
+                                                <!-- Cancel button -->
+                                                <button @click="showDeleteModal = false" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">
+                                                    Cancel
+                                                </button>
+
+                                                <!-- Confirm Delete button -->
+                                                <form method="POST" action="{{ route('clients.destroy', $client) }}">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                                        Confirm
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     @endforeach
                 </div>
-
-
 
                 <!-- Pagination links -->
                 <div class="mt-6 flex items-center justify-between">
@@ -287,13 +316,11 @@
                                 <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
                                 <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
-                                <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All
-                                </option>
+                                <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option>
                             </select>
                         </div>
                     </form>
                 </div>
-
             </div>
         </div>
     </div>
@@ -367,6 +394,8 @@
         gap: 10px;
     }
 </style>
+
+{{-- <script src="//unpkg.com/alpinejs" defer></script> --}}
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
