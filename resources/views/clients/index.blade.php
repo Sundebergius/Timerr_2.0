@@ -63,31 +63,44 @@
                         </div>
 
                         <!-- Radio buttons for status -->
-                        <div class="radio-group flex items-center mb-3">
+                        <div class="radio-group flex flex-col sm:flex-row sm:items-center mb-3">
                             <span class="mr-3 font-semibold">Status:</span>
-                            <input type="radio" id="status_all" name="status" value=""
-                                {{ empty(request('status')) ? 'checked' : '' }}>
-                            <label for="status_all" class="mr-3">All</label>
 
-                            <input type="radio" id="status_lead" name="status" value="lead"
-                                {{ request('status') === 'lead' ? 'checked' : '' }}>
-                            <label for="status_lead" class="mr-3">Lead</label>
+                            <div class="flex items-center mb-2 sm:mb-0 sm:mr-3">
+                                <input type="radio" id="status_all" name="status" value=""
+                                    {{ empty(request('status')) ? 'checked' : '' }}>
+                                <label for="status_all" class="ml-1">All</label>
+                            </div>
 
-                            <input type="radio" id="status_contacted" name="status" value="contacted"
-                                {{ request('status') === 'contacted' ? 'checked' : '' }}>
-                            <label for="status_contacted" class="mr-3">Contacted</label>
+                            <div class="flex items-center mb-2 sm:mb-0 sm:mr-3">
+                                <input type="radio" id="status_lead" name="status" value="lead"
+                                    {{ request('status') === 'lead' ? 'checked' : '' }}>
+                                <label for="status_lead" class="ml-1">Lead</label>
+                            </div>
 
-                            <input type="radio" id="status_interested" name="status" value="interested"
-                                {{ request('status') === 'interested' ? 'checked' : '' }}>
-                            <label for="status_interested" class="mr-3">Interested</label>
+                            <div class="flex items-center mb-2 sm:mb-0 sm:mr-3">
+                                <input type="radio" id="status_contacted" name="status" value="contacted"
+                                    {{ request('status') === 'contacted' ? 'checked' : '' }}>
+                                <label for="status_contacted" class="ml-1">Contacted</label>
+                            </div>
 
-                            <input type="radio" id="status_negotiation" name="status" value="negotiation"
-                                {{ request('status') === 'negotiation' ? 'checked' : '' }}>
-                            <label for="status_negotiation" class="mr-3">Negotiation</label>
+                            <div class="flex items-center mb-2 sm:mb-0 sm:mr-3">
+                                <input type="radio" id="status_interested" name="status" value="interested"
+                                    {{ request('status') === 'interested' ? 'checked' : '' }}>
+                                <label for="status_interested" class="ml-1">Interested</label>
+                            </div>
 
-                            <input type="radio" id="status_deal_made" name="status" value="deal_made"
-                                {{ request('status') === 'deal_made' ? 'checked' : '' }}>
-                            <label for="status_deal_made" class="mr-3">Deal Made</label>
+                            <div class="flex items-center mb-2 sm:mb-0 sm:mr-3">
+                                <input type="radio" id="status_negotiation" name="status" value="negotiation"
+                                    {{ request('status') === 'negotiation' ? 'checked' : '' }}>
+                                <label for="status_negotiation" class="ml-1">Negotiation</label>
+                            </div>
+
+                            <div class="flex items-center mb-2 sm:mb-0 sm:mr-3">
+                                <input type="radio" id="status_deal_made" name="status" value="deal_made"
+                                    {{ request('status') === 'deal_made' ? 'checked' : '' }}>
+                                <label for="status_deal_made" class="ml-1">Deal Made</label>
+                            </div>
                         </div>
                     </form>
 
