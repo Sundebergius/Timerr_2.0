@@ -349,6 +349,20 @@ class ProjectController extends Controller
         return redirect()->route('projects.index', $project);
     }
 
+    public function destroy(Project $project)
+    {
+        //delete related data
+        $project->tasks()->delete();
+        $project->notes()->delete();
+        $project->contracts()->delete();
+        $project->invoices()->delete();
+
+        //delete project
+        $project->delete();
+
+        return redirect()->route('projects.index');
+    }
+
     public function fetchProjects()
     {
         $projects = Project::where('user_id', auth()->id())->get(); // Adjust based on your logic

@@ -8,12 +8,28 @@
     <title>FullCalendar Example</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        #calendar {
-            max-width: 100%;
-            margin: 0 auto;
-            height: 100vh;
+    #calendar {
+        max-width: 100%;
+        margin: 0 auto;
+        height: 100vh;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 0 10px;
         }
-    </style>
+
+        .btn-group {
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .btn-group .btn {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+    }
+</style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
