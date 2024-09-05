@@ -165,7 +165,8 @@
                             <button type="submit" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
                         </form>
 
-                        @if($project->status == 'completed')
+                        {{-- Test area for sending webhook  --}}
+                        {{-- @if($project->status == 'completed')
                             <!-- Webhook button -->
                             <form method="POST" action="{{ route('projects.sendWebhook', $project) }}" class="inline">
                                 @csrf
@@ -174,7 +175,7 @@
                                     Send to Webhook
                                 </button>
                             </form>
-                        @endif
+                        @endif --}}
 
                         <div class="relative inline-flex" x-data="{ open: false, modalOpen: false, invoiceModalOpen: false }" @click.away="open = false">
                             <button @click="open = !open" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
