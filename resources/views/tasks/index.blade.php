@@ -14,6 +14,19 @@
                 <p class="text-gray-700"><strong>Total Price:</strong> {{ $task->taskable->price }}</p>
                 <p class="text-gray-700"><strong>Date:</strong> {{ date('d-m-Y', strtotime($task->taskable->start_date)) }}</p>
                 <p class="text-gray-700"><strong>Location:</strong> {{ $task->taskable->project_location }}</p>
+                
+                <!-- Add to Calendar Button -->
+                {{-- Add to Calendar Button --}}
+                {{-- <button onclick="addToCalendar(
+                    {{ $task->id }},
+                    '{{ $task->title }}',
+                    '{{ $task->taskable->start_date ? $task->taskable->start_date->format('Y-m-d\TH:i') : 'N/A' }}',
+                    '{{ $task->taskable->end_date ? $task->taskable->end_date->format('Y-m-d\TH:i') : 'N/A' }}'
+                )"
+                class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out mt-2">
+                    Add to Calendar
+                </button> --}}
+                
                 @elseif($task->task_type == 'hourly')
                 @php
                     $totalMinutes = $task->taskable->registrationHourly->sum('minutes_worked');
@@ -137,3 +150,10 @@
         }
     </style>
 </div>
+
+<script>
+    function addToCalendar(taskId, title, startDate, endDate) {
+        // Implement the function to add the task to the calendar
+        alert(`Add task ${title} to calendar from ${startDate} to ${endDate}`);
+    }
+</script>
