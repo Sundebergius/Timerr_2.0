@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class TaskProject extends Model
 {
@@ -20,6 +21,12 @@ class TaskProject extends Model
         'currency',
         'project_location',
     ];
+
+    // Specify the attributes that should be cast to Carbon instances
+    // protected $dates = [
+    //     'start_date',
+    //     'end_date',
+    //];
 
     public function task()
     {
