@@ -34,7 +34,7 @@ class NoteController extends Controller
         $note = new Note;
         $note->title = $request->title;
         $note->content = $request->content;
-        $note->user_id = auth()->id();
+        // $note->user_id = auth()->id();
         $project->notes()->save($note);
 
         return redirect()->route('projects.notes.show', [$project, $note]);
