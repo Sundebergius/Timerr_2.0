@@ -88,6 +88,39 @@
                                             class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
                                     </div>
                                 </div>
+
+                                <!-- Address -->
+                                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                    <label for="address" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                                        Address
+                                    </label>
+                                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                                        <input type="text" id="address" name="address" value="{{ $client->address }}"
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
+                                    </div>
+                                </div>
+
+                                <!-- City -->
+                                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                    <label for="city" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                                        City
+                                    </label>
+                                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                                        <input type="text" id="city" name="city" value="{{ $client->city }}"
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
+                                    </div>
+                                </div>
+
+                                <!-- Zip Code -->
+                                <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">
+                                    <label for="zip_code" class="block text-sm font-medium text-gray-700 sm:mt-px sm:pt-2">
+                                        Zip Code
+                                    </label>
+                                    <div class="mt-1 sm:mt-0 sm:col-span-2">
+                                        <input type="text" id="zip_code" name="zip_code" value="{{ $client->zip_code }}"
+                                            class="max-w-lg block w-full shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:max-w-xs lg:max-w-lg xl:max-w-xl border-gray-300 rounded-md">
+                                    </div>
+                                </div>
     
                                 <!-- Tags - currently innactive  -->
                                 {{-- <div class="sm:grid sm:grid-cols-3 sm:gap-4 sm:items-start sm:border-t sm:border-gray-200 sm:pt-5">

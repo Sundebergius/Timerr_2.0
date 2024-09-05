@@ -158,6 +158,9 @@ class ClientController extends Controller
             'status' => 'required',
             'phone' => 'nullable',
             'email' => 'nullable|email',
+            'address' => 'nullable',
+            'city' => 'nullable',
+            'zip_code' => 'nullable',
             'categories' => 'nullable',
             'notes' => 'nullable',
         ]);
