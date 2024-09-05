@@ -55,7 +55,7 @@ class NoteController extends Controller
      */
     public function edit(Project $project, Note $note)
     {
-        return view('projects.notes.edit', ['note' => $note]);
+        return view('projects.notes.edit', compact('project', 'note'));
     }
 
     /**
@@ -63,10 +63,22 @@ class NoteController extends Controller
      */
     public function update(Request $request, Project $project, Note $note)
     {
-        $note->content = $request->content;
+        // Validate the incoming request data
+        $validatedData = $request->validate([
+            'title' => 'required|string|max:255',  // Validate title field
+            'content' => 'required|string',        // Validate content field
+        ]);
+
+        /// Explicitly set the fields
+        $note->title = $validatedData['title'];
+        $note->content = $validatedData['content'];
+
+        // Save the changes
         $note->save();
 
-        return redirect()->route('projects.notes.show', [$project, $note]);
+        // Redirect to the show page after updating the note
+        return redirect()->route('projects.notes.show', [$project, $note])
+            ->with('success', 'Note updated successfully!');
     }
 
     /**
@@ -76,6 +88,6 @@ class NoteController extends Controller
     {
         $note->delete();
 
-        return redirect()->route('projects.notes.index', $project);
+        return redirect()->route('projects.show', $project);
     }
 }
