@@ -8,6 +8,7 @@ use App\Models\Client;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Invoice;
+use App\Models\Event;
 use Illuminate\Support\Facades\Http;
 use App\Models\TaskProduct;
 use App\Models\Webhook;
@@ -33,7 +34,6 @@ class ProjectController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        // If a client ID was provided, associate the project with the client
         if ($request->has('client_id')) {
             $client = Client::find($request->client_id);
             $project->client()->associate($client);
@@ -41,11 +41,33 @@ class ProjectController extends Controller
 
         $project->save();
 
-        // Trigger webhook after project creation if any active webhook exists
         $this->triggerProjectCreatedWebhook($project);
 
         return redirect()->route('projects.show', $project);
     }
+
+    // protected function createEvent($project)
+    // {    
+    //     $start = $project->start_date->format('Y-m-d\TH:i');
+    //     $end = $project->end_date->format('Y-m-d\TH:i');
+    
+    //     try {
+    //         $response = Http::withHeaders([
+    //             'X-CSRF-TOKEN' => csrf_token(),
+    //         ])->post('https://your-calendar-api-endpoint', $payload);
+                
+    //         if ($response->failed()) {
+    //             \Log::error('HTTP request failed', [
+    //                 'status' => $response->status(),
+    //                 'body' => $response->body(),
+    //             ]);
+    //         } else {
+    //             \Log::info('Event created successfully', ['response' => $response->json()]);
+    //         }
+    //     } catch (\Exception $e) {
+    //         \Log::error('Exception during event creation', ['message' => $e->getMessage()]);
+    //     }
+    // }
 
     protected function triggerProjectCreatedWebhook(Project $project)
     {
