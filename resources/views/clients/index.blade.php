@@ -121,12 +121,12 @@
 
 
                     {{-- Test delete 2 tags  --}}
-                    @if (request('status'))
+                    {{-- @if (request('status'))
                         <span class="tag bg-gray-400 text-white px-2 py-1 m-1 rounded">
                             Status: {{ ucfirst(request('status')) }}
                             <a href="{{ url('clients') }}" class="ml-1 text-white">x</a>
                         </span>
-                    @endif
+                    @endif --}}
                 </div>
 
 
