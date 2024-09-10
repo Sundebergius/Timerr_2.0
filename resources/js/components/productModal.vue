@@ -11,6 +11,7 @@
         <div class="mb-4">
           <label for="type" class="block text-gray-700 text-sm font-bold mb-2">Type:</label>
           <select id="type" v-model="type" @change="handleTypeChange" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <option disabled value="">Select Type</option>
             <option value="product">Product</option>
             <option value="service">Service</option>
           </select>
@@ -18,9 +19,15 @@
 
         <!-- Conditional Fields for Services -->
         <div v-if="type === 'service'">
+          <!-- Optional Price Field for Services -->
+          <div class="mb-4">
+            <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price (Optional):</label>
+            <input type="number" id="price" v-model="price" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          </div>
+          
           <div class="mb-4">
             <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., sizes):</label>
-            <div v-for="(attribute, index) in attributes" :key="index" class="mb-2">
+            <div v-for="(attribute, index) in attributes" :key="index" class="mb-2 flex items-center">
               <input type="text" v-model="attribute.key" placeholder="Attribute Name" class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
               <input type="text" v-model="attribute.value" placeholder="Attribute Value" class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
               <button type="button" @click="removeAttribute(index)" class="text-red-500">Remove</button>
@@ -29,24 +36,28 @@
           </div>
         </div>
 
-        <!-- Common Fields -->
-        <div v-if="type === 'product'" class="mb-4">
-          <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price:</label>
-          <input type="number" id="price" v-model="price" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-        </div>
+        <!-- Common Fields for Products -->
+        <div v-if="type === 'product'">
+          <!-- Optional Price Field for Products -->
+          <div class="mb-4">
+            <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price (Optional):</label>
+            <input type="number" id="price" v-model="price" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          </div>
 
-        <div class="mb-4">
-          <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-          <input type="number" id="quantity" v-model="quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-        </div>
+          <!-- Quantity Field for Products -->
+          <div v-if="type === 'product'" class="mb-4">
+            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity (Optional):</label>
+            <input type="number" id="quantity" v-model="quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          </div>
 
-        <!-- Parent Product Dropdown -->
-        <div class="mb-4">
-          <label for="parent_id" class="block text-gray-700 text-sm font-bold mb-2">Parent Product (Optional):</label>
-          <select id="parent_id" v-model="parent_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            <option value="">None</option>
-            <option v-for="product in products" :key="product.id" :value="product.id">{{ product.title }}</option>
-          </select>
+          <!-- Parent Product Dropdown -->
+          <div class="mb-4">
+            <label for="parent_id" class="block text-gray-700 text-sm font-bold mb-2">Parent Product (Optional):</label>
+            <select id="parent_id" v-model="parent_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+              <option value="">None</option>
+              <option v-for="product in products" :key="product.id" :value="product.id">{{ product.title }}</option>
+            </select>
+          </div>
         </div>
 
         <!-- Submit Button -->
@@ -61,6 +72,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';
@@ -126,16 +138,18 @@ export default {
     createProduct() {
       const productData = {
         title: this.title,
-        category: this.category,
+        // category: this.category,
         description: this.description,
-        price: this.price,
-        quantity_in_stock: this.quantity,
+        price: this.price || 0, // Default to 0 if price is not provided
+        quantity_in_stock: this.quantity || 0, // Default to 0 if no quantity is provided
         user_id: this.userId,
         image: null,
         active: true,
-        parent_id: this.parent_id,
+        parent_id: this.parent_id || null, // Ensure parent_id is null if not selected
         attributes: this.attributes.reduce((acc, attribute) => {
-          acc[attribute.key] = attribute.value;
+          if (attribute.key && attribute.value) {
+            acc[attribute.key] = attribute.value;
+          }
           return acc;
         }, {})
       };
