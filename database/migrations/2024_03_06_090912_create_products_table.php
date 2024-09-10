@@ -16,17 +16,16 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('parent_id')->nullable()->constrained('products')->onDelete('set null');
             $table->string('title');
+            $table->enum('type', ['product', 'service'])->default('product'); // Added type field
             $table->string('category')->nullable();
             $table->string('description')->nullable();
             $table->string('image')->nullable();
-            $table->decimal('price', 8, 2);
+            $table->decimal('price', 8, 2)->nullable(); // Price can be null for services
             $table->integer('quantity_in_stock')->default(0);
             $table->integer('quantity_sold')->default(0);
             $table->boolean('active')->default(true);
-            $table->json('attributes')->nullable();
+            $table->json('attributes')->nullable(); // Stores attributes for services
             $table->timestamps();
-
-            // $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');        
         });
     }
 

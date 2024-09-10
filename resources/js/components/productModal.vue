@@ -1,91 +1,63 @@
 <template>
-  <div class="fixed z-10 inset-0 overflow-y-auto flex items-center justify-center"
-    style="background-color: rgba(0,0,0,0.5);" aria-labelledby="modal-title" role="dialog" aria-modal="true"
-    @click.self="closeModal">
+  <div class="fixed z-10 inset-0 overflow-y-auto flex items-center justify-center" style="background-color: rgba(0,0,0,0.5);" aria-labelledby="modal-title" role="dialog" aria-modal="true" @click.self="closeModal">
     <div class="bg-white rounded-lg w-96 p-6 m-4">
-      <!-- ...modal content... -->
-
-
-
       <form @submit.prevent="createProduct">
         <div class="mb-4">
           <label for="title" class="block text-gray-700 text-sm font-bold mb-2">Title:</label>
-          <input type="text" id="title" v-model="title" required
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <input type="text" id="title" v-model="title" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
 
+        <!-- Type Selection -->
         <div class="mb-4">
-          <label for="category" class="block text-gray-700 text-sm font-bold mb-2">Category:</label>
-          <input type="text" id="category" v-model="category"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <label for="type" class="block text-gray-700 text-sm font-bold mb-2">Type:</label>
+          <select id="type" v-model="type" @change="handleTypeChange" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <option value="product">Product</option>
+            <option value="service">Service</option>
+          </select>
         </div>
 
-        <div class="mb-4">
-          <label for="description" class="block text-gray-700 text-sm font-bold mb-2">Description:</label>
-          <textarea id="description" v-model="description"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+        <!-- Conditional Fields for Services -->
+        <div v-if="type === 'service'">
+          <div class="mb-4">
+            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., sizes):</label>
+            <div v-for="(attribute, index) in attributes" :key="index" class="mb-2">
+              <input type="text" v-model="attribute.key" placeholder="Attribute Name" class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
+              <input type="text" v-model="attribute.value" placeholder="Attribute Value" class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
+              <button type="button" @click="removeAttribute(index)" class="text-red-500">Remove</button>
+            </div>
+            <button type="button" @click="addAttribute" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline">Add Attribute</button>
+          </div>
         </div>
 
-        <div class="mb-4">
+        <!-- Common Fields -->
+        <div v-if="type === 'product'" class="mb-4">
           <label for="price" class="block text-gray-700 text-sm font-bold mb-2">Price:</label>
-          <input type="number" id="price" v-model="price"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <input type="number" id="price" v-model="price" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
 
         <div class="mb-4">
           <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-          <input type="number" id="quantity" v-model="quantity"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <input type="number" id="quantity" v-model="quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
         </div>
-
-        <!-- Image should be stored in cloud storage like AWS S3, Google Cloud Storage, or Firebase Storage. -->
-
-        <!-- <div class="mb-4">
-            <label for="image" class="block text-gray-700 text-sm font-bold mb-2">Image:</label>
-            <input type="file" id="image" v-model="image" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-        </div> -->
 
         <!-- Parent Product Dropdown -->
         <div class="mb-4">
           <label for="parent_id" class="block text-gray-700 text-sm font-bold mb-2">Parent Product (Optional):</label>
-          <select id="parent_id" v-model="parent_id"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <select id="parent_id" v-model="parent_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             <option value="">None</option>
             <option v-for="product in products" :key="product.id" :value="product.id">{{ product.title }}</option>
           </select>
         </div>
 
-        <!-- Dynamic Attributes Section -->
-        <div class="mb-4">
-          <label class="block text-gray-700 text-sm font-bold mb-2">Attributes:</label>
-          <div v-for="(attribute, index) in attributes" :key="index" class="mb-2">
-            <input type="text" v-model="attribute.key" placeholder="Attribute Name"
-              class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
-            <input type="text" v-model="attribute.value" placeholder="Attribute Value"
-              class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
-            <button type="button" @click="removeAttribute(index)" class="text-red-500">Remove</button>
-          </div>
-          <button type="button" @click="addAttribute"
-            class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline">
-            Add Attribute
-          </button>
-        </div>
-
-        <!-- ...other form fields... -->
-
         <!-- Submit Button -->
         <div class="flex justify-center">
-          <button type="submit"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-            Create Product
-          </button>
+          <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Create Product</button>
         </div>
 
         <!-- Success and Error Messages -->
         <div v-if="successMessage" class="alert alert-success mt-4">{{ successMessage }}</div>
         <div v-if="errorMessage" class="alert alert-danger mt-4">{{ errorMessage }}</div>
       </form>
-
     </div>
   </div>
 </template>
@@ -101,13 +73,18 @@ export default {
     userId: {
       type: Number,
       required: true
-    }
+    },
+    // type: {
+    //   type: String,
+    //   default: ''
+    // }
   },
   data() {
     return {
       showModal: false,
       title: '',
-      category: '',
+      category: '', // Ensure this is a valid option if it's being used in a dropdown
+      type:'',
       description: '',
       price: '',
       quantity: '',
@@ -117,15 +94,13 @@ export default {
       errorMessage: '',
       products: [],
       localProject: this.project ? JSON.parse(this.project) : {},
-      // ...other data properties...
+      // Initialize any other necessary data properties here
     };
   },
   created() {
-    // console.log('userId:', this.userId);
-    // console.log('projectId:', this.projectId);
+    // Fetch products when the component is created
     this.fetchProducts();
   },
-
   methods: {
     closeModal() {
       this.$emit('close');
@@ -134,7 +109,6 @@ export default {
       this.products.push(newProduct);
     },
     fetchProducts() {
-      // Fetch existing products to populate the parent product dropdown
       axios.get(`/api/products/${this.userId}`)
         .then(response => {
           this.products = response.data.products;
@@ -150,65 +124,64 @@ export default {
       this.attributes.splice(index, 1);
     },
     createProduct() {
-  const productData = {
-    title: this.title,
-    category: this.category,
-    description: this.description,
-    price: this.price,
-    quantity_in_stock: this.quantity,
-    user_id: this.userId,
-    image: null,
-    active: true,
-    parent_id: this.parent_id,
-    attributes: this.attributes.reduce((acc, attribute) => {
-      acc[attribute.key] = attribute.value;
-      return acc;
-    }, {})
-  };
+      const productData = {
+        title: this.title,
+        category: this.category,
+        description: this.description,
+        price: this.price,
+        quantity_in_stock: this.quantity,
+        user_id: this.userId,
+        image: null,
+        active: true,
+        parent_id: this.parent_id,
+        attributes: this.attributes.reduce((acc, attribute) => {
+          acc[attribute.key] = attribute.value;
+          return acc;
+        }, {})
+      };
 
-  console.log('Product data being sent:', productData);
+      console.log('Product data being sent:', productData);
 
-  axios.post('/api/products', productData)
-    .then(response => {
-      console.log('Full server response:', response);
-      console.log('Server response data:', response.data);
+      axios.post('/api/products', productData)
+        .then(response => {
+          console.log('Full server response:', response);
+          console.log('Server response data:', response.data);
 
-      if (response.data && response.data.product) {
-        this.addProduct(response.data.product);
-        this.$emit('product-created', response.data.product);
-        this.resetForm();
-        this.successMessage = 'Product created successfully!';
-        this.errorMessage = '';  // Clear any previous error messages
-      } else {
-        console.error('Product not defined in server response');
-        this.errorMessage = 'An error occurred while creating the product.';
-      }
-    })
-    .catch(error => {
-  console.error('Error caught in catch block:', error);
+          if (response.data && response.data.product) {
+            this.addProduct(response.data.product);
+            this.$emit('product-created', response.data.product);
+            this.resetForm();
+            this.successMessage = 'Product created successfully!';
+            this.errorMessage = '';  // Clear any previous error messages
+          } else {
+            console.error('Product not defined in server response');
+            this.errorMessage = 'An error occurred while creating the product.';
+          }
+        })
+        .catch(error => {
+          console.error('Error caught in catch block:', error);
 
-  if (error.response) {
-    if (error.response.status === 422) {
-      // Validation errors
-      console.log('Validation errors:', error.response.data);
-      this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
-    } else {
-      this.errorMessage = 'Error: ' + error.response.status + ' - ' + error.response.data;
-    }
-  } else if (error.request) {
-    // No response received
-    console.error('No response received:', error.request);
-    this.errorMessage = 'No response received from server.';
-  } else {
-    // Request setup error
-    console.error('Error setting up request:', error.message);
-    this.errorMessage = 'An error occurred: ' + error.message;
-  }
+          if (error.response) {
+            if (error.response.status === 422) {
+              // Validation errors
+              console.log('Validation errors:', error.response.data);
+              this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
+            } else {
+              this.errorMessage = 'Error: ' + error.response.status + ' - ' + error.response.data;
+            }
+          } else if (error.request) {
+            // No response received
+            console.error('No response received:', error.request);
+            this.errorMessage = 'No response received from server.';
+          } else {
+            // Request setup error
+            console.error('Error setting up request:', error.message);
+            this.errorMessage = 'An error occurred: ' + error.message;
+          }
 
-  this.successMessage = '';  // Clear any previous success messages
-});
-},
-
+          this.successMessage = '';  // Clear any previous success messages
+        });
+    },
     resetForm() {
       // Reset the form after successful creation
       this.title = '';
@@ -221,4 +194,5 @@ export default {
     }
   },
 };
+
 </script>
