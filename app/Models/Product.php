@@ -20,11 +20,13 @@ class Product extends Model
         'quantity_sold',
         'active',
         'parent_id',
+        'type',
         'attributes'
     ];
 
     protected $casts = [
         'attributes' => 'array', // To handle JSON attributes as an array
+        'type' => 'string', // Cast type to string
     ];
 
     public function user()

@@ -26,7 +26,7 @@
           </div>
           
           <div class="mb-4">
-            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., size - 13x18):</label>
+            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., print size - price):</label>
             <div v-for="(attribute, index) in attributes" :key="index" class="mb-2 flex items-center">
               <input type="text" v-model="attribute.key" placeholder="Attribute Name" class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
               <input type="text" v-model="attribute.value" placeholder="Attribute Value" class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
@@ -58,13 +58,13 @@
           </div>
 
           <!-- Parent Product Dropdown -->
-          <div class="mb-4">
+          <!-- <div class="mb-4">
             <label for="parent_id" class="block text-gray-700 text-sm font-bold mb-2">Parent Product (Optional):</label>
             <select id="parent_id" v-model="parent_id" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
               <option value="">None</option>
               <option v-for="product in products" :key="product.id" :value="product.id">{{ product.title }}</option>
             </select>
-          </div>
+          </div> -->
         </div>
 
         <!-- Submit Button -->
@@ -153,6 +153,7 @@ export default {
         image: null,
         active: true,
         parent_id: this.parent_id || null, // Ensure parent_id is null if not selected
+        type: this.type,
         attributes: this.attributes.reduce((acc, attribute) => {
           if (attribute.key && attribute.value) {
             acc[attribute.key] = attribute.value;

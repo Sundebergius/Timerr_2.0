@@ -22,6 +22,7 @@ class ProductController extends Controller
             'quantity_in_stock' => 'nullable|integer|min:0',
             'active' => 'required|boolean',
             'parent_id' => 'nullable|exists:products,id',
+            'type' => 'required|in:product,service', // Validate type field
             'attributes' => 'nullable|array',
         ]);
 
@@ -44,6 +45,7 @@ class ProductController extends Controller
                 'quantity_in_stock' => $request->quantity_in_stock,
                 'active' => $request->active,
                 'parent_id' => $request->parent_id,
+                'type' => $request->type, // Save the type field (product or service)
                 'attributes' => $request->input('attributes') ?: null, // Correctly handle attributes
             ];
 
@@ -111,6 +113,8 @@ class ProductController extends Controller
             'active' => 'nullable|boolean', // Changed to nullable
             'parent_id' => 'nullable|exists:products,id',
             'attributes' => 'nullable|array',
+            'attributes.*.key' => 'nullable|string|max:255',
+            'attributes.*.value' => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -129,7 +133,7 @@ class ProductController extends Controller
                 'quantity_sold' => $request->quantity_sold,
                 'active' => $request->has('active') ? 1 : 0,
                 'parent_id' => $request->parent_id,
-                'attributes' => $request->input('attributes') ?: null,
+                'attributes' => $this->filterAttributes($request->input('attributes', [])), // Cleaned attributes array
             ];
 
             \Log::info('Product data to be updated:', $productData); // Log data before updating
@@ -144,6 +148,13 @@ class ProductController extends Controller
             \Log::error('Error updating product:', ['exception' => $e->getMessage()]); // Log general errors
             return redirect()->back()->with('error', 'Unable to update product');
         }
+    }
+
+    private function filterAttributes(array $attributes): array
+    {
+        return array_filter($attributes, function ($attribute) {
+            return !empty($attribute['key']) || !empty($attribute['value']);
+        });
     }
 
 }
