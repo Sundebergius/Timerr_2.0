@@ -30,6 +30,8 @@ class ProductController extends Controller
             return response()->json($validator->errors(), 422);
         }
 
+        //\Log::info('Attributes in request:', $request->attributes);
+
         try {
             \Log::info('Validation passed'); // Log validation success
 
@@ -42,12 +44,15 @@ class ProductController extends Controller
                 'quantity_in_stock' => $request->quantity_in_stock,
                 'active' => $request->active,
                 'parent_id' => $request->parent_id,
-                'attributes' => $request->attributes ? json_encode($request->attributes) : null, // Ensure proper JSON encoding
+                'attributes' => $request->input('attributes') ?: null, // Correctly handle attributes
             ];
 
             \Log::info('Product data to be saved:', $productData); // Log data before saving
 
             $product = Product::create($productData);
+
+            // Fetch the product again to apply the cast to 'attributes'
+            $product = Product::find($product->id);
 
             \Log::info('Product created successfully:', $product->toArray()); // Log success
 
@@ -96,23 +101,49 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        $request->validate([
-            'title' => 'required',
-            'description' => 'required',
-            'price' => 'required',
-            'quantityInStock' => 'required',
-            'quantitySold' => 'required',
+        // Validate request data
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'price' => 'nullable|numeric|min:0',
+            'quantity_in_stock' => 'nullable|integer|min:0',
+            'active' => 'nullable|boolean', // Changed to nullable
+            'parent_id' => 'nullable|exists:products,id',
+            'attributes' => 'nullable|array',
         ]);
-    
-        $product->title = $request->title;
-        $product->description = $request->description;
-        $product->price = $request->price;
-        $product->quantityInStock = $request->quantityInStock;
-        $product->quantitySold = $request->quantitySold;
-        $product->active = $request->has('active') ? 1 : 0;
-    
-        $product->save();
-    
-        return redirect()->route('products.index')->with('success', 'Product updated successfully');
+
+        if ($validator->fails()) {
+            \Log::error('Validation failed:', $validator->errors()->toArray()); // Log validation errors
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        try {
+            // Prepare product data
+            $productData = [
+                'title' => $request->title,
+                'category' => $request->category,
+                'description' => $request->description,
+                'price' => $request->price,
+                'quantity_in_stock' => $request->quantity_in_stock,
+                'quantity_sold' => $request->quantity_sold,
+                'active' => $request->has('active') ? 1 : 0,
+                'parent_id' => $request->parent_id,
+                'attributes' => $request->input('attributes') ?: null,
+            ];
+
+            \Log::info('Product data to be updated:', $productData); // Log data before updating
+
+            // Update the product
+            $product->update($productData);
+
+            \Log::info('Product updated successfully:', $product->toArray()); // Log success
+
+            return redirect()->route('products.index')->with('success', 'Product updated successfully');
+        } catch (\Exception $e) {
+            \Log::error('Error updating product:', ['exception' => $e->getMessage()]); // Log general errors
+            return redirect()->back()->with('error', 'Unable to update product');
+        }
     }
+
 }

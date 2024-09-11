@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
             $table->foreignId('client_id')->constrained()->onDelete('cascade');
-            $table->string('title')->default('Untitled')->after('id');
+            $table->string('title')->default('Untitled');
             $table->text('service_description')->nullable();
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();  // Nullable in case there is no defined end date

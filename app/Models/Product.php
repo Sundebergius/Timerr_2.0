@@ -16,8 +16,8 @@ class Product extends Model
         'description',
         'image',
         'price',
-        'quantityInStock',
-        'quantitySold',
+        'quantity_in_stock',
+        'quantity_sold',
         'active',
         'parent_id',
         'attributes'

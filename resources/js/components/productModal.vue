@@ -26,15 +26,22 @@
           </div>
           
           <div class="mb-4">
-            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., sizes):</label>
+            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., size - 13x18):</label>
             <div v-for="(attribute, index) in attributes" :key="index" class="mb-2 flex items-center">
               <input type="text" v-model="attribute.key" placeholder="Attribute Name" class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
               <input type="text" v-model="attribute.value" placeholder="Attribute Value" class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
-              <button type="button" @click="removeAttribute(index)" class="text-red-500">Remove</button>
+              <button type="button" @click="removeAttribute(index)" class="inline-flex items-center px-4 py-2 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:shadow-outline-gray transition ease-in-out duration-150">
+                  <i class="fas fa-trash"></i>
+              </button>            
             </div>
-            <button type="button" @click="addAttribute" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline">Add Attribute</button>
+
+            <!-- Centered Add Attribute Button -->
+            <div class="flex justify-center">
+              <button type="button" @click="addAttribute" class="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-3 rounded focus:outline-none focus:shadow-outline">Add Attribute</button>
+            </div>
           </div>
         </div>
+
 
         <!-- Common Fields for Products -->
         <div v-if="type === 'product'">

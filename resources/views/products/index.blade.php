@@ -10,7 +10,9 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 bg-white border-b border-gray-200">
                     <button type="button" @click="showModal = true"
-                        class="inline-flex items-center px-4 py-2 bg-green-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-900 focus:outline-none focus:border-green-900 focus:shadow-outline-gray disabled:opacity-25 transition ease-in-out duration-150">
+                        class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:shadow-outline-gray disabled:opacity-25 transition ease-in-out duration-150">
+                        {{-- class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out"> --}}
+
                         <i class="fas fa-plus mr-2"></i> Create New Product
                     </button>
 
@@ -38,10 +40,10 @@
                                                     Price: {{ $product->price }}
                                                 </dd>
                                                 <dd class="mt-2 text-sm text-gray-500">
-                                                    Quantity in Stock: {{ $product->quantityInStock }}
+                                                    Quantity in Stock: {{ $product->quantity_in_stock }}
                                                 </dd>
                                                 <dd class="mt-2 text-sm text-gray-500">
-                                                    Quantity Sold: {{ $product->quantitySold }}
+                                                    Quantity Sold: {{ $product->quantity_sold }}
                                                 </dd>
                                                 <dd class="mt-2 text-sm">
                                                     Status: 
