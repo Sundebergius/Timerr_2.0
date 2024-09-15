@@ -29,7 +29,7 @@
             <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Attributes (e.g., print size - price):</label>
             <div v-for="(attribute, index) in attributes" :key="index" class="mb-2 flex items-center">
               <input type="text" v-model="attribute.key" placeholder="Attribute Name" class="shadow appearance-none border rounded w-1/3 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
-              <input type="text" v-model="attribute.value" placeholder="Attribute Value" class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
+              <input type="number" v-model="attribute.value" placeholder="Attribute Value" class="shadow appearance-none border rounded w-1/2 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
               <button type="button" @click="removeAttribute(index)" class="inline-flex items-center px-4 py-2 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:shadow-outline-gray transition ease-in-out duration-150">
                   <i class="fas fa-trash"></i>
               </button>            
@@ -137,29 +137,48 @@ export default {
         });
     },
     addAttribute() {
+      // Check for empty attribute name
+      if (this.attributes.some(attr => !attr.key.trim())) {
+        this.errorMessage = 'Attribute name cannot be empty.';
+        return;
+      }
       this.attributes.push({ key: '', value: '' });
     },
     removeAttribute(index) {
       this.attributes.splice(index, 1);
     },
     createProduct() {
+      const attributes = this.attributes.reduce((acc, attribute) => {
+        // Trim key and ensure it is not empty
+        const key = attribute.key.trim();
+        if (key) {
+          // Ensure the attribute value is numeric, default to 0 if empty or invalid
+          const numericValue = isNaN(parseFloat(attribute.value)) ? 0 : parseFloat(attribute.value);
+          acc[key] = numericValue;
+        }
+        return acc;
+      }, {});
+
+      // Log attributes to check their structure
+      console.log('Attributes:', attributes);
+
+      // Check if attributes are valid before sending
+      if (Object.keys(attributes).length === 0) {
+        this.errorMessage = 'At least one valid attribute must be provided.';
+        return;
+      }
+
       const productData = {
         title: this.title,
-        // category: this.category,
         description: this.description,
-        price: this.price || 0, // Default to 0 if price is not provided
-        quantity_in_stock: this.quantity || 0, // Default to 0 if no quantity is provided
+        price: this.price || 0,
+        quantity_in_stock: this.quantity || 0,
         user_id: this.userId,
         image: null,
         active: true,
-        parent_id: this.parent_id || null, // Ensure parent_id is null if not selected
+        parent_id: this.parent_id || null,
         type: this.type,
-        attributes: this.attributes.reduce((acc, attribute) => {
-          if (attribute.key && attribute.value) {
-            acc[attribute.key] = attribute.value;
-          }
-          return acc;
-        }, {})
+        attributes
       };
 
       console.log('Product data being sent:', productData);

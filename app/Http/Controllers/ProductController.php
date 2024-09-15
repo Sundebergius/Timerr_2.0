@@ -10,8 +10,8 @@ class ProductController extends Controller
 {
     public function store(Request $request)
     {
-        \Log::info('Store method called'); // Log when store method is called
-        \Log::info('Request data:', $request->all()); // Log the request data
+        \Log::info('Store method called');
+        \Log::info('Request data:', $request->all());
 
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
@@ -22,47 +22,74 @@ class ProductController extends Controller
             'quantity_in_stock' => 'nullable|integer|min:0',
             'active' => 'required|boolean',
             'parent_id' => 'nullable|exists:products,id',
-            'type' => 'required|in:product,service', // Validate type field
+            'type' => 'required|in:product,service',
             'attributes' => 'nullable|array',
+            'attributes.*.key' => 'nullable|string|max:255',
+            'attributes.*.value' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Validation failed:', $validator->errors()->toArray()); // Log validation errors
+            \Log::error('Validation failed:', $validator->errors()->toArray());
             return response()->json($validator->errors(), 422);
         }
 
-        //\Log::info('Attributes in request:', $request->attributes);
-
         try {
-            \Log::info('Validation passed'); // Log validation success
+            \Log::info('Validation passed');
+
+            // Format attributes
+            $formattedAttributes = $this->formatAttributes($request->input('attributes', []));
+            
+            \Log::info('Formatted attributes:', $formattedAttributes);
 
             $productData = [
                 'user_id' => $request->user_id,
                 'title' => $request->title,
                 'category' => $request->category,
                 'description' => $request->description,
-                'price' => $request->price,
-                'quantity_in_stock' => $request->quantity_in_stock,
+                'price' => $request->price ?: 0,
+                'quantity_in_stock' => $request->quantity_in_stock ?: 0,
                 'active' => $request->active,
                 'parent_id' => $request->parent_id,
-                'type' => $request->type, // Save the type field (product or service)
-                'attributes' => $request->input('attributes') ?: null, // Correctly handle attributes
+                'type' => $request->type,
+                'attributes' => $formattedAttributes,
             ];
 
-            \Log::info('Product data to be saved:', $productData); // Log data before saving
+            \Log::info('Product data to be saved:', $productData);
 
             $product = Product::create($productData);
 
             // Fetch the product again to apply the cast to 'attributes'
             $product = Product::find($product->id);
 
-            \Log::info('Product created successfully:', $product->toArray()); // Log success
+            \Log::info('Product created successfully:', $product->toArray());
 
             return response()->json(['message' => 'Product created successfully', 'product' => $product], 200);
         } catch (\Exception $e) {
-            \Log::error('Error creating product:', ['exception' => $e->getMessage()]); // Log general errors
+            \Log::error('Error creating product:', ['exception' => $e->getMessage()]);
             return response()->json(['error' => 'Unable to create product'], 500);
         }
+    }
+
+
+    private function formatAttributes(array $attributes)
+    {
+        \Log::info('Original attributes:', $attributes);
+
+        $formattedAttributes = [];
+
+        // Check if the attributes are in the correct format (key-value pairs)
+        foreach ($attributes as $key => $value) {
+            if (!empty($key)) {
+                $formattedAttributes[] = [
+                    'key' => $key,
+                    'value' => (float) $value,  // Cast value to float
+                ];
+            }
+        }
+
+        \Log::info('Formatted attributes:', $formattedAttributes);
+
+        return $formattedAttributes;
     }
 
     public function getUserProducts($userId)
@@ -103,49 +130,45 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        // Validate request data
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'category' => 'nullable|string|max:255',
             'description' => 'nullable|string|max:1000',
             'price' => 'nullable|numeric|min:0',
             'quantity_in_stock' => 'nullable|integer|min:0',
-            'active' => 'nullable|boolean', // Changed to nullable
+            'active' => 'nullable|boolean',
             'parent_id' => 'nullable|exists:products,id',
             'attributes' => 'nullable|array',
-            'attributes.*.key' => 'nullable|string|max:255',
-            'attributes.*.value' => 'nullable|string|max:255',
+            'attributes.*.key' => 'required_with:attributes|distinct|string|max:255',
+            'attributes.*.value' => 'nullable|numeric',
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Validation failed:', $validator->errors()->toArray()); // Log validation errors
+            \Log::error('Validation failed:', $validator->errors()->toArray());
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         try {
-            // Prepare product data
             $productData = [
                 'title' => $request->title,
                 'category' => $request->category,
                 'description' => $request->description,
-                'price' => $request->price,
-                'quantity_in_stock' => $request->quantity_in_stock,
-                'quantity_sold' => $request->quantity_sold,
+                'price' => $request->price ?: 0,
+                'quantity_in_stock' => $request->quantity_in_stock ?: 0,
                 'active' => $request->has('active') ? 1 : 0,
                 'parent_id' => $request->parent_id,
-                'attributes' => $this->filterAttributes($request->input('attributes', [])), // Cleaned attributes array
+                'attributes' => $this->formatAttributes($request->input('attributes', [])),
             ];
 
-            \Log::info('Product data to be updated:', $productData); // Log data before updating
+            \Log::info('Product data to be updated:', $productData);
 
-            // Update the product
             $product->update($productData);
 
-            \Log::info('Product updated successfully:', $product->toArray()); // Log success
+            \Log::info('Product updated successfully:', $product->toArray());
 
             return redirect()->route('products.index')->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
-            \Log::error('Error updating product:', ['exception' => $e->getMessage()]); // Log general errors
+            \Log::error('Error updating product:', ['exception' => $e->getMessage()]);
             return redirect()->back()->with('error', 'Unable to update product');
         }
     }

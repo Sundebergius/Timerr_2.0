@@ -76,37 +76,62 @@
             <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea> -->
       
 
-      <div v-if="task_type === 'product'" class="mb-4">
-        <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4">
-          <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
-          <div class="flex items-center">
-            <button type="button" @click="showModal = true"
-              class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-              <i class="fas fa-plus"></i>
-            </button>
-            <select id="product" v-model="taskProduct.selectedProduct"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
-              <option v-for="product in products" :value="product.id">{{ product.title }}</option>
-            </select>
-          </div>
-          <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-          <input type="number" id="quantity" v-model="taskProduct.quantity"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            min="1" />
-          <button type="button" @click="addProduct(index)"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-            Add this product
-          </button>
-        </div>
-        <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index"
-          class="mb-4 p-4 bg-white rounded shadow">
-          <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
-          <p class="text-gray-700 mb-1"><span class="font-bold">Quantity in Stock:</span> {{ product.quantityInStock }}
-          </p>
-          <p class="text-gray-700 mb-1"><span class="font-bold">Quantity Sold:</span> {{ product.quantitySold }}</p>
-          <p class="text-gray-700 mb-1"><span class="font-bold">Price:</span> {{ product.price }}</p>
-        </div>
-      </div>
+            <div v-if="task_type === 'product'" class="mb-4">
+              <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4">
+                <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
+                <div class="flex items-center">
+                  <button type="button" @click="showModal = true"
+                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                  <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
+                    <option v-for="product in products" :value="product.id">{{ product.title }}</option>
+                  </select>
+                </div>
+
+                <!-- If product is a physical product -->
+                <div v-if="taskProduct.type === 'product'" class="mt-4">
+                  <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+                  <input type="number" id="quantity" v-model="taskProduct.quantity"
+                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    min="1" />
+                </div>
+
+                <!-- If product is a service, allow attribute selection -->
+                <div v-if="taskProduct.type === 'service'" class="mt-4">
+                  <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Select Attributes:</label>
+                  <div v-for="(attributeValue, attributeKey) in taskProduct.attributes" :key="attributeKey" class="mb-2">
+                    <input type="checkbox" :id="attributeKey" v-model="taskProduct.selectedAttributes[attributeKey]" :true-value="1" :false-value="0">
+                    <label :for="attributeKey">{{ attributeKey }} - {{ attributeValue }} cm</label>
+                    <div v-if="taskProduct.selectedAttributes[attributeKey] > 0">
+                      <label :for="attributeKey + '-quantity'" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+                      <input type="number" :id="attributeKey + '-quantity'" v-model="taskProduct.selectedAttributesQuantities[attributeKey]"
+                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        min="1" />
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" @click="addProduct(index)"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+                  Add this product
+                </button>
+              </div>
+
+              <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
+                <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
+                <p v-if="product.type === 'product'" class="text-gray-700 mb-1"><span class="font-bold">Quantity Sold:</span> {{ product.quantity }}</p>
+                <div v-if="product.type === 'service'">
+                  <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
+                  <ul>
+                    <li v-for="(attrValue, attrKey) in product.selectedAttributes" :key="attrKey">{{ attrKey }} - {{ attrValue }} cm</li>
+                  </ul>
+                </div>
+                <p class="text-gray-700 mb-1"><span class="font-bold">Price:</span> {{ product.price }}</p>
+              </div>
+            </div>
+
 
       <div v-if="task_type === 'distance'" class="mb-4">
         <!-- <label for="distance" class="block text-gray-700 text-sm font-bold mb-2">Distance (KM):</label>
@@ -277,6 +302,10 @@ export default {
         {
           selectedProduct: null,
           quantity: 1,
+          type: 'product', // or 'service'
+          attributes: {}, // { 'size': 'Large', 'color': 'Red' }
+          selectedAttributes: {}, // { 'size': 0, 'color': 0 }
+          selectedAttributesQuantities: {} // { 'size': 0, 'color': 0 }
         }
       ],
       addedProducts: [],
@@ -349,6 +378,23 @@ export default {
     deleteChecklistItem(sectionIndex, itemIndex) {
       this.checklistSections[sectionIndex].items.splice(itemIndex, 1);
     },
+    onProductChange(index) {
+      const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
+      if (selectedProduct) {
+        const attributes = typeof selectedProduct.attributes === 'string'
+          ? JSON.parse(selectedProduct.attributes)
+          : selectedProduct.attributes || {}; // Use empty object if no attributes
+        
+        // Directly modify the taskProducts array
+        this.taskProducts[index] = {
+          ...this.taskProducts[index],
+          type: selectedProduct.type, // Use type instead of productType
+          attributes: selectedProduct.type === 'service' ? attributes : {},
+          selectedAttributes: [],
+          quantity: 1,
+        };
+      }
+    },
     fetchProducts() {
       this.initialTaskType = 'product';
       if (this.localProject && this.localProject.user_id) {
@@ -380,21 +426,30 @@ export default {
       this.products.push(newProduct);
     }
   },
-    addProduct(index) {
+  addProduct(index) {
       console.log('addProduct method called');
       console.log('this.taskProducts[index].selectedProduct:', this.taskProducts[index].selectedProduct);
       console.log('this.products:', this.products);
       const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
       console.log('selectedProduct:', selectedProduct);
+
       if (selectedProduct) {
+        const selectedAttributes = Object.keys(this.taskProducts[index].selectedAttributes)
+          .filter(attrKey => this.taskProducts[index].selectedAttributes[attrKey] > 0)
+          .map(attrKey => ({
+            attribute: attrKey,
+            quantity: this.taskProducts[index].selectedAttributesQuantities[attrKey] || 0
+          }));
+
         this.taskProducts[index] = {
           selectedProduct: selectedProduct.id,
-          quantity: this.taskProducts[index].quantity,
+          selectedAttributes,
         };
-        // Include quantity when pushing to addedProducts
+
+        // Include the selected attributes with quantities when pushing to addedProducts
         this.addedProducts.push({
           ...selectedProduct,
-          quantity: this.taskProducts[index].quantity
+          selectedAttributes: selectedAttributes,
         });
         console.log('Added Products: ', this.addedProducts); // new console log statement
       }
