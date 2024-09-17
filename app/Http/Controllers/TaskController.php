@@ -293,53 +293,59 @@ class TaskController extends Controller
             'task_title' => 'required|string',
             'products' => 'required|array',
             'products.*.product_id' => 'required|integer|exists:products,id',
-            'products.*.quantity' => 'required|integer|min:1',
+            'products.*.quantity' => 'required|integer|min:0',
+            'products.*.type' => 'required|string|in:product,service',
+            'products.*.attributes' => 'array',
+            'products.*.attributes.*.attribute' => 'required_if:products.*.type,service|string|max:255',
+            'products.*.attributes.*.quantity' => 'required_if:products.*.type,service|integer|min:0',
+            'products.*.attributes.*.price' => 'required_if:products.*.type,service|numeric|min:0',
         ])->validate();
 
-        // Fetch the project
+        Log::info('Validated data: ', $validatedData);
+
         $project = Project::findOrFail($request->project_id);
 
         DB::transaction(function () use ($validatedData, $request, $project) {
             try {
-                // Create a new Task
                 $task = Task::create([
                     'project_id' => $request->project_id,
                     'user_id' => $request->user_id,
                     'title' => $validatedData['task_title'],
                     'task_type' => 'product',
                     'client_id' => $project->client_id ?? null,
-                    //'taskable_id' => $taskProduct->id,
                     'taskable_type' => TaskProduct::class,
                 ]);
 
-                // Group products by product_id and sum the quantities
-                $groupedProducts = collect($validatedData['products'])->groupBy('product_id')->map(function ($productGroup) {
-                    return [
-                        'product_id' => $productGroup[0]['product_id'],
-                        'quantity' => $productGroup->sum('quantity'),
-                    ];
-                });
+                foreach ($validatedData['products'] as $productData) {
+                    Log::info('Processing product data: ', $productData);
 
-                // Create TaskProduct entries
-                foreach ($groupedProducts as $productData) {
-                    TaskProduct::create([
+                    // Store the attributes as JSON if it's a service
+                    $attributes = $productData['type'] === 'service' 
+                        ? json_encode($productData['attributes']) 
+                        : null;
+
+                    $taskProduct = TaskProduct::create([
                         'task_id' => $task->id,
                         'product_id' => $productData['product_id'],
-                        'total_sold' => $productData['quantity'],
+                        'type' => $productData['type'],
+                        'quantity' => $productData['quantity'],
+                        'attributes' => $attributes, // JSON data for services, null for physical products
                     ]);
 
-                    // Update the quantitySold in the products table
-                    $product = Product::find($productData['product_id']);
-                    $product->increment('quantitySold', $productData['quantity']);
+                    // If the product is a physical product, increment the quantity sold
+                    if ($productData['type'] === 'product') {
+                        $product = Product::find($productData['product_id']);
+                        $product->increment('quantity_sold', $productData['quantity']);
+                    }
                 }
-
             } catch (\Exception $e) {
                 Log::error('Failed to create task and task product: ' . $e->getMessage());
             }
         });
     }
 
-    
+
+
 
     public function show(Project $project, Task $task)
     {
