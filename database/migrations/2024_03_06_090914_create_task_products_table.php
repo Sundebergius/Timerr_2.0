@@ -14,10 +14,14 @@ return new class extends Migration
         Schema::create('task_products', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('task_id');
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->integer('total_sold')->default(0);
+            $table->unsignedBigInteger('product_id');
+            $table->string('type'); // 'product' or 'service'
+            $table->integer('quantity')->default(0); // For both products and services
+            $table->json('attributes')->nullable(); // To store service-specific attributes like size, etc.
+            $table->timestamps();
     
             $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
         });
     }
 
