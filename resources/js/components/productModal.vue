@@ -148,24 +148,22 @@ export default {
       this.attributes.splice(index, 1);
     },
     createProduct() {
-      const attributes = this.attributes.reduce((acc, attribute) => {
-        // Trim key and ensure it is not empty
-        const key = attribute.key.trim();
-        if (key) {
+      let attributes = [];
+
+      if (this.type === 'service') {
+        attributes = this.attributes.map(attribute => {
+          // Trim key and ensure it is not empty
+          const key = attribute.key.trim();
           // Ensure the attribute value is numeric, default to 0 if empty or invalid
-          const numericValue = isNaN(parseFloat(attribute.value)) ? 0 : parseFloat(attribute.value);
-          acc[key] = numericValue;
+          const value = isNaN(parseFloat(attribute.value)) ? 0 : parseFloat(attribute.value);
+          return { key, value }; // Format as array of objects
+        }).filter(attr => attr.key); // Remove any attributes with empty keys
+
+        // Check if attributes are valid before sending
+        if (attributes.length === 0) {
+          this.errorMessage = 'At least one valid attribute must be provided for services.';
+          return;
         }
-        return acc;
-      }, {});
-
-      // Log attributes to check their structure
-      console.log('Attributes:', attributes);
-
-      // Check if attributes are valid before sending
-      if (Object.keys(attributes).length === 0) {
-        this.errorMessage = 'At least one valid attribute must be provided.';
-        return;
       }
 
       const productData = {
@@ -178,7 +176,7 @@ export default {
         active: true,
         parent_id: this.parent_id || null,
         type: this.type,
-        attributes
+        attributes: this.type === 'service' ? attributes : [], // Send attributes as an array
       };
 
       console.log('Product data being sent:', productData);

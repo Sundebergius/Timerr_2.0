@@ -77,60 +77,94 @@
       
 
             <div v-if="task_type === 'product'" class="mb-4">
-              <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4">
-                <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
-                <div class="flex items-center">
-                  <button type="button" @click="showModal = true"
-                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
-                    <i class="fas fa-plus"></i>
-                  </button>
-                  <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mr-2">
-                    <option v-for="product in products" :value="product.id">{{ product.title }}</option>
-                  </select>
-                </div>
+  <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4">
+    <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
+    <div class="flex items-center">
+      <button type="button" @click="showModal = true"
+        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2">
+        <i class="fas fa-plus"></i>
+      </button>
+      <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
+        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+        <option v-for="product in products" :value="product.id">{{ product.title }}</option>
+      </select>
+    </div>
 
-                <!-- If product is a physical product -->
-                <div v-if="taskProduct.type === 'product'" class="mt-4">
-                  <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-                  <input type="number" id="quantity" v-model="taskProduct.quantity"
-                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    min="1" />
-                </div>
+    <!-- If product is a physical product -->
+    <div v-if="taskProduct.type === 'product'" class="mt-4">
+      <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+      <input type="number" id="quantity" v-model="taskProduct.quantity"
+        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        min="1" />
+    </div>
 
-                <!-- If product is a service, allow attribute selection -->
-                <div v-if="taskProduct.type === 'service'" class="mt-4">
-                  <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Select Attributes:</label>
-                  <div v-for="(attributeValue, attributeKey) in taskProduct.attributes" :key="attributeKey" class="mb-2">
-                    <input type="checkbox" :id="attributeKey" v-model="taskProduct.selectedAttributes[attributeKey]" :true-value="1" :false-value="0">
-                    <label :for="attributeKey">{{ attributeKey }} - {{ attributeValue }} cm</label>
-                    <div v-if="taskProduct.selectedAttributes[attributeKey] > 0">
-                      <label :for="attributeKey + '-quantity'" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-                      <input type="number" :id="attributeKey + '-quantity'" v-model="taskProduct.selectedAttributesQuantities[attributeKey]"
-                        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        min="1" />
-                    </div>
-                  </div>
-                </div>
+    <!-- If product is a service, allow attribute selection -->
+    <div v-if="taskProduct.type === 'service'" class="mt-4">
+      <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Select Attributes:</label>
+      <div v-for="(attribute, index) in taskProduct.attributes" :key="index" class="mb-2">
+        <div class="flex items-center">
+          <input type="checkbox" :id="attribute.key" v-model="taskProduct.selectedAttributes[attribute.key]" :true-value="1" :false-value="0" class="mr-2">
+          <label :for="attribute.key">{{ attribute.key }} - {{ attribute.value }} kr</label>
 
-                <button type="button" @click="addProduct(index)"
-                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-                  Add this product
-                </button>
-              </div>
+          <div v-if="taskProduct.selectedAttributes[attribute.key] > 0" class="ml-4 flex items-center">
+            <label :for="attribute.key + '-quantity'" class="text-sm font-bold mr-2">Quantity:</label>
+            <input type="number" :id="attribute.key + '-quantity'" v-model="taskProduct.selectedAttributesQuantities[attribute.key]"
+              class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              min="1" />
+          </div>
+        </div>
+      </div>
+    </div>
 
-              <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
-                <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
-                <p v-if="product.type === 'product'" class="text-gray-700 mb-1"><span class="font-bold">Quantity Sold:</span> {{ product.quantity }}</p>
-                <div v-if="product.type === 'service'">
-                  <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
-                  <ul>
-                    <li v-for="(attrValue, attrKey) in product.selectedAttributes" :key="attrKey">{{ attrKey }} - {{ attrValue }} cm</li>
-                  </ul>
-                </div>
-                <p class="text-gray-700 mb-1"><span class="font-bold">Price:</span> {{ product.price }}</p>
-              </div>
-            </div>
+    <button type="button" @click="addProduct(index)"
+      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+      Add this product
+    </button>
+  </div>
+
+  <!-- Display added products -->
+  <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
+  <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
+  <p v-if="product.type === 'product'" class="text-gray-700 mb-1">
+    <span class="font-bold">Quantity Added:</span> {{ product.quantity }}
+  </p>
+  <div v-if="product.type === 'service'">
+    <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
+    <ul>
+      <li v-for="(attr, index) in product.selectedAttributes" :key="index">
+        {{ attr.attribute }} - {{ attr.quantity }} ({{ attr.price }} kr each)
+      </li>
+    </ul>
+    <p class="text-gray-700 mb-1"><span class="font-bold">Total Price:</span> {{ product.totalPrice }} kr</p>
+  </div>
+
+  <!-- Edit and Remove buttons -->
+  <button type="button" @click="editProduct(index)"
+    class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+    Edit
+  </button>
+  <button type="button" @click="removeProduct(index)"
+    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+    Remove
+  </button>
+</div>
+
+<!-- Edit Modal (hidden by default) -->
+<div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+  <div class="bg-white p-4 rounded shadow-lg">
+    <h3 class="text-lg font-bold mb-4">Edit Product</h3>
+    <!-- Your edit form goes here -->
+    <!-- Example fields for editing: -->
+    <label for="editQuantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+    <input type="number" id="editQuantity" v-model="editProductDetails.quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" min="1" />
+    
+    <!-- More fields as needed for editing attributes -->
+
+    <button type="button" @click="updateProduct" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Update</button>
+    <button type="button" @click="showEditModal = false" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Cancel</button>
+  </div>
+</div>
+</div>
 
 
       <div v-if="task_type === 'distance'" class="mb-4">
@@ -309,6 +343,12 @@ export default {
         }
       ],
       addedProducts: [],
+      showEditModal: false,
+      editProductIndex: null,
+      editProductDetails: {
+        quantity: 1,
+        // Add other fields for editing if needed
+    },
     };
   },
   computed: {
@@ -427,34 +467,67 @@ export default {
     }
   },
   addProduct(index) {
-      console.log('addProduct method called');
-      console.log('this.taskProducts[index].selectedProduct:', this.taskProducts[index].selectedProduct);
-      console.log('this.products:', this.products);
-      const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
-      console.log('selectedProduct:', selectedProduct);
+    console.log('addProduct method called');
+    console.log('this.taskProducts[index].selectedProduct:', this.taskProducts[index].selectedProduct);
+    console.log('this.products:', this.products);
 
-      if (selectedProduct) {
-        const selectedAttributes = Object.keys(this.taskProducts[index].selectedAttributes)
-          .filter(attrKey => this.taskProducts[index].selectedAttributes[attrKey] > 0)
-          .map(attrKey => ({
+    const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
+    console.log('selectedProduct:', selectedProduct);
+
+    if (selectedProduct) {
+      let basePrice = parseFloat(selectedProduct.price);
+      let totalPrice = basePrice;
+
+      const selectedAttributes = Object.keys(this.taskProducts[index].selectedAttributes)
+        .filter(attrKey => this.taskProducts[index].selectedAttributes[attrKey] > 0)
+        .map(attrKey => {
+          const quantity = this.taskProducts[index].selectedAttributesQuantities[attrKey] || 0;
+          const attribute = selectedProduct.attributes?.find(attr => attr.key === attrKey);
+          const price = attribute ? parseFloat(attribute.value) : 0;
+          
+          // Calculate price for each attribute
+          totalPrice += price * quantity;
+
+          return {
             attribute: attrKey,
-            quantity: this.taskProducts[index].selectedAttributesQuantities[attrKey] || 0
-          }));
+            quantity: quantity,
+            price: price
+          };
+        });
 
-        this.taskProducts[index] = {
-          selectedProduct: selectedProduct.id,
-          selectedAttributes,
-        };
-
-        // Include the selected attributes with quantities when pushing to addedProducts
+      // If it's a service, calculate based on selected attributes
+      if (this.taskProducts[index].type === 'service') {
         this.addedProducts.push({
           ...selectedProduct,
-          selectedAttributes: selectedAttributes,
+          selectedAttributes: selectedAttributes, // Attach the selected attributes
+          totalPrice: totalPrice.toFixed(2) // Compute total price for all attributes
         });
-        console.log('Added Products: ', this.addedProducts); // new console log statement
       }
-      console.log('Product: ', this.taskProducts);
-    },
+      
+      // Handle physical products separately
+      else if (this.taskProducts[index].type === 'product') {
+        this.addedProducts.push({
+          ...selectedProduct,
+          totalPrice: totalPrice.toFixed(2), // No attributes, just the base price
+          quantity: this.taskProducts[index].quantity || 1
+        });
+      }
+
+      console.log('Added Products: ', this.addedProducts);
+
+      // Clear out the input after adding
+      this.taskProducts[index] = {
+        selectedProduct: null,
+        quantity: 1,
+        type: 'product', // Reset type to default product
+        attributes: [],
+        selectedAttributes: {},
+        selectedAttributesQuantities: {}
+      };
+    }
+
+    console.log('Product: ', this.taskProducts);
+  },
     handleProductCreated(product) {
       console.log(product);
       // Emit an event to notify the parent component about the creation of the product
@@ -469,6 +542,72 @@ export default {
         // Here you can call handleFormSubmission
         this.handleFormSubmission();
       }
+    },
+    editProduct(index) {
+      this.editProductIndex = index;
+      this.editProductDetails = {
+        quantity: this.addedProducts[index].quantity,
+        // Set other fields for editing if needed
+      };
+      this.showEditModal = true;
+    },
+    updateProduct() {
+      if (this.editProductIndex !== null) {
+        // Update the selected product with the new details
+        this.addedProducts[this.editProductIndex] = {
+          ...this.addedProducts[this.editProductIndex],
+          quantity: this.editProductDetails.quantity,
+          // Update other fields as needed
+        };
+
+        // Recalculate total price if needed
+        this.addedProducts[this.editProductIndex].totalPrice = this.calculateTotalPrice(this.addedProducts[this.editProductIndex]);
+
+        this.showEditModal = false;
+        this.editProductIndex = null;
+      }
+    },
+    removeProduct(index) {
+      // Check if the index is valid for addedProducts
+      if (index >= 0 && index < this.addedProducts.length) {
+        this.addedProducts.splice(index, 1);
+        console.log('Product removed from addedProducts:', index);
+      } else {
+        console.error('Invalid index for removing product from addedProducts:', index);
+      }
+
+      // Check if the index is valid for taskProducts
+      if (index >= 0 && index < this.taskProducts.length) {
+        // Reset the taskProducts entry at the correct index
+        this.$set(this.taskProducts, index, {
+          selectedProduct: null,
+          quantity: 1,
+          type: 'product',
+          attributes: [],
+          selectedAttributes: {},
+          selectedAttributesQuantities: {}
+        });
+        console.log('Task product reset at index:', index);
+      } else {
+        console.error('Invalid index for resetting taskProducts:', index);
+      }
+
+      console.log('Removed Product: ', this.addedProducts);
+      console.log('Task Products After Removal: ', this.taskProducts);
+      console.log('Added Products Length:', this.addedProducts.length);
+      console.log('Task Products Length:', this.taskProducts.length);
+    },
+    calculateTotalPrice(product) {
+      let totalPrice = parseFloat(product.price);
+
+      // Add attribute prices if present
+      if (product.selectedAttributes) {
+        product.selectedAttributes.forEach(attr => {
+          totalPrice += attr.price * attr.quantity;
+        });
+      }
+
+      return totalPrice.toFixed(2);
     },
     handleFormSubmission() {
       console.log('handleFormSubmission called');
@@ -535,14 +674,31 @@ export default {
             task_type: 'hourly',
           };
           break;
-        case 'product':
+          case 'product':
           route = `/projects/${this.localProject.id}/tasks/store-product`;
           data = {
             ...data,
-            products: this.addedProducts.map(product => ({
-              product_id: product.id,
-              quantity: product.quantity
-            })),
+            products: this.addedProducts.map(product => {
+              let productData = {
+                product_id: product.id,
+                quantity: product.type === 'product' 
+                          ? product.quantity // For physical products, take the provided quantity directly
+                          : product.selectedAttributes.reduce((total, attr) => total + attr.quantity, 0), // Sum of quantities for service attributes
+                type: product.type, // 'physical' or 'service'
+              };
+
+              // Only add attributes for services
+              if (product.type === 'service') {
+                productData.attributes = product.selectedAttributes.map(attr => ({
+                  attribute: attr.attribute,
+                  quantity: attr.quantity,
+                  price: attr.price,
+                  totalPrice: attr.quantity * attr.price
+                }));
+              }
+
+              return productData;
+            }),
             task_type: 'product',
           };
           break;
