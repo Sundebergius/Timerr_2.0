@@ -16,7 +16,9 @@ class TaskProduct extends Model
     protected $fillable = [
         'task_id',
         'product_id',
-        'total_sold',
+        'type',  // Add this
+        'quantity',  // Add this
+        'attributes',  // Add this if you plan to mass-assign JSON data
     ];
 
     public function task()

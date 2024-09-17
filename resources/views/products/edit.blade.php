@@ -1,6 +1,6 @@
 <x-app-layout>
     <div class="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 class="text-4xl font-bold mb-10">Edit Product</h1>
+        <h1 class="text-4xl font-bold mb-10">Edit {{ ucfirst($product->type) }}</h1>
 
         <form method="POST" action="{{ route('products.update', $product->id) }}" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
             @csrf
@@ -14,13 +14,15 @@
                 <input id="title" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="title" value="{{ $product->title }}" required autofocus />
             </div>
 
-            <!-- Description -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
-                    Description
-                </label>
-                <input id="description" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="description" value="{{ $product->description }}" />
-            </div>
+            <!-- Description (only for type 'product') -->
+            @if($product->type === 'product')
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="description">
+                        Description
+                    </label>
+                    <input id="description" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" name="description" value="{{ $product->description }}" />
+                </div>
+            @endif
 
             <!-- Type (Read-only) -->
             <div class="mb-4">
@@ -31,29 +33,31 @@
                 <input type="hidden" name="type" value="{{ $product->type }}">
             </div>
 
-            <!-- Price -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="price">
-                    Price
-                </label>
-                <input id="price" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" step="0.01" name="price" value="{{ $product->price }}" required />
-            </div>
+            <!-- Price (only for type 'product') -->
+            @if($product->type === 'product')
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="price">
+                        Price
+                    </label>
+                    <input id="price" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" step="0.01" name="price" value="{{ $product->price }}" required />
+                </div>
 
-            <!-- Quantity in Stock -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="quantityInStock">
-                    Quantity in Stock
-                </label>
-                <input id="quantityInStock" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" name="quantity_in_stock" value="{{ $product->quantity_in_stock }}" required />
-            </div>
+                <!-- Quantity in Stock -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="quantityInStock">
+                        Quantity in Stock
+                    </label>
+                    <input id="quantityInStock" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" name="quantity_in_stock" value="{{ $product->quantity_in_stock }}" required />
+                </div>
 
-            <!-- Quantity Sold -->
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="quantitySold">
-                    Quantity Sold
-                </label>
-                <input id="quantitySold" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" name="quantity_sold" value="{{ $product->quantity_sold }}" required />
-            </div>
+                <!-- Quantity Sold -->
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="quantitySold">
+                        Quantity Sold
+                    </label>
+                    <input id="quantitySold" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="number" name="quantity_sold" value="{{ $product->quantity_sold }}" required />
+                </div>
+            @endif
 
             <!-- Status (Active) -->
             <div class="mb-4">
@@ -64,69 +68,119 @@
                 <input id="active" class="block mt-1" type="checkbox" name="active" value="1" {{ $product->active ? 'checked' : '' }} />
             </div>
 
-            <!-- Attributes -->
+            <!-- Attributes (only for type 'service') -->
+            @if($product->type === 'service')
             <div class="mb-4">
                 <label for="attributes">Attributes</label>
 
                 <!-- Show the paragraph only if there are attributes -->
-                @if (count($product->attributes) > 0)
+                @if (count($product->attributes ?? []) > 0)
                     <p class="text-sm text-gray-600">Add or edit key-value pairs for attributes (e.g., size, color).</p>
                 @endif
 
-                <!-- Attributes List -->
                 <div id="attributes-list">
-                    @forelse($product->attributes as $index => $attribute)
-                        <div class="flex items-center mt-2">
+                    @forelse($product->attributes ?? [] as $index => $attribute)
+                        <div class="flex items-center mt-2 attribute-item" data-index="{{ $index }}">
                             <input type="text" name="attributes[{{ $index }}][key]" value="{{ $attribute['key'] ?? '' }}" placeholder="Key" class="block w-1/3 mr-2 shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                             <input type="text" name="attributes[{{ $index }}][value]" value="{{ $attribute['value'] ?? '' }}" placeholder="Value" class="block w-1/3 mr-2 shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                             <button type="button" class="remove-attribute bg-red-500 text-white px-2 py-1 rounded">
                                 <i class="fas fa-trash-alt"></i> Remove
                             </button>
+                            <button type="button" class="undo-remove-attribute bg-green-500 text-white px-2 py-1 rounded hidden">
+                                <i class="fas fa-undo"></i> Undo
+                            </button>
+                            <input type="hidden" name="attributes[{{ $index }}][delete]" value="0" class="delete-flag">
                         </div>
                     @empty
                         <p>No attributes available. Add one below:</p>
                     @endforelse
-                </div>
+                </div>                           
 
                 <!-- Add Attribute Button -->
                 <div class="mt-4">
                     <button type="button" id="add-attribute" class="bg-blue-500 text-white px-4 py-2 rounded">Add Attribute</button>
                 </div>
             </div>
+            @endif
 
             <!-- Update Button -->
             <div class="flex items-center justify-end mt-4">
-                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:shadow-outline-gray disabled:opacity-25 transition ease-in-out duration-150">
-                    <i class="fas fa-edit mr-2"></i> Update
-                </button>
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:shadow-outline-gray disabled:opacity-25 transition ease-in-out duration-150">
+                <i class="fas fa-edit mr-2"></i> Update
+            </button>
             </div>
         </form>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let index = @json(count($product->attributes)); // Initial index
+    <style>
+        .attribute-item {
+            transition: background-color 0.3s, color 0.3s;
+        }
 
-            document.getElementById('add-attribute').addEventListener('click', function() {
-                let attributesList = document.getElementById('attributes-list');
+        .attribute-item.deleting {
+            background-color: #fdd;
+            border: 1px solid #f99;
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .attribute-item .remove-attribute {
+            display: inline-block;
+        }
+
+        .attribute-item.deleting .remove-attribute {
+            display: inline-block;
+        }
+    </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let attributesList = document.getElementById('attributes-list');
+    if (attributesList) {
+        let index = @json(count($product->attributes ?? [])); // Initial index
+
+        let addAttributeButton = document.getElementById('add-attribute');
+        if (addAttributeButton) {
+            addAttributeButton.addEventListener('click', function() {
                 let newAttribute = document.createElement('div');
-                newAttribute.className = 'flex items-center mt-2';
+                newAttribute.className = 'flex items-center mt-2 attribute-item';
+                newAttribute.setAttribute('data-index', index);
                 newAttribute.innerHTML = `
                     <input type="text" name="attributes[${index}][key]" placeholder="Key" class="block w-1/3 mr-2 shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                     <input type="text" name="attributes[${index}][value]" placeholder="Value" class="block w-1/3 mr-2 shadow border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                     <button type="button" class="remove-attribute bg-red-500 text-white px-2 py-1 rounded">
                         <i class="fas fa-trash-alt"></i> Remove
                     </button>
+                    <button type="button" class="undo-remove-attribute bg-green-500 text-white px-2 py-1 rounded hidden">
+                        <i class="fas fa-undo"></i> Undo
+                    </button>
+                    <input type="hidden" name="attributes[${index}][delete]" value="0" class="delete-flag">
                 `;
                 attributesList.appendChild(newAttribute);
                 index++;
             });
+        }
 
-            document.getElementById('attributes-list').addEventListener('click', function(event) {
-                if (event.target.classList.contains('remove-attribute')) {
-                    event.target.parentElement.remove();
-                }
-            });
+        attributesList.addEventListener('click', function(event) {
+            if (event.target.classList.contains('remove-attribute')) {
+                let attributeItem = event.target.closest('.attribute-item');
+                let deleteFlag = attributeItem.querySelector('.delete-flag');
+                deleteFlag.value = '1';
+                attributeItem.classList.add('deleting');
+                attributeItem.querySelector('.remove-attribute').classList.add('hidden');
+                attributeItem.querySelector('.undo-remove-attribute').classList.remove('hidden');
+            } else if (event.target.classList.contains('undo-remove-attribute')) {
+                let attributeItem = event.target.closest('.attribute-item');
+                let deleteFlag = attributeItem.querySelector('.delete-flag');
+                deleteFlag.value = '0';
+                attributeItem.classList.remove('deleting');
+                attributeItem.querySelector('.remove-attribute').classList.remove('hidden');
+                attributeItem.querySelector('.undo-remove-attribute').classList.add('hidden');
+            }
         });
-    </script>
+    }
+});
+
+</script>
+
 </x-app-layout>

@@ -38,9 +38,46 @@
                 <p class="text-gray-700"><strong>Number of Registrations:</strong> {{ $task->taskable->registrationHourly->count() }}</p>
                 <p class="text-gray-700"><strong>Total Time:</strong> {{ sprintf("%d days, %02d hours, %02d minutes", $days, $hours, $minutes) }}</p>
                 @elseif($task->task_type == 'product')
-                <div class="space-y-2">
+                <div class="space-y-4">
                     @foreach($task->taskProduct as $taskProduct)
-                        <p class="text-gray-700"><strong>Product Sold:</strong> {{ $taskProduct->product->title }}</p>
+                        @php
+                            $product = $taskProduct->product;
+                            $price = $product->price; // Get price from the product
+                            $quantity = $taskProduct->quantity; // Quantity from taskProduct
+                            $totalPrice = $price * $quantity; // Calculate total price
+                            $attributes = $taskProduct->attributes ? (is_string($taskProduct->attributes) ? json_decode($taskProduct->attributes, true) : $taskProduct->attributes) : [];
+                        @endphp
+                        
+                        <!-- Product or Service Details -->
+                        <div class="p-4 bg-white rounded-lg shadow-lg border border-gray-300">
+                            <h3 class="text-xl font-semibold text-gray-800">{{ $product->title }}</h3>
+                            <p class="text-gray-600"><strong>Type:</strong> {{ ucfirst($product->type) }}</p>
+                            
+                            <!-- Common Details -->
+                            <p class="text-gray-700"><strong>Quantity:</strong> {{ $quantity }}</p>
+                            
+                            <!-- Product-specific Details -->
+                            @if($product->type == 'product')
+                                <p class="text-gray-700"><strong>Price per Unit:</strong> ${{ number_format($price, 2) }}</p>
+                                <p class="text-gray-700"><strong>Total Price:</strong> ${{ number_format($totalPrice, 2) }}</p>
+                            
+                            <!-- Service-specific Details -->
+                            @elseif($product->type == 'service')
+                                @if(count($attributes))
+                                    <div class="mt-2">
+                                        <p class="text-gray-700"><strong>Attributes:</strong></p>
+                                        <ul class="list-disc pl-5">
+                                            @foreach($attributes as $attribute)
+                                                <li>{{ $attribute['attribute'] ?? 'N/A' }}: {{ $attribute['quantity'] ?? 'N/A' }} (Price: ${{ $attribute['price'] ?? 'N/A' }})</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                @else
+                                    <p class="text-gray-700">No attributes available for this service.</p>
+                                @endif
+                                <!-- Add other service-specific details if needed -->
+                            @endif
+                        </div>
                     @endforeach
                 </div>
                 @elseif($task->task_type == 'distance')
