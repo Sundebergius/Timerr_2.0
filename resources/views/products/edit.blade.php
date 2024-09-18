@@ -116,29 +116,39 @@
         .attribute-item {
             transition: background-color 0.3s, color 0.3s;
         }
-
+    
         .attribute-item.deleting {
             background-color: #fdd;
             border: 1px solid #f99;
             color: #999;
             text-decoration: line-through;
         }
-
-        .attribute-item .remove-attribute {
-            display: inline-block;
-        }
-
+    
+        /* Ensure remove-attribute button is hidden when deleting */
         .attribute-item.deleting .remove-attribute {
-            display: inline-block;
+            display: none !important; /* Force hiding the remove button */
+        }
+    
+        /* The undo button is visible only when deleting */
+        .attribute-item.deleting .undo-remove-attribute {
+            display: inline-block !important;
+        }
+    
+        /* Initially, hide the undo button */
+        .undo-remove-attribute {
+            display: none;
         }
     </style>
+    
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let attributesList = document.getElementById('attributes-list');
+    
     if (attributesList) {
-        let index = @json(count($product->attributes ?? [])); // Initial index
+        let index = @json(count($product->attributes ?? [])); 
 
+        // Add new attribute logic
         let addAttributeButton = document.getElementById('add-attribute');
         if (addAttributeButton) {
             addAttributeButton.addEventListener('click', function() {
@@ -161,21 +171,39 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
+        // Add event listener to the parent `attributesList` for remove and undo buttons
         attributesList.addEventListener('click', function(event) {
-            if (event.target.classList.contains('remove-attribute')) {
-                let attributeItem = event.target.closest('.attribute-item');
-                let deleteFlag = attributeItem.querySelector('.delete-flag');
+            let attributeItem = event.target.closest('.attribute-item');
+            if (!attributeItem) return;
+
+            let deleteFlag = attributeItem.querySelector('.delete-flag');
+            let removeButton = attributeItem.querySelector('.remove-attribute');
+            let undoButton = attributeItem.querySelector('.undo-remove-attribute');
+
+            // Handling Remove Button Click
+            if (event.target.closest('.remove-attribute')) {
+                console.log('Remove clicked:', attributeItem); // Debugging: log item being removed
+
+                // Mark for deletion and add visual class
                 deleteFlag.value = '1';
                 attributeItem.classList.add('deleting');
-                attributeItem.querySelector('.remove-attribute').classList.add('hidden');
-                attributeItem.querySelector('.undo-remove-attribute').classList.remove('hidden');
-            } else if (event.target.classList.contains('undo-remove-attribute')) {
-                let attributeItem = event.target.closest('.attribute-item');
-                let deleteFlag = attributeItem.querySelector('.delete-flag');
+
+                // Toggle buttons
+                removeButton.classList.add('hidden');
+                undoButton.classList.remove('hidden');
+            }
+
+            // Handling Undo Button Click
+            else if (event.target.closest('.undo-remove-attribute')) {
+                console.log('Undo clicked:', attributeItem); // Debugging: log item being undone
+
+                // Unmark for deletion and remove visual class
                 deleteFlag.value = '0';
                 attributeItem.classList.remove('deleting');
-                attributeItem.querySelector('.remove-attribute').classList.remove('hidden');
-                attributeItem.querySelector('.undo-remove-attribute').classList.add('hidden');
+
+                // Toggle buttons back
+                removeButton.classList.remove('hidden');
+                undoButton.classList.add('hidden');
             }
         });
     }
