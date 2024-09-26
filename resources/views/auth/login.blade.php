@@ -32,17 +32,45 @@
                 </label>
             </div>
 
-            <div class="flex items-center justify-end mt-4">
-                @if (Route::has('password.request'))
-                    <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
-                        {{ __('Forgot your password?') }}
-                    </a>
-                @endif
-
-                <x-button class="ms-4">
+            <!-- Centered Login Button -->
+            <div class="flex items-center justify-center mt-6">
+                <x-button class="w-full justify-center">
                     {{ __('Log in') }}
                 </x-button>
             </div>
+
+            <!-- Forgot Password and Sign Up Links -->
+            <div class="flex items-center justify-between mt-4">
+                @if (Route::has('password.request'))
+                    <a class="underline text-sm text-gray-600 hover:text-gray-900" href="{{ route('password.request') }}">
+                        {{ __('Forgot your password?') }}
+                    </a>
+                @endif
+            </div>
         </form>
+
+        <!-- Separator with "or" -->
+        <div class="flex items-center my-6">
+            <hr class="w-full border-gray-300">
+            <span class="px-2 text-sm text-gray-500">or</span>
+            <hr class="w-full border-gray-300">
+        </div>
+
+        <!-- Social Login Section (Google) -->
+        <div class="flex items-center justify-center">
+            <a href="{{ route('google.login') }}" class="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow hover:bg-gray-100 transition-colors duration-200 ease-in-out">
+                <img src="https://cdn.studioninja.co/build/master-pipeline-15-5b26b/resources/dist/assets/images/icons/integration-icons/google-logo.svg" alt="Google Logo" width="28" height="28" class="mr-3">
+                <span class="text-gray-600 text-sm font-semibold">Sign in with Google</span>
+            </a>
+        </div>
+
+        <!-- Sign Up Link (Positioned Under Google Login) -->
+        <div class="text-center mt-6">
+            <span class="text-sm text-gray-600">Not a member?</span>
+            <a class="underline text-sm text-gray-600 hover:text-gray-900" href="{{ route('register') }}">
+                Sign up for free
+            </a>
+        </div>
+
     </x-authentication-card>
 </x-guest-layout>

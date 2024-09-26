@@ -482,4 +482,35 @@ class WebhookController extends Controller
 
         ];
     }
+
+    public function handleStripeWebhook(Request $request)
+    {
+        $payload = $request->getContent();
+        $signature = $request->headers->get('Stripe-Signature');
+        $webhookSecret = env('STRIPE_WEBHOOK_SECRET');
+
+        // Verify the webhook signature
+        try {
+            $event = \Stripe\Webhook::constructEvent($payload, $signature, $webhookSecret);
+        } catch (\UnexpectedValueException $e) {
+            // Invalid payload
+            return response()->json(['error' => 'Invalid payload'], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            // Invalid signature
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
+
+        // Handle the event
+        switch ($event['type']) {
+            case 'invoice.payment_succeeded':
+                // Handle successful payment
+                break;
+            case 'customer.subscription.created':
+                // Handle subscription creation
+                break;
+            // Add more cases for other events you want to handle
+        }
+
+        return response()->json(['status' => 'success']);
+    }
 }

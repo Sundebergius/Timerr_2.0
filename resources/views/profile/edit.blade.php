@@ -15,7 +15,21 @@
 
             <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
+                    {{-- Pass the `hasPassword` variable to the update-password-form --}}
+                    @include('profile.partials.update-password-form', ['hasPassword' => $hasPassword])
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    @include('profile.partials.connect-google-account')
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
+                <div class="max-w-xl">
+                    {{-- Include the subscription management section --}}
+                    @include('profile.partials.subscription-management')
                 </div>
             </div>
 
