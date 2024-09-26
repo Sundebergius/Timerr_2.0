@@ -93,6 +93,10 @@ export default {
       type: Number,
       required: true
     },
+    teamId: { // Add this prop if the team_id is available via props
+      type: Number,
+      required: true
+    },
     // type: {
     //   type: String,
     //   default: ''
@@ -172,12 +176,20 @@ export default {
         price: this.price || 0,
         quantity_in_stock: this.quantity || 0,
         user_id: this.userId,
+        team_id: this.teamId,  // Include team_id in the product data
         image: null,
         active: true,
         parent_id: this.parent_id || null,
         type: this.type,
         attributes: this.type === 'service' ? attributes : [], // Send attributes as an array
       };
+
+      // Determine if the product is created for a team or personal account
+      // if (this.teamId) {
+      //      productData.team_id = this.teamId; // Set team_id if it exists
+      //  } else {
+      //     productData.user_id = this.userId; // Otherwise set user_id
+      //  }
 
       console.log('Product data being sent:', productData);
 

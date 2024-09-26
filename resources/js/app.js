@@ -32,6 +32,8 @@ const app = createApp({
              showModal: false,
          // products: [],
             userId: null,
+            teamId: null, // Add teamId here
+            products: [],
          };
      },
     async created() {
@@ -39,7 +41,11 @@ const app = createApp({
         const appElement = document.querySelector('#app');
         if (appElement) {
             this.userId = Number(appElement.getAttribute('data-user-id'));
+            this.teamId = Number(appElement.getAttribute('data-team-id')); // Retrieve teamId
+
             console.log('User ID from app.js:', this.userId);
+            console.log('Team ID from app.js:', this.teamId); // Log teamId
+
             if (this.userId) {
                 try {
                     console.log('Fetching products from app.js...');
