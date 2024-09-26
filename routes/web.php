@@ -11,6 +11,9 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\WebhookController;
+use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\StripeController;
+use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,9 +31,17 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+Route::post('auth/google/disconnect', [GoogleController::class, 'disconnect'])->name('google.disconnect');
+Route::get('auth/google/redirect', [GoogleController::class, 'redirectToGoogle'])->name('google.redirect'); // For connecting
+
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware(['auth'])->get('/billing-portal', [ProfileController::class, 'redirectToBillingPortal'])->name('billing.portal');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -66,9 +77,23 @@ Route::middleware('auth')->group(function () {
             Route::post('/project-completed', [WebhookController::class, 'handleProjectCompleted'])->name('project_completed');
             Route::post('/task-created', [WebhookController::class, 'handleTaskCreated'])->name('task_created');
             Route::post('/task-completed', [WebhookController::class, 'handleTaskCompleted'])->name('task_completed');
+            Route::post('/stripe/webhook', [WebhookController::class, 'handleStripeWebhook']);
+
 
         });
     });
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/stripe/payment', [StripeController::class, 'showPaymentPage'])->name('stripe.payment');
+        Route::post('/stripe/process', [StripeController::class, 'processPayment'])->name('stripe.process');
+        Route::post('/subscription/resume', [StripeController::class, 'resumeSubscription'])->name('subscription.resume');
+
+        // Route::post('/subscription/upgrade', [SubscriptionController::class, 'upgrade'])->name('subscription.upgrade');
+        // Route::post('/subscription/downgrade', [SubscriptionController::class, 'downgrade'])->name('subscription.downgrade');
+        // Route::post('/subscription/cancel', [SubscriptionController::class, 'cancel'])->name('subscription.cancel');
+    });
+    Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
+
 
     // client tag routes
     // Route::post('/tag', [TagController::class, 'store']);
