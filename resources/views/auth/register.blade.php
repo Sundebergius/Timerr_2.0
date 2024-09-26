@@ -34,7 +34,6 @@
                     <x-label for="terms">
                         <div class="flex items-center">
                             <x-checkbox name="terms" id="terms" required />
-
                             <div class="ms-2">
                                 {!! __('I agree to the :terms_of_service and :privacy_policy', [
                                         'terms_of_service' => '<a target="_blank" href="'.route('terms.show').'" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">'.__('Terms of Service').'</a>',
@@ -46,15 +45,35 @@
                 </div>
             @endif
 
-            <div class="flex items-center justify-end mt-4">
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                    {{ __('Already registered?') }}
-                </a>
-
-                <x-button class="ms-4">
+            <!-- Centered Register Button -->
+            <div class="flex items-center justify-center mt-6">
+                <x-button class="w-full justify-center">
                     {{ __('Register') }}
                 </x-button>
             </div>
+
+            <!-- Already Registered Link -->
+            <div class="flex items-center justify-center mt-4">
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
+                    {{ __('Already registered?') }}
+                </a>
+            </div>
         </form>
+
+        <!-- Separator with "or" -->
+        <div class="flex items-center my-6">
+            <hr class="w-full border-gray-300">
+            <span class="px-2 text-sm text-gray-500">or</span>
+            <hr class="w-full border-gray-300">
+        </div>
+
+        <!-- Social Login Section (Google) -->
+        <div class="flex items-center justify-center">
+            <a href="{{ route('google.login') }}" class="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow hover:bg-gray-100 transition-colors duration-200 ease-in-out">
+                <img src="https://cdn.studioninja.co/build/master-pipeline-15-5b26b/resources/dist/assets/images/icons/integration-icons/google-logo.svg" alt="Google Logo" width="28" height="28" class="mr-3">
+                <span class="text-gray-600 text-sm font-semibold">Sign up with Google</span>
+            </a>
+        </div>
+
     </x-authentication-card>
 </x-guest-layout>

@@ -15,6 +15,7 @@ class CreateTeam implements CreatesTeams
     /**
      * Validate and create a new team for the given user.
      *
+     * @param  User  $user
      * @param  array<string, string>  $input
      */
     public function create(User $user, array $input): Team
@@ -25,12 +26,20 @@ class CreateTeam implements CreatesTeams
             'name' => ['required', 'string', 'max:255'],
         ])->validateWithBag('createTeam');
 
+        // Dispatch event for adding team (if needed)
         AddingTeam::dispatch($user);
 
-        $user->switchTeam($team = $user->ownedTeams()->create([
+        // Create the team
+        $team = $user->ownedTeams()->create([
             'name' => $input['name'],
             'personal_team' => false,
-        ]));
+        ]);
+
+        // Assign the user as the owner of the new team
+        $user->teams()->attach($team, ['role' => 'owner']);
+
+        // Optionally switch to the new team
+        $user->switchTeam($team);
 
         return $team;
     }

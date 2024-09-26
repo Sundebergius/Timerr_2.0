@@ -6,6 +6,29 @@
             @csrf
             @method('PUT')
 
+            @if($errors->any())
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <strong class="font-bold">Whoops!</strong>
+                    <span class="block sm:inline">There were some problems with your input.</span>
+                    <ul class="mt-2 list-disc list-inside">
+                        @foreach ($errors->all() as $error)
+                            @php
+                                // Translate technical messages to user-friendly messages
+                                $userFriendlyMessage = str_replace([
+                                    'The attributes.', 
+                                    'field has a duplicate value'
+                                ], [
+                                    'Duplicate attribute', 
+                                    'has a duplicate key'
+                                ], $error);
+                            @endphp
+                            <li>{{ $userFriendlyMessage }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+
             <!-- Title -->
             <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="title">

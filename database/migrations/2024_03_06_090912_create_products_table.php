@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('products', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('team_id')->nullable()->constrained('teams')->onDelete('cascade');
             $table->foreignId('parent_id')->nullable()->constrained('products')->onDelete('set null');
             $table->string('title');
             $table->enum('type', ['product', 'service'])->default('product'); // Added type field

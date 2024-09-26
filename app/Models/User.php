@@ -10,6 +10,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Cashier\Billable;
 
 class User extends Authenticatable
 {
@@ -19,6 +20,7 @@ class User extends Authenticatable
     use HasTeams;
     use Notifiable;
     use TwoFactorAuthenticatable;
+    use Billable;
 
     /**
      * The attributes that are mass assignable.
@@ -68,5 +70,39 @@ class User extends Authenticatable
     public function webhooks()
     {
         return $this->hasMany(Webhook::class);
+    }
+
+    public function ownedTeams()
+    {
+        return $this->hasMany(Team::class, 'user_id');
+    }
+
+    public function currentTeam()
+    {
+        // Assuming you have a 'current_team_id' column in your users table
+        return $this->belongsTo(Team::class, 'current_team_id');
+    }
+
+    /**
+     * Get all teams the user belongs to.
+     */
+    // public function teams()
+    // {
+    //     return $this->hasMany(Team::class);
+    // }
+
+    public function teams()
+    {
+        return $this->belongsToMany(Team::class, 'team_user'); // Assuming you have a pivot table named 'team_user'
+    }
+
+    // public function subscription($name = 'default')
+    // {
+    //     return $this->hasOne(Subscription::class)->where('name', $name);
+    // }
+
+    public function isSubscribedTo($planName)
+    {
+        return $this->subscribed('default') && $this->subscription('default')->name === $planName;
     }
 }

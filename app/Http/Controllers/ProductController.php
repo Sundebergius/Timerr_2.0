@@ -4,80 +4,106 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Models\User;
+use App\Models\Team;
 use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
     public function store(Request $request)
-    {
-        \Log::info('Store method called');
-        \Log::info('Request data:', $request->all());
-    
-        // Common validation rules
-        $rules = [
-            'title' => 'required|string|max:255',
-            'category' => 'nullable|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'price' => 'nullable|numeric|min:0',
-            'user_id' => 'required|exists:users,id',
-            'quantity_in_stock' => 'nullable|integer|min:0',
-            'active' => 'required|boolean',
-            'parent_id' => 'nullable|exists:products,id',
-            'type' => 'required|in:product,service', // Required to distinguish product and service
-        ];
-    
-        // Additional validation for services (attributes are required only for services)
-        if ($request->input('type') === 'service') {
-            $rules['attributes'] = 'required|array'; // Ensure attributes are provided for services
-            $rules['attributes.*.key'] = 'required|string|max:255';
-            $rules['attributes.*.value'] = 'required|numeric';
-        }
-    
-        $validator = Validator::make($request->all(), $rules);
-    
-        if ($validator->fails()) {
-            \Log::error('Validation failed:', $validator->errors()->toArray());
-            return response()->json($validator->errors(), 422);
-        }
-    
-        try {
-            \Log::info('Validation passed');
-    
-            // Format attributes if it's a service, otherwise set as null or empty
-            $formattedAttributes = [];
-            if ($request->input('type') === 'service') {
-                $formattedAttributes = $this->formatAttributes($request->input('attributes', []));
-            }
-    
-            \Log::info('Formatted attributes:', $formattedAttributes);
-    
-            // Prepare the product data
-            $productData = [
-                'user_id' => $request->user_id,
-                'title' => $request->title,
-                'category' => $request->category,
-                'description' => $request->description,
-                'price' => $request->price ?: 0,
-                'quantity_in_stock' => $request->quantity_in_stock ?: 0,
-                'active' => $request->active,
-                'parent_id' => $request->parent_id,
-                'type' => $request->type,
-                'attributes' => !empty($formattedAttributes) ? $formattedAttributes : null,
-            ];
-    
-            \Log::info('Product data to be saved:', $productData);
-    
-            // Create the product
-            $product = Product::create($productData);
-    
-            \Log::info('Product created successfully:', $product->toArray());
-    
-            return response()->json(['message' => 'Product created successfully', 'product' => $product], 200);
-        } catch (\Exception $e) {
-            \Log::error('Error creating product:', ['exception' => $e->getMessage()]);
-            return response()->json(['error' => 'Unable to create product'], 500);
-        }
+{
+    \Log::info('Store method called');
+
+    // Log the request data
+    \Log::info('Request data:', $request->all());
+
+    // Common validation rules
+    $rules = [
+        'title' => 'required|string|max:255',
+        'category' => 'nullable|string|max:255',
+        'description' => 'nullable|string|max:1000',
+        'price' => 'nullable|numeric|min:0',
+        'quantity_in_stock' => 'nullable|integer|min:0',
+        'active' => 'required|boolean',
+        'parent_id' => 'nullable|exists:products,id',
+        'type' => 'required|in:product,service',
+        'user_id' => 'required|exists:users,id',  // Ensure user exists
+        'team_id' => 'nullable|exists:teams,id',  // Ensure team exists
+    ];
+
+    // Additional validation for services
+    if ($request->input('type') === 'service') {
+        $rules['attributes'] = 'required|array';
+        $rules['attributes.*.key'] = 'required|string|max:255';
+        $rules['attributes.*.value'] = 'required|numeric';
     }
+
+    $validator = Validator::make($request->all(), $rules);
+
+    if ($validator->fails()) {
+        \Log::error('Validation failed:', $validator->errors()->toArray());
+        return response()->json($validator->errors(), 422);
+    }
+
+    try {
+        \Log::info('Validation passed');
+
+        // Check the provided team ID
+        $teamId = $request->input('team_id');
+        \Log::info('Team ID from request:', ['team_id' => $teamId]);
+
+        $team = Team::find($teamId);  // Get the team from the database
+        \Log::info('Fetched team:', $team ? $team->toArray() : 'No team found');
+
+        // Initialize userId and teamId for product data
+        $assignedUserId = $request->input('user_id'); // Always assign user_id
+        $assignedTeamId = null;
+
+        // Check if a valid team exists
+        if ($team) {
+            if ($team->personal_team) {
+                \Log::info('Personal team detected. Using assigned user_id:', ['assigned_user_id' => $assignedUserId]);
+                // Don't assign team_id for personal teams
+            } else {
+                \Log::info('Non-personal team detected. Assigning team_id.');
+                $assignedTeamId = $team->id; // Use team_id for public teams
+                \Log::info('Assigned team_id:', ['assigned_team_id' => $assignedTeamId]);
+            }
+        } else {
+            \Log::error('No valid team found for the user. Team ID: ' . $teamId);
+            return response()->json(['error' => 'Invalid team provided'], 422);
+        }
+
+        // Prepare the product data
+        $productData = [
+            'user_id' => $assignedUserId, // Always set user_id
+            'team_id' => $assignedTeamId, // Set team_id if public team or null if personal
+            'title' => $request->title,
+            'category' => $request->category,
+            'description' => $request->description,
+            'price' => $request->price ?: 0,
+            'quantity_in_stock' => $request->quantity_in_stock ?: 0,
+            'active' => $request->active,
+            'parent_id' => $request->parent_id,
+            'type' => $request->type,
+            'attributes' => $request->input('attributes') ? $this->formatAttributes($request->input('attributes')) : null,
+        ];
+
+        \Log::info('Product data to be saved:', $productData);
+
+        // Create the product
+        $product = Product::create($productData);
+
+        \Log::info('Product created successfully:', $product->toArray());
+
+        return response()->json(['message' => 'Product created successfully', 'product' => $product], 200);
+    } catch (\Exception $e) {
+        \Log::error('Error creating product:', ['exception' => $e->getMessage()]);
+        return response()->json(['error' => 'Unable to create product'], 500);
+    }
+}
+
+
 
 
     private function formatAttributes(array $attributes)
@@ -109,8 +135,18 @@ class ProductController extends Controller
     public function getUserProducts($userId)
     {
         try {
-            // Fetch products for the given user ID
-            $products = Product::where('user_id', $userId)->get();
+            // Fetch the current user
+            $user = User::find($userId);
+            
+            // Check if the user is working within their personal team
+            if ($user->currentTeam && $user->currentTeam->personal_team) {
+                // Fetch products for the user's personal account
+                $products = Product::where('user_id', $user->id)->get();
+            } else {
+                // Fetch products for the current team
+                $products = Product::where('team_id', $user->current_team_id)->get();
+            }
+
             return response()->json(['products' => $products], 200);
         } catch (\Exception $e) {
             \Log::error('Error fetching products: '.$e->getMessage());
@@ -121,10 +157,16 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $pageSize = $request->get('pageSize', 10); // Default to 10 if pageSize is not set
-        if ($pageSize === 'all') {
-            $products = Product::all();
+        
+        $user = auth()->user(); // Get the authenticated user
+
+        // Check if the user is working in their personal team or a team
+        if ($user->currentTeam && $user->currentTeam->personal_team) {
+            // Fetch personal products
+            $products = Product::where('user_id', $user->id)->paginate($pageSize);
         } else {
-            $products = Product::paginate($pageSize);
+            // Fetch team products
+            $products = Product::where('team_id', $user->current_team_id)->paginate($pageSize);
         }
 
         return view('products.index', ['products' => $products]);
@@ -150,6 +192,7 @@ class ProductController extends Controller
             'description' => 'nullable|string|max:1000',
             'price' => 'nullable|numeric|min:0',
             'quantity_in_stock' => 'nullable|integer|min:0',
+            'quantity_sold' => 'nullable|integer|min:0',
             'active' => 'nullable|boolean',
             'parent_id' => 'nullable|exists:products,id',
             'attributes' => 'nullable|array',
@@ -169,6 +212,7 @@ class ProductController extends Controller
                 'description' => $request->description,
                 'price' => $request->price ?: 0,
                 'quantity_in_stock' => $request->quantity_in_stock ?: 0,
+                'quantity_sold' => $request->quantity_sold ?: 0,
                 'active' => $request->has('active') ? 1 : 0,
                 'parent_id' => $request->parent_id,
                 'attributes' => $this->formatAttributes($request->input('attributes', [])),
