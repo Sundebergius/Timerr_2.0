@@ -10,20 +10,19 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if($errors->any())
-        <div class="alert alert-danger">
-            {{ implode(', ', $errors->all()) }}
-        </div>
-    @endif
-
     <div class="mt-5 md:mt-0 md:col-span-2">
         <div class="px-4 py-5 bg-white sm:p-6 shadow sm:rounded-tl-md sm:rounded-tr-md">
+            @if(session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="alert alert-danger">
+                    {{ implode(', ', $errors->all()) }}
+                </div>
+            @endif
             <p class="mt-4 text-sm text-gray-600">
                 {{ __('Manage your subscription and billing details in the secure Stripe portal.') }}
             </p>
