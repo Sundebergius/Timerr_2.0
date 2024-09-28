@@ -55,16 +55,15 @@ class StripeService
         $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
         if ($subscription) {
-            $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
 
-            // Always set `ends_at` to the current period end if cancel_at_period_end is true
-            $endsAt = $isCancelAtPeriodEnd ? $currentPeriodEnd : null;
+            // Always set `ends_at` to the current billing period end
+            $endsAt = $currentPeriodEnd;
 
             // Update the local subscription with the new status and `ends_at` date
             $subscription->update([
                 'stripe_status' => $subscriptionObject->status,
-                'ends_at' => $endsAt,
+                'ends_at' => $endsAt,  // Update ends_at to the current billing cycle end date
                 'updated_at' => now(),
             ]);
 
