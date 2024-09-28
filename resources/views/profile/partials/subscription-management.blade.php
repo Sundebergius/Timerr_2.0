@@ -54,33 +54,45 @@
                     </form>
                 @endif
             
-                @if($subscription = $user->subscription('default'))
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
-                        <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
-                        <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
-            
-                        @if($subscription->active() && $subscription->ends_at)
-                            <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
-                        @elseif($subscription->canceled() && $subscription->ends_at)
-                            <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
-                        @endif
-            
-                        @if($subscription->onTrial())
-                            <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
-                        @endif
-            
-                        <!-- Show subscription items if necessary -->
-                        @if(!empty($subscription->items))
-                            <h4 class="mt-2 font-bold">{{ __('Subscription Items') }}</h4>
-                            <ul>
-                                @foreach($subscription->items as $item)
-                                    <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
-                                @endforeach
-                            </ul>
-                        @endif
-                    </div>
-                @endif
+                @if($subscription = $user->subscription('active'))
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
+                    <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
+                    <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
+
+                    @if($subscription->active() && $subscription->ends_at)
+                        <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
+                    @elseif($subscription->canceled() && $subscription->ends_at)
+                        <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
+                    @endif
+
+                    @if($subscription->onTrial())
+                        <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
+                    @endif
+
+                    <!-- Show subscription items if necessary -->
+                    @if(!empty($subscription->items))
+                        <h4 class="mt-2 font-bold">{{ __('Subscription Items') }}</h4>
+                        <ul>
+                            @foreach($subscription->items as $item)
+                                <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
+                            @endforeach
+                        </ul>
+                    @endif
+
+                    <!-- Display the message if they try to add a new card but already have a subscription -->
+                    @if($subscription->active() || $subscription->canceled())
+                        <p class="text-red-500">{{ __('You already have a subscription. You cannot add a new payment method or subscribe again.') }}</p>
+                    @else
+                        <!-- Allow adding a new payment method or card if no active or canceled subscription -->
+                        <form method="POST" action="{{ route('subscription.updatePaymentMethod') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-primary">{{ __('Add Payment Method') }}</button>
+                        </form>
+                    @endif
+                </div>
+            @endif
+
             
                 <!-- Resume Subscription Button (Only show if the subscription is canceled but within the grace period) -->
                 @if($subscription && $subscription->canceled() && !$subscription->ended())
