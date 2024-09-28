@@ -104,47 +104,59 @@ class StripeController extends Controller
     {
         \Log::info("Stripe Webhook Event Received: " . $event->type);
 
-        $session = $event->data->object;
-        $user = User::where('stripe_id', $session->customer)->first();
+        // Identify the type of object based on the event type
+        $object = $event->data->object;
 
+        // Fetch the customer associated with the event
+        $customer_id = isset($object->customer) ? $object->customer : null;
+        if (!$customer_id) {
+            \Log::error("No customer ID found in event: " . $event->id);
+            return;
+        }
+
+        $user = User::where('stripe_id', $customer_id)->first();
         if (!$user) {
-            \Log::error("No user found with Stripe customer ID: " . $session->customer);
+            \Log::error("No user found with Stripe customer ID: " . $customer_id);
             return;
         }
 
         switch ($event->type) {
             case 'checkout.session.completed':
                 \Log::info("Processing checkout.session.completed for user: " . $user->id);
-                // Create subscription locally after successful payment
-                $this->createSubscriptionForUser($user, $session);
+                $this->createSubscriptionForUser($user, $object);  // Use session object
+                break;
+
+            case 'customer.subscription.created':
+                \Log::info("Processing customer.subscription.created for user: " . $user->id);
+                $this->createSubscriptionForUser($user, $object);  // Use subscription object
                 break;
 
             case 'customer.subscription.updated':
                 \Log::info("Processing customer.subscription.updated for user: " . $user->id);
-                $this->stripeService->updateSubscription($user, $session);
+                $this->stripeService->updateSubscription($user, $object);  // Use subscription object
                 break;
 
             case 'customer.subscription.deleted':
                 \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
-                $this->stripeService->cancelAndArchiveUser($user);
+                $this->stripeService->cancelAndArchiveUser($user);  // Use subscription object
                 break;
 
             case 'invoice.payment_succeeded':
                 \Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
-                // Handle successful payment if needed
+                \Log::info("Invoice status: " . $object->status);  // Log the payment status
                 break;
 
             case 'invoice.payment_failed':
                 \Log::error("Processing invoice.payment_failed for user: " . $user->id);
-                // Handle payment failure
+                \Log::error("Failure reason: " . $object->last_payment_error->message);  // Log why the payment failed
                 break;
 
             default:
                 \Log::warning("Unhandled event type: " . $event->type);
-                // Handle other event types
                 break;
         }
     }
+
 
     // Method to handle creating a subscription in your local database after successful payment
     private function createSubscriptionForUser($user, $session)
@@ -154,17 +166,47 @@ class StripeController extends Controller
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
             $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
 
-            // Use Laravel Cashier's newSubscription method to create the subscription
-            try {
-                $user->newSubscription('default', $stripeSubscription->items->data[0]->price->id)
-                    ->create(); // This handles creating the subscription in the subscriptions and subscription_items tables
+            // Only proceed if the subscription is active
+            if ($stripeSubscription->status === 'active') {
 
-                \Log::info("Successfully created subscription for user: {$user->id}");
+                // Check if this subscription already exists in your local database
+                $existingSubscription = $user->subscriptions()->where('stripe_id', $stripeSubscription->id)->first();
 
-            } catch (\Exception $e) {
-                \Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());
+                if ($existingSubscription) {
+                    \Log::info("Subscription already exists for user {$user->id}. Skipping creation.");
+                    return;
+                }
+
+                // Create the local subscription entry using Laravel Cashier
+                try {
+                    $user->subscriptions()->create([
+                        'stripe_id' => $stripeSubscription->id,
+                        'name' => 'default',  // Assuming 'default' is the subscription type
+                        'stripe_status' => $stripeSubscription->status,
+                        'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                        'quantity' => $stripeSubscription->items->data[0]->quantity,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    // Create the subscription item entry
+                    foreach ($stripeSubscription->items->data as $item) {
+                        $user->subscriptionItems()->create([
+                            'stripe_id' => $item->id,
+                            'stripe_price' => $item->price->id,
+                            'quantity' => $item->quantity,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
+                    \Log::info("Successfully created local subscription and subscription items for user: {$user->id}");
+                } catch (\Exception $e) {
+                    \Log::error("Error creating local subscription for user {$user->id}: " . $e->getMessage());
+                }
+            } else {
+                \Log::warning("Subscription for user {$user->id} is not active, status: " . $stripeSubscription->status);
             }
-
         } else {
             \Log::error("Failed to create subscription: user or session subscription missing.");
         }
