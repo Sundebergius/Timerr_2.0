@@ -59,8 +59,8 @@ class StripeService
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
             
-            // Determine the correct `ends_at` value
-            $endsAt = $isCancelAtPeriodEnd ? $currentPeriodEnd : null;
+            // Always update the `ends_at` field with the current period end from Stripe
+            $endsAt = $currentPeriodEnd;
 
             // Handle different statuses and adjust the type accordingly
             $type = match ($subscriptionObject->status) {
@@ -72,17 +72,16 @@ class StripeService
             // Update the local subscription with the new status, 'ends_at' date, and 'type'
             $subscription->update([
                 'stripe_status' => $subscriptionObject->status,  // Update to reflect actual Stripe status
-                'ends_at' => $endsAt,  // Set ends_at if cancel_at_period_end is true
+                'ends_at' => $endsAt,  // Always set ends_at to the current billing period end
                 'type' => $type,  // Update the subscription type based on the status
                 'updated_at' => now(),
             ]);
 
-            \Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}, and type {$type}.");
+            \Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}, type {$type}, and ends_at {$endsAt}.");
         } else {
             \Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
         }
     }
-
 
     // Downgrade the user to the Free plan
     public function downgradeToFree(User $user)
