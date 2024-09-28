@@ -13,14 +13,22 @@
     <div class="mt-5 md:mt-0 md:col-span-2">
         <div class="px-4 py-5 bg-white sm:p-6 shadow sm:rounded-tl-md sm:rounded-tr-md">
             @if(session('success'))
-                <div class="alert alert-success">
-                    {{ session('success') }}
+                <div class="alert bg-green-500 text-white px-4 py-3 rounded relative" role="alert" id="alert-success">
+                    <strong class="font-bold">Success!</strong>
+                    <span class="block sm:inline">{{ session('success') }}</span>
+                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                        <svg class="fill-current h-6 w-6 text-white" role="button" id="close-success-alert" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.348 5.652a.999.999 0 10-1.414-1.414L10 7.172 7.066 4.238a.999.999 0 10-1.414 1.414l2.934 2.934-2.934 2.934a.999.999 0 101.414 1.414l2.934-2.934 2.934 2.934a.999.999 0 101.414-1.414L11.414 10l2.934-2.934z"/></svg>
+                    </span>
                 </div>
             @endif
-
+    
             @if($errors->any())
-                <div class="alert alert-danger">
-                    {{ implode(', ', $errors->all()) }}
+                <div class="alert bg-red-500 text-white px-4 py-3 rounded relative" role="alert" id="alert-danger">
+                    <strong class="font-bold">Error!</strong>
+                    <span class="block sm:inline">{{ implode(', ', $errors->all()) }}</span>
+                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
+                        <svg class="fill-current h-6 w-6 text-white" role="button" id="close-danger-alert" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.348 5.652a.999.999 0 10-1.414-1.414L10 7.172 7.066 4.238a.999.999 0 10-1.414 1.414l2.934 2.934-2.934 2.934a.999.999 0 101.414 1.414l2.934-2.934 2.934 2.934a.999.999 0 101.414-1.414L11.414 10l2.934-2.934z"/></svg>
+                    </span>
                 </div>
             @endif
             <p class="mt-4 text-sm text-gray-600">
@@ -89,3 +97,36 @@
         </div>
     </div>
 </section>
+
+<!-- JavaScript to handle fade out and close button functionality -->
+<script>
+    // Fade out success message after 5 seconds
+    setTimeout(function() {
+        let successAlert = document.getElementById('alert-success');
+        if (successAlert) {
+            successAlert.style.transition = 'opacity 1s ease-out';
+            successAlert.style.opacity = '0';
+            setTimeout(() => successAlert.remove(), 1000);
+        }
+    }, 5000);
+
+    // Close success alert manually
+    document.getElementById('close-success-alert')?.addEventListener('click', function() {
+        document.getElementById('alert-success').remove();
+    });
+
+    // Fade out error message after 5 seconds
+    setTimeout(function() {
+        let dangerAlert = document.getElementById('alert-danger');
+        if (dangerAlert) {
+            dangerAlert.style.transition = 'opacity 1s ease-out';
+            dangerAlert.style.opacity = '0';
+            setTimeout(() => dangerAlert.remove(), 1000);
+        }
+    }, 5000);
+
+    // Close error alert manually
+    document.getElementById('close-danger-alert')?.addEventListener('click', function() {
+        document.getElementById('alert-danger').remove();
+    });
+</script>
