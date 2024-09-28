@@ -49,18 +49,26 @@ class StripeService
     }
 
     // Handle subscription updates from Stripe webhooks
-    public function updateSubscription(User $user, $subscription)
+    public function updateSubscription($user, $subscriptionObject)
     {
-        if ($user) {
-            $userSubscription = $user->subscription('default');
-            if ($userSubscription) {
-                $userSubscription->update([
-                    'stripe_status' => $subscription->status,
-                    'stripe_price' => $subscription->items->data[0]->price->id, // Update the Stripe price
-                ]);
+        // Find the subscription in your local database
+        $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
-                \Log::info("Updated subscription for user {$user->id} with price ID {$subscription->items->data[0]->price->id}");
-            }
+        if ($subscription) {
+            // Determine the subscription status
+            $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
+            $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
+
+            // Update local subscription status and dates
+            $subscription->update([
+                'stripe_status' => $subscriptionObject->status,
+                'ends_at' => $isCancelAtPeriodEnd ? $currentPeriodEnd : ($subscriptionObject->status === 'canceled' ? now() : null),
+                'updated_at' => now(),
+            ]);
+
+            \Log::info("Updated subscription for user {$user->id} with price ID {$subscriptionObject->items->data[0]->price->id}");
+        } else {
+            \Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
         }
     }
 
@@ -70,43 +78,51 @@ class StripeService
         if ($user->subscription('default')) {
             try {
                 $user->subscription('default')->cancel();
-                \Log::info("Downgraded subscription for user {$user->id} to free plan.");
+                \Log::info("Downgraded subscription for user {$user->id} to the free plan.");
             } catch (\Exception $e) {
                 \Log::error("Error downgrading subscription for user {$user->id}: " . $e->getMessage());
             }
+        } else {
+            \Log::info("No active subscription found for user {$user->id} to downgrade.");
         }
     }
 
     // Cancel subscription and archive user in Stripe
     public function cancelAndArchiveUser(User $user)
-{
-    \Log::info("Attempting to cancel and archive user in Stripe: {$user->id}");
+    {
+        \Log::info("Attempting to cancel and archive user in Stripe: {$user->id}");
 
-    if ($user->stripe_id) {
-        try {
-            // Cancel any active subscriptions
-            $subscription = $user->subscription('default');
-            if ($subscription) {
-                $subscription->cancel();
-                \Log::info("Canceled subscription for user {$user->id}");
-            } else {
-                \Log::info("No active subscription found for user {$user->id}");
+        if ($user->stripe_id) {
+            try {
+                // Cancel any active subscriptions
+                $subscription = $user->subscription('default');
+                if ($subscription && !$subscription->ended()) {
+                    $subscription->cancel();
+                    \Log::info("Canceled subscription for user {$user->id}");
+
+                    // Update the local database to mark the subscription as canceled
+                    $subscription->update([
+                        'stripe_status' => 'canceled',
+                        'ends_at' => now(), // Assume immediate cancellation in this context
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    \Log::info("No active subscription found for user {$user->id}");
+                }
+
+                // Archive the customer in Stripe by adding metadata
+                $this->stripe->customers->update($user->stripe_id, [
+                    'metadata' => ['status' => 'deleted'],
+                ]);
+
+                \Log::info("Archived customer in Stripe for user {$user->id}");
+            } catch (\Exception $e) {
+                \Log::error("Error canceling and archiving customer for user {$user->id}: " . $e->getMessage());
             }
-
-            // Archive the customer in Stripe by adding metadata
-            $this->stripe->customers->update($user->stripe_id, [
-                'metadata' => ['status' => 'deleted'],
-            ]);
-
-            \Log::info("Archived customer in Stripe for user {$user->id}");
-        } catch (\Exception $e) {
-            \Log::error("Error canceling and archiving customer for user {$user->id}: " . $e->getMessage());
+        } else {
+            \Log::info("No Stripe customer ID found for user {$user->id}");
         }
-    } else {
-        \Log::info("No Stripe customer ID found for user {$user->id}");
     }
-}
-
 
     // Resume a canceled subscription
     public function resumeSubscription(User $user)
