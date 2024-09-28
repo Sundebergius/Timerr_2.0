@@ -255,13 +255,18 @@ private function createSubscriptionForUser($user, $session)
 
     public function resumeSubscription(Request $request)
     {
+        \Log::info("Attempting to resume subscription for user: " . $request->user()->id);
+
         $user = $request->user();
         $result = $this->stripeService->resumeSubscription($user);
 
         if ($result) {
+            \Log::info("Subscription resumed successfully for user: " . $user->id);
             return redirect()->back()->with('success', 'Your subscription has been resumed.');
         }
 
+        \Log::error("Failed to resume subscription for user: " . $user->id);
         return redirect()->back()->withErrors(['error' => 'Unable to resume your subscription.']);
     }
+
 }

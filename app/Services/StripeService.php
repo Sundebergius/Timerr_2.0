@@ -130,16 +130,22 @@ class StripeService
     // Resume a canceled subscription
     public function resumeSubscription(User $user)
     {
-        if ($user->subscription('default')->canceled() && is_null($user->subscription('default')->ends_at)) {
-            try {
-                $user->subscription('default')->resume();
+        try {
+            // Check if the subscription has been canceled but is within the grace period (meaning it's not fully ended)
+            $subscription = $user->subscription('default');
+            
+            if ($subscription && $subscription->onGracePeriod()) {
+                $subscription->resume();
                 \Log::info("Resumed subscription for user {$user->id}");
                 return true;
-            } catch (\Exception $e) {
-                \Log::error("Error resuming subscription for user {$user->id}: " . $e->getMessage());
-                return false;
+            } else {
+                \Log::warning("Cannot resume subscription for user {$user->id}. Subscription is either not canceled or grace period has ended.");
             }
+        } catch (\Exception $e) {
+            \Log::error("Error resuming subscription for user {$user->id}: " . $e->getMessage());
         }
+
         return false;
     }
+
 }
