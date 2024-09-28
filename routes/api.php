@@ -20,12 +20,15 @@ use App\Http\Controllers\ProjectController;
 |
 */
 
+Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
+
+// Other webhooks for project completion (stateless)
+Route::post('/webhooks/project-completed', [WebhookController::class, 'handleProjectCompleted']);
+Route::post('/projects/{project}/send-webhook', [WebhookController::class, 'sendWebhook'])->name('projects.sendWebhook');
+
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
-
-Route::post('/webhooks/project-completed', [WebhookController::class, 'handleProjectCompleted']);
-Route::post('/projects/{project}/send-webhook', [WebhookController::class, 'sendWebhook'])->name('projects.sendWebhook');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/webhooks', [WebhookController::class, 'index'])->name('webhooks.index');

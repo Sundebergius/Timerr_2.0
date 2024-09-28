@@ -36,7 +36,7 @@ Route::get('auth/google/callback', function() {
 });
 
 // Stripe Webhook Route (public, no auth required)
-Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
+// Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
 
 /*
 |--------------------------------------------------------------------------
