@@ -177,9 +177,11 @@ class StripeController extends Controller
                     return;
                 }
 
-                // Create the local subscription entry using Laravel Cashier
+                // Create the local subscription entry directly in the `subscriptions` table
                 try {
-                    $user->subscriptions()->create([
+                    // Insert subscription data into the `subscriptions` table
+                    $subscriptionId = \DB::table('subscriptions')->insertGetId([
+                        'user_id' => $user->id,
                         'stripe_id' => $stripeSubscription->id,
                         'type' => 'default',  // Assuming 'default' is the subscription type
                         'stripe_status' => $stripeSubscription->status,
@@ -189,10 +191,12 @@ class StripeController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                    // Create the subscription item entry
+                    // Now create the subscription items
                     foreach ($stripeSubscription->items->data as $item) {
-                        $user->subscriptionItems()->create([
+                        \DB::table('subscription_items')->insert([
+                            'subscription_id' => $subscriptionId, // Link to the created subscription
                             'stripe_id' => $item->id,
+                            'stripe_product' => $item->price->product,
                             'stripe_price' => $item->price->id,
                             'quantity' => $item->quantity,
                             'created_at' => now(),
@@ -211,6 +215,7 @@ class StripeController extends Controller
             \Log::error("Failed to create subscription: user or session subscription missing.");
         }
     }
+
 
     public function subscribe(Request $request)
     {
