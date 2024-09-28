@@ -53,7 +53,9 @@
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
                         <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
             
-                        @if($subscription->ends_at)
+                        @if($subscription->active() && $subscription->ends_at)
+                            <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
+                        @elseif($subscription->canceled() && $subscription->ends_at)
                             <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @endif
             
@@ -83,6 +85,7 @@
                     </form>
                 @endif
             </div>
+            
             
         </div>
     </div>
