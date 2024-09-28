@@ -29,6 +29,8 @@
             </p>
 
             <div class="space-y-4 mt-4">
+                @inject('planService', 'App\Services\PlanService') <!-- Inject the PlanService -->
+            
                 @if(!$user->subscribed('default'))
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
@@ -44,11 +46,35 @@
                         </x-primary-button>
                     </form>
                 @endif
-                @if($user->subscription('default'))
-                    <pre>{{ print_r($user->subscription('default')->toArray(), true) }}</pre>
+            
+                @if($subscription = $user->subscription('default'))
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
+                        <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
+                        <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
+            
+                        @if($subscription->ends_at)
+                            <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
+                        @endif
+            
+                        @if($subscription->onTrial())
+                            <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
+                        @endif
+            
+                        <!-- Show subscription items if necessary -->
+                        @if(!empty($subscription->items))
+                            <h4 class="mt-2 font-bold">{{ __('Subscription Items') }}</h4>
+                            <ul>
+                                @foreach($subscription->items as $item)
+                                    <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
                 @endif
+            
                 <!-- Resume Subscription Button (Only show if the subscription is canceled but within the grace period) -->
-                @if($user->subscription('default') && $user->subscription('default')->canceled() && !$user->subscription('default')->ended())
+                @if($subscription && $subscription->canceled() && !$subscription->ended())
                     <form method="POST" action="{{ route('subscription.resume') }}">
                         @csrf
                         <x-primary-button>
@@ -57,6 +83,7 @@
                     </form>
                 @endif
             </div>
+            
         </div>
     </div>
 </section>
