@@ -55,25 +55,34 @@ class StripeService
         $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
         if ($subscription) {
+            // Get the current billing period end
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
             
             // Determine the correct `ends_at` value
             $endsAt = $isCancelAtPeriodEnd ? $currentPeriodEnd : null;
 
-            // Update the local subscription with the new status and `ends_at` date
+            // Handle different statuses and adjust the type accordingly
+            $type = match ($subscriptionObject->status) {
+                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'active',  // Mark as canceled if cancel_at_period_end is true
+                'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled', // Mark as expired if ends_at has passed
+                default => $subscription->type,  // Retain the type if status is unrecognized
+            };
+
+            // Update the local subscription with the new status, 'ends_at' date, and 'type'
             $subscription->update([
-                'stripe_status' => $subscriptionObject->status,  // Update to reflect the actual subscription status from Stripe
-                'ends_at' => $endsAt,  // Update ends_at if cancel_at_period_end is true
+                'stripe_status' => $subscriptionObject->status,  // Update to reflect actual Stripe status
+                'ends_at' => $endsAt,  // Set ends_at if cancel_at_period_end is true
+                'type' => $type,  // Update the subscription type based on the status
                 'updated_at' => now(),
             ]);
 
-            // Log subscription status update
-            \Log::info("Updated subscription for user {$user->id} with price ID {$subscriptionObject->items->data[0]->price->id} and status {$subscriptionObject->status}.");
+            \Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}, and type {$type}.");
         } else {
             \Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
         }
     }
+
 
     // Downgrade the user to the Free plan
     public function downgradeToFree(User $user)
@@ -131,12 +140,23 @@ class StripeService
     public function resumeSubscription(User $user)
     {
         try {
-            // Check if the subscription has been canceled but is within the grace period (meaning it's not fully ended)
+            // Check if the subscription has been canceled but is within the grace period
             $subscription = $user->subscription('default');
             
             if ($subscription && $subscription->onGracePeriod()) {
                 $subscription->resume();
                 \Log::info("Resumed subscription for user {$user->id}");
+                
+                // Ensure `ends_at` remains unchanged, as it reflects the next billing cycle
+                $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscription->asStripeSubscription()->current_period_end);
+
+                // Update the subscription to ensure the status is correct, but keep `ends_at`
+                $subscription->update([
+                    'stripe_status' => 'active',  // Mark the subscription as active again
+                    'type' => 'active',  // Change the type back to active
+                    'updated_at' => now(),
+                ]);
+
                 return true;
             } else {
                 \Log::warning("Cannot resume subscription for user {$user->id}. Subscription is either not canceled or grace period has ended.");
@@ -147,5 +167,4 @@ class StripeService
 
         return false;
     }
-
 }
