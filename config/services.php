@@ -31,9 +31,9 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    'webhook' => [
-        'url' => env('WEBHOOK_URL'),
-    ],
+    // 'webhook' => [
+    //     'url' => env('WEBHOOK_URL'),
+    // ],
 
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
