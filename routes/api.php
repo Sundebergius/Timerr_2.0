@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\StripeController;
 
 
 /*
