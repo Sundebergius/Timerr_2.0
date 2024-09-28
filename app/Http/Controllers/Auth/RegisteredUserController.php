@@ -53,32 +53,31 @@ class RegisteredUserController extends Controller
         $team = Team::create([
             'user_id' => $user->id,
             'name' => $user->name . "'s Team",
-            'personal_team' => true,  // Set the team as personal
+            'personal_team' => true,
         ]);
 
         // Assign the team to the user
         $user->ownedTeams()->save($team);
 
         // Set the current team ID for the user
-        $user->current_team_id = $team->id; // Set the current team ID
-        $user->save(); // Don't forget to save the user model!
+        $user->current_team_id = $team->id;
+        $user->save();
 
         // Optionally, make the user a member of their own team
         $user->teams()->attach($team, ['role' => 'owner']);
 
-        // Create a customer in Stripe
+        // Create a customer in Stripe without subscription for free users
         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
         $stripeCustomer = \Stripe\Customer::create([
             'email' => $user->email,
-            // Add more fields if necessary
+            // Optionally add metadata or other fields
         ]);
 
         // Save the Stripe customer ID to the user model
         $user->stripe_id = $stripeCustomer->id;
         $user->save();
 
-        // Create a subscription for the Free plan
-        $user->newSubscription('default', 'price_1Q2SR1EEh64CES4EGHXu1oMy')->create(); // Use the appropriate price ID for your Free plan
+        // Free users are not subscribed to any plan, so no subscription creation here
 
         event(new Registered($user));
 

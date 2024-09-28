@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Invoice;
 use App\Models\Event;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Session;
 use App\Models\TaskProduct;
 use App\Models\Webhook;
 use PDF;
@@ -324,15 +325,16 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        // Abort if the authenticated user is not the owner of the project
-        if ($project->user_id !== auth()->id()) {
-            abort(403, 'Unauthorized access.');
-        }
-    
-        $clients = Client::where('user_id', auth()->id())->get(); // Retrieve the clients created by the authenticated user
-    
+        $this->authorize('view', $project);
+
+        // Store the project ID in session
+        session(['current_project_id' => $project->id]);
+
+        $clients = Client::where('user_id', auth()->id())->get();
+
         return view('projects.show', compact('project', 'clients'));
     }
+
 
     public function create()
     {
@@ -340,46 +342,55 @@ class ProjectController extends Controller
         return view('projects.create', compact('clients'));
     }
 
-    public function edit($id)
+    public function edit(Project $project)
     {
-        $project = Project::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
+        $this->authorize('update', $project);
+
+        // Store the project ID in session
+        session(['current_project_id' => $project->id]);
+
         $clients = Client::where('user_id', auth()->id())->get();
+
         return view('projects.edit', compact('project', 'clients'));
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Project $project)
     {
-        $project = Project::where('id', $id)->where('user_id', auth()->id())->firstOrFail();
-    
+        // Authorize the update action
+        $this->authorize('update', $project);
+
         $request->validate([
             'title' => 'required',
             'description' => 'nullable',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
-    
+
         $project->fill($request->all());
-    
+
         // If a client ID was provided, associate the project with the client
         if ($request->has('client_id')) {
             $client = Client::find($request->client_id);
             $project->client()->associate($client);
         }
-    
+
         $project->save();
-    
-        return redirect()->route('projects.index', $project);
+
+        return redirect()->route('projects.index');
     }
 
     public function destroy(Project $project)
     {
-        //delete related data
+        // Authorize the delete action
+        $this->authorize('delete', $project);
+
+        // Delete related data
         $project->tasks()->delete();
         $project->notes()->delete();
         $project->contracts()->delete();
         $project->invoices()->delete();
 
-        //delete project
+        // Delete the project
         $project->delete();
 
         return redirect()->route('projects.index');

@@ -2,14 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\StripeService;
+use App\Services\PlanService;
 use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use \Stripe\Webhook;
 use Stripe\StripeClient;
 
-
 class StripeController extends Controller
 {
+    protected $stripeService;
+    protected $planService;
+
+    public function __construct(StripeService $stripeService, PlanService $planService)
+    {
+        $this->stripeService = $stripeService;
+        $this->planService = $planService;
+    }
+
     public function showPaymentPage()
     {
         $user = Auth::user();
@@ -17,49 +28,41 @@ class StripeController extends Controller
         // Set the Stripe secret key
         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
+        // Use PlanService to get the Freelancer plan price ID
+        $freelancerPriceId = $this->planService->getPriceId('freelancer');
+
         // Create a Checkout Session for the Freelancer plan
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
             'line_items' => [[
-                'price' => 'price_1Q2RSpEEh64CES4EjOr0VQvr', // Replace with your actual Stripe price ID for the Freelancer plan
+                'price' => $freelancerPriceId,
                 'quantity' => 1,
             ]],
             'mode' => 'subscription', // Use 'payment' for one-time payments
-            'success_url' => route('dashboard') . '?success=true', // Redirect URL after successful payment
-            'cancel_url' => route('stripe.payment') . '?canceled=true', // Redirect URL for canceled payment
+            'success_url' => route('dashboard') . '?success=true',
+            'cancel_url' => route('stripe.payment') . '?canceled=true',
             'metadata' => [
                 'user_id' => $user->id,
                 'plan' => 'freelancer',
             ],
         ]);
 
-        // Redirect the user to the Stripe Checkout page
         return redirect($session->url);
     }
-
 
     public function processPayment(Request $request)
     {
         $user = Auth::user();
-
-        // Set the Stripe API key
         \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
 
         try {
-            // Retrieve the PaymentIntent (this confirms the payment was processed)
-            $paymentIntentId = $request->input('payment_intent'); // You need to pass this from the frontend if needed
+            $paymentIntentId = $request->input('payment_intent');
             $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
 
             if ($paymentIntent->status == 'succeeded') {
-                // Subscribe the user to the Freelancer plan using Stripe
-                $priceId = 'price_1Q2RSpEEh64CES4EjOr0VQvr';  // Replace this with your actual Stripe price ID
-
-                $subscription = $user->newSubscription('default', $priceId)->create($paymentIntent->payment_method);
-
-                // Update the user’s plan
-                $user->update([
-                    'plan' => 'freelancer'
-                ]);
+                $priceId = 'price_1Q2RSpEEh64CES4EjOr0VQvr';
+                $user->newSubscription('default', $priceId)->create($paymentIntent->payment_method);
+                $user->update(['plan' => 'freelancer']);
 
                 return redirect()->route('dashboard')->with('success', 'You have successfully upgraded to the Freelancer plan!');
             }
@@ -70,146 +73,133 @@ class StripeController extends Controller
         }
     }
 
-    // public function upgrade(Request $request)
-    // {
-    //     $user = auth()->user();
-    //     $user->subscription('default')->swap('freelancer_plan_id'); // Replace with your actual plan ID
-    //     return redirect()->back()->with('status', 'Successfully upgraded your subscription!');
-    // }
-
-    // public function downgrade(Request $request)
-    // {
-    //     $user = auth()->user();
-    //     $user->subscription('default')->swap('free_plan_id'); // Replace with your actual plan ID
-    //     return redirect()->back()->with('status', 'Successfully downgraded your subscription!');
-    // }
-
-    // public function cancel(Request $request)
-    // {
-    //     $user = auth()->user();
-    //     $user->subscription('default')->cancel();
-    //     return redirect()->back()->with('status', 'Your subscription has been canceled.');
-    // }
-
-    // Webhook handler methods
     public function handleWebhook(Request $request)
     {
+        \Log::info('Webhook hit, starting process.');
+
         $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
 
         try {
-            // Verify the signature of the webhook
-            $event = Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+            $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+            \Log::info('Webhook successfully verified.');
         } catch (\UnexpectedValueException $e) {
-            return response('Invalid payload', 400);
+            \Log::error('Invalid payload: ' . $e->getMessage());
+            return response()->json(['error' => 'Invalid payload'], 400);
         } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            return response('Invalid signature', 400);
+            \Log::error('Invalid signature: ' . $e->getMessage());
+            return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        // Handle the event based on its type
+        \Log::info('Event Type: ' . $event->type);
+
+        // Handle the event
         $this->processEvent($event);
 
-        // Return a 200 response to acknowledge receipt of the event
         return response('Webhook handled', 200);
     }
 
-    // Process the event based on its type
     private function processEvent($event)
     {
-        $subscription = $event->data->object;
-        $user = User::where('stripe_id', $subscription->customer)->first();
+        \Log::info("Stripe Webhook Event Received: " . $event->type);
+
+        $session = $event->data->object;
+        $user = User::where('stripe_id', $session->customer)->first();
+
+        if (!$user) {
+            \Log::error("No user found with Stripe customer ID: " . $session->customer);
+            return;
+        }
 
         switch ($event->type) {
+            case 'checkout.session.completed':
+                \Log::info("Processing checkout.session.completed for user: " . $user->id);
+                // Create subscription locally after successful payment
+                $this->createSubscriptionForUser($user, $session);
+                break;
+
             case 'customer.subscription.updated':
-                $this->handleSubscriptionUpdate($user, $subscription);
+                \Log::info("Processing customer.subscription.updated for user: " . $user->id);
+                $this->stripeService->updateSubscription($user, $session);
                 break;
 
             case 'customer.subscription.deleted':
-                $this->handleSubscriptionCancellation($user, $subscription);
+                \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
+                $this->stripeService->cancelAndArchiveUser($user);
                 break;
 
             case 'invoice.payment_succeeded':
-                // Handle successful payment (optional)
+                \Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
+                // Handle successful payment if needed
                 break;
 
             case 'invoice.payment_failed':
-                // Handle payment failure (optional)
+                \Log::error("Processing invoice.payment_failed for user: " . $user->id);
+                // Handle payment failure
                 break;
-
-            case 'customer.subscription.trial_will_end':
-                // Notify user about the trial ending (optional)
-                break;
-
-            // Add other cases as needed
 
             default:
-                // Handle unexpected event types
+                \Log::warning("Unhandled event type: " . $event->type);
+                // Handle other event types
                 break;
         }
     }
 
-    // Handle subscription updates
-    private function handleSubscriptionUpdate($user, $subscription)
+    // Method to handle creating a subscription in your local database after successful payment
+    private function createSubscriptionForUser($user, $session)
     {
-        if ($user) {
-            if ($subscription->status === 'canceled') {
-                $this->downgradeUserToFreePlan($user);
-            } else {
-                // Handle other updates as necessary, like payment failures
+        if ($user && isset($session->subscription)) {
+            // Retrieve the Stripe subscription object
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+            $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
+
+            // Use Laravel Cashier's newSubscription method to create the subscription
+            try {
+                $user->newSubscription('default', $stripeSubscription->items->data[0]->price->id)
+                    ->create(); // This handles creating the subscription in the subscriptions and subscription_items tables
+
+                \Log::info("Successfully created subscription for user: {$user->id}");
+
+            } catch (\Exception $e) {
+                \Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());
             }
+
+        } else {
+            \Log::error("Failed to create subscription: user or session subscription missing.");
         }
     }
 
-    // Handle subscription cancellation events
-    private function handleSubscriptionCancellation($user, $subscription)
+    public function subscribe(Request $request)
     {
-        if ($user) {
-            $this->downgradeUserToFreePlan($user);
-        }
-    }
+        $user = $request->user();
 
-    // Downgrade user to the Free plan
-    private function downgradeUserToFreePlan($user)
-    {
-        // Cancel the current subscription (if not already done)
-        $currentSubscription = $user->subscription('default');
-        if ($currentSubscription) {
-            $currentSubscription->cancel();
-        }
-
-        // Create a new subscription for the Free plan
-        $newSubscription = \Stripe\Subscription::create([
-            'customer' => $user->stripe_id, // Replace with your user’s Stripe ID
-            'items' => [['price' => 'price_for_free_package']], // Replace with your Free package price ID
+        // Create a Stripe Checkout Session for the Freelancer plan
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        
+        $session = \Stripe\Checkout\Session::create([
+            'payment_method_types' => ['card'],
+            'customer' => $user->stripe_id, // Pass the existing Stripe customer ID
+            'line_items' => [[
+                'price' => 'price_1Q2RSpEEh64CES4EjOr0VQvr', // Freelancer plan price ID
+                'quantity' => 1,
+            ]],
+            'mode' => 'subscription',
+            'success_url' => route('dashboard') . '?session_id={CHECKOUT_SESSION_ID}', // Redirect URL after successful payment
+            'cancel_url' => route('profile.edit'), // Redirect URL for canceled payment
         ]);
 
-        // Update the user in the database
-        $user->update(['plan' => 'free']); // Update the user plan in your database
+        // Redirect the user to the Stripe Checkout page
+        return redirect($session->url);
     }
 
     public function resumeSubscription(Request $request)
     {
         $user = $request->user();
+        $result = $this->stripeService->resumeSubscription($user);
 
-        // Initialize Stripe client
-        $stripe = new StripeClient(env('STRIPE_SECRET'));
-
-        // Fetch subscription from Stripe
-        $subscription = $stripe->subscriptions->retrieve(
-            $user->subscription('default')->stripe_id
-        );
-
-        // Check if the subscription is canceled but still active on Stripe
-        if ($subscription->status === 'active' && $user->subscription('default')->cancelled() && is_null($user->subscription('default')->ends_at)) {
-            try {
-                // Resume the subscription
-                $user->subscription('default')->resume();
-
-                return redirect()->back()->with('success', 'Your subscription has been resumed.');
-            } catch (\Exception $e) {
-                return redirect()->back()->withErrors(['error' => 'Error resuming subscription: ' . $e->getMessage()]);
-            }
+        if ($result) {
+            return redirect()->back()->with('success', 'Your subscription has been resumed.');
         }
 
         return redirect()->back()->withErrors(['error' => 'Unable to resume your subscription.']);
