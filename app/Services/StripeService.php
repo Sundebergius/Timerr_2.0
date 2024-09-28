@@ -130,7 +130,7 @@ class StripeService
     // Resume a canceled subscription
     public function resumeSubscription(User $user)
     {
-        if ($user->subscription('default')->cancelled() && is_null($user->subscription('default')->ends_at)) {
+        if ($user->subscription('default')->canceled() && is_null($user->subscription('default')->ends_at)) {
             try {
                 $user->subscription('default')->resume();
                 \Log::info("Resumed subscription for user {$user->id}");
