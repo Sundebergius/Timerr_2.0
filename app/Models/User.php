@@ -111,6 +111,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class, 'team_user'); // Assuming you have a pivot table named 'team_user'
     }
 
+    public function subscriptionItems()
+    {
+        return $this->hasMany(\Laravel\Cashier\SubscriptionItem::class);
+    }
+
     // public function subscriptions()
     // {
     //     // A user has many subscriptions
