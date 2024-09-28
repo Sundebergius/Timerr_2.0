@@ -83,6 +83,21 @@ class User extends Authenticatable
         return $this->belongsTo(Team::class, 'current_team_id');
     }
 
+    public function clients()
+    {
+        return $this->hasMany(Client::class);
+    }
+
+    public function projects()
+    {
+        return $this->hasMany(Project::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
     /**
      * Get all teams the user belongs to.
      */
@@ -96,13 +111,21 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class, 'team_user'); // Assuming you have a pivot table named 'team_user'
     }
 
-    // public function subscription($name = 'default')
+    // public function subscriptions()
     // {
-    //     return $this->hasOne(Subscription::class)->where('name', $name);
+    //     // A user has many subscriptions
+    //     return $this->hasMany(Subscription::class);
     // }
 
+    // Check if the user is subscribed to a specific plan
     public function isSubscribedTo($planName)
     {
-        return $this->subscribed('default') && $this->subscription('default')->name === $planName;
+        return $this->subscribedToPlan($planName);
+    }
+
+    // Check if the user has any active subscription
+    public function hasActiveSubscription()
+    {
+        return $this->subscribed();
     }
 }

@@ -104,6 +104,17 @@
                         </div>
                     </form>
 
+                    <div class="mb-4">
+                        <p class="text-sm text-gray-700">
+                            You have <strong>{{ $clientCount }}/{{ $clientLimit }}</strong> clients.
+                            @if ($clientCount < $clientLimit)
+                                You can add {{ $clientLimit - $clientCount }} more.
+                            @else
+                                You have reached your client limit.
+                            @endif
+                        </p>
+                    </div>                    
+
                     <!-- Search tags -->
                     <div class="tags flex flex-wrap mb-6">
                         @foreach (is_array(request('search')) ? request('search') : (request('search') ? [request('search')] : []) as $search)

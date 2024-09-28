@@ -29,12 +29,21 @@
             </p>
 
             <div class="space-y-4 mt-4">
-                <!-- Instead of using <a>, we use a form with method GET and an x-primary-button component for styling -->
-                <form method="GET" action="{{ route('billing.portal') }}">
-                    <x-primary-button>
-                        {{ __('Manage Subscription') }}
-                    </x-primary-button>
-                </form>
+                @if(!$user->subscribed('default'))
+                    <form method="POST" action="{{ route('stripe.subscribe') }}">
+                        @csrf
+                        <x-primary-button>
+                            {{ __('Subscribe to Freelancer Plan') }}
+                        </x-primary-button>
+                    </form>
+                @else
+                    <!-- Manage Subscription Button -->
+                    <form method="GET" action="{{ route('billing.portal') }}">
+                        <x-primary-button>
+                            {{ __('Manage Subscription') }}
+                        </x-primary-button>
+                    </form>
+                @endif
                 @if($user->subscription('default'))
                     <pre>{{ print_r($user->subscription('default')->toArray(), true) }}</pre>
                 @endif
