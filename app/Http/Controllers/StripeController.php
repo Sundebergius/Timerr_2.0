@@ -159,64 +159,74 @@ class StripeController extends Controller
 
 
     // Method to handle creating a subscription in your local database after successful payment
-    private function createSubscriptionForUser($user, $session)
-    {
-        if ($user && isset($session->subscription)) {
-            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-            $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
+private function createSubscriptionForUser($user, $session)
+{
+    if ($user && isset($session->subscription)) {
+        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
 
-            // Only proceed if the subscription is active
-            if ($stripeSubscription->status === 'active') {
+        // Only proceed if the subscription is active
+        if ($stripeSubscription->status === 'active') {
 
-                // Check if this subscription already exists in your local database
-                $existingSubscription = $user->subscriptions()->where('stripe_id', $stripeSubscription->id)->first();
+            // Check if this subscription already exists in your local database
+            $existingSubscription = $user->subscriptions()->where('stripe_id', $stripeSubscription->id)->first();
 
-                if ($existingSubscription) {
-                    \Log::info("Subscription already exists for user {$user->id}. Skipping creation.");
-                    return;
-                }
+            if ($existingSubscription) {
+                \Log::info("Subscription already exists for user {$user->id}. Skipping creation.");
+                return;
+            }
 
-                // Get the current billing period end from Stripe
-                $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+            // Get the current billing period end from Stripe
+            $currentPeriodEnd = isset($stripeSubscription->current_period_end) 
+                ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
+                : null;
 
-                try {
-                    // Insert subscription data into the `subscriptions` table
-                    $subscriptionId = \DB::table('subscriptions')->insertGetId([
-                        'user_id' => $user->id,
-                        'stripe_id' => $stripeSubscription->id,
-                        'type' => 'default',  // Assuming 'default' is the subscription type
-                        'stripe_status' => $stripeSubscription->status,
-                        'stripe_price' => $stripeSubscription->items->data[0]->price->id,
-                        'quantity' => $stripeSubscription->items->data[0]->quantity,
-                        'ends_at' => $currentPeriodEnd, // Always set ends_at to the current billing period end
+            // Log the period end time to verify
+            if ($currentPeriodEnd) {
+                \Log::info("Subscription for user {$user->id} has a current period end at: {$currentPeriodEnd}");
+            } else {
+                \Log::warning("Subscription for user {$user->id} does not have a current period end.");
+            }
+
+            try {
+                // Insert subscription data into the `subscriptions` table
+                $subscriptionId = \DB::table('subscriptions')->insertGetId([
+                    'user_id' => $user->id,
+                    'stripe_id' => $stripeSubscription->id,
+                    'type' => 'default',  // Assuming 'default' is the subscription type
+                    'stripe_status' => $stripeSubscription->status,
+                    'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                    'quantity' => $stripeSubscription->items->data[0]->quantity,
+                    'ends_at' => $currentPeriodEnd, // Set ends_at to the current billing period end if available
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Now create the subscription items
+                foreach ($stripeSubscription->items->data as $item) {
+                    \DB::table('subscription_items')->insert([
+                        'subscription_id' => $subscriptionId, // Link to the created subscription
+                        'stripe_id' => $item->id,
+                        'stripe_product' => $item->price->product,
+                        'stripe_price' => $item->price->id,
+                        'quantity' => $item->quantity,
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
-
-                    // Now create the subscription items
-                    foreach ($stripeSubscription->items->data as $item) {
-                        \DB::table('subscription_items')->insert([
-                            'subscription_id' => $subscriptionId, // Link to the created subscription
-                            'stripe_id' => $item->id,
-                            'stripe_product' => $item->price->product,
-                            'stripe_price' => $item->price->id,
-                            'quantity' => $item->quantity,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    }
-
-                    \Log::info("Successfully created local subscription and subscription items for user: {$user->id}");
-                } catch (\Exception $e) {
-                    \Log::error("Error creating local subscription for user {$user->id}: " . $e->getMessage());
                 }
-            } else {
-                \Log::warning("Subscription for user {$user->id} is not active, status: " . $stripeSubscription->status);
+
+                \Log::info("Successfully created local subscription and subscription items for user: {$user->id}");
+            } catch (\Exception $e) {
+                \Log::error("Error creating local subscription for user {$user->id}: " . $e->getMessage());
             }
         } else {
-            \Log::error("Failed to create subscription: user or session subscription missing.");
+            \Log::warning("Subscription for user {$user->id} is not active, status: " . $stripeSubscription->status);
         }
+    } else {
+        \Log::error("Failed to create subscription: user or session subscription missing.");
     }
+}
+
 
 
 
