@@ -51,11 +51,9 @@ class StripeService
     // Handle subscription updates from Stripe webhooks
     public function updateSubscription($user, $subscriptionObject)
     {
-        // Find the subscription in your local database
         $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
         if ($subscription) {
-            // Determine the subscription status
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
 
@@ -94,7 +92,6 @@ class StripeService
 
         if ($user->stripe_id) {
             try {
-                // Cancel any active subscriptions
                 $subscription = $user->subscription('default');
                 if ($subscription && !$subscription->ended()) {
                     $subscription->cancel();
@@ -103,7 +100,7 @@ class StripeService
                     // Update the local database to mark the subscription as canceled
                     $subscription->update([
                         'stripe_status' => 'canceled',
-                        'ends_at' => now(), // Assume immediate cancellation in this context
+                        'ends_at' => $subscription->cancel_at_period_end ? \Carbon\Carbon::createFromTimestamp($subscription->current_period_end) : now(),  // Mark when it ends
                         'updated_at' => now(),
                     ]);
                 } else {
@@ -123,6 +120,7 @@ class StripeService
             \Log::info("No Stripe customer ID found for user {$user->id}");
         }
     }
+
 
     // Resume a canceled subscription
     public function resumeSubscription(User $user)

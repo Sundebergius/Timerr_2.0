@@ -187,6 +187,7 @@ class StripeController extends Controller
                         'stripe_status' => $stripeSubscription->status,
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                         'quantity' => $stripeSubscription->items->data[0]->quantity,
+                        'ends_at' => $stripeSubscription->cancel_at_period_end ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : null, // Set ends_at if cancel_at_period_end is true
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
