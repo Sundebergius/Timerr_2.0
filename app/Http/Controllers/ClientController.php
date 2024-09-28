@@ -25,6 +25,13 @@ class ClientController extends Controller
             'gray' => 'bg-gray-100 text-gray-500 hover:bg-gray-200',
         ];
 
+        $user = auth()->user();
+    
+        // Fetch the current user and calculate client count and limit
+        $clientCount = $user->clients()->count();
+        $clientLimit = 5; // Example: This can be fetched dynamically based on the user's plan if needed
+
+
         // Ensure $searches is always an array
         $searches = (array) $request->input('search', []);
         $pageSize = $request->get('pageSize', 10);
@@ -69,7 +76,7 @@ class ClientController extends Controller
         $clients = $query->orderBy($sortField, $sortDirection)
                         ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
 
-        return view('clients.index', ['clients' => $clients, 'colorClasses' => $colorClasses]);
+        return view('clients.index', ['clients' => $clients, 'clientCount' => $clientCount, 'clientLimit' => $clientLimit, 'colorClasses' => $colorClasses]);
     }
 
     public function store(Request $request)
