@@ -162,7 +162,6 @@ class StripeController extends Controller
     private function createSubscriptionForUser($user, $session)
     {
         if ($user && isset($session->subscription)) {
-            // Retrieve the Stripe subscription object
             \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
             $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
 
@@ -177,7 +176,9 @@ class StripeController extends Controller
                     return;
                 }
 
-                // Create the local subscription entry directly in the `subscriptions` table
+                // Get the current billing period end from Stripe
+                $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end);
+
                 try {
                     // Insert subscription data into the `subscriptions` table
                     $subscriptionId = \DB::table('subscriptions')->insertGetId([
@@ -187,7 +188,7 @@ class StripeController extends Controller
                         'stripe_status' => $stripeSubscription->status,
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                         'quantity' => $stripeSubscription->items->data[0]->quantity,
-                        'ends_at' => $stripeSubscription->cancel_at_period_end ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end) : null, // Set ends_at if cancel_at_period_end is true
+                        'ends_at' => $currentPeriodEnd, // Always set ends_at to the current billing period end
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -216,6 +217,7 @@ class StripeController extends Controller
             \Log::error("Failed to create subscription: user or session subscription missing.");
         }
     }
+
 
 
     public function subscribe(Request $request)

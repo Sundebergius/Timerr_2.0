@@ -51,20 +51,24 @@ class StripeService
     // Handle subscription updates from Stripe webhooks
     public function updateSubscription($user, $subscriptionObject)
     {
+        // Find the subscription in your local database
         $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
         if ($subscription) {
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
 
-            // Update local subscription status and dates
+            // Always set `ends_at` to the current period end if cancel_at_period_end is true
+            $endsAt = $isCancelAtPeriodEnd ? $currentPeriodEnd : null;
+
+            // Update the local subscription with the new status and `ends_at` date
             $subscription->update([
                 'stripe_status' => $subscriptionObject->status,
-                'ends_at' => $isCancelAtPeriodEnd ? $currentPeriodEnd : ($subscriptionObject->status === 'canceled' ? now() : null),
+                'ends_at' => $endsAt,
                 'updated_at' => now(),
             ]);
 
-            \Log::info("Updated subscription for user {$user->id} with price ID {$subscriptionObject->items->data[0]->price->id}");
+            \Log::info("Updated subscription for user {$user->id} with price ID {$subscriptionObject->items->data[0]->price->id} and status {$subscriptionObject->status}.");
         } else {
             \Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
         }
