@@ -181,7 +181,7 @@ class StripeController extends Controller
                 try {
                     $user->subscriptions()->create([
                         'stripe_id' => $stripeSubscription->id,
-                        'name' => 'default',  // Assuming 'default' is the subscription type
+                        'type' => 'default',  // Assuming 'default' is the subscription type
                         'stripe_status' => $stripeSubscription->status,
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                         'quantity' => $stripeSubscription->items->data[0]->quantity,
