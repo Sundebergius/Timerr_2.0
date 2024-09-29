@@ -95,14 +95,14 @@
             
                         <!-- Show add-ons if they exist -->
                         @if(!empty($subscription->items))
-                            <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
-                            <ul>
-                                @foreach($subscription->items as $item)
-                                    @if($item['stripe_product'] !== 'base_subscription_product_id') <!-- Use your base product ID -->
-                                        <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
-                                    @endif
-                                @endforeach
-                            </ul>
+                        <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
+                        <ul>
+                            @foreach($subscription->items as $item)
+                                @if($item['stripe_product'] !== 'base_subscription_product_id' && $subscription->stripe_status === 'active') <!-- Ensure only active subscriptions show items -->
+                                    <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
+                                @endif
+                            @endforeach
+                        </ul>
                         @endif
                     </div>
                 @endif
