@@ -138,7 +138,7 @@ class StripeController extends Controller
 
             case 'customer.subscription.deleted':
                 \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
-                $this->stripeService->cancelAndArchiveUser($user);  // Use subscription object
+                $this->stripeService->cancelSubscription($user, $object);  // Use subscription object, but don't archive the user
                 break;
 
             case 'invoice.payment_succeeded':

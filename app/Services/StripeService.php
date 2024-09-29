@@ -143,6 +143,35 @@ class StripeService
         }
     }
 
+    // Cancel subscription but do not archive user in Stripe
+    public function cancelSubscription(User $user, $subscriptionObject)
+    {
+        \Log::info("Attempting to cancel subscription for user: {$user->id}");
+
+        if ($user->stripe_id) {
+            try {
+                // Find the subscription in your local database
+                $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
+
+                if ($subscription && !$subscription->ended()) {
+                    // Update the subscription to mark it as canceled
+                    $subscription->update([
+                        'stripe_status' => 'canceled',
+                        'ends_at' => \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end),
+                        'updated_at' => now(),
+                    ]);
+
+                    \Log::info("Canceled subscription for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
+                } else {
+                    \Log::info("No active subscription found for user {$user->id}");
+                }
+            } catch (\Exception $e) {
+                \Log::error("Error canceling subscription for user {$user->id}: " . $e->getMessage());
+            }
+        } else {
+            \Log::info("No Stripe customer ID found for user {$user->id}");
+        }
+    }
 
     // Resume a canceled subscription
     public function resumeSubscription(User $user)
