@@ -41,7 +41,7 @@
             
                 <!-- Custom check for subscription status -->
                 @php
-                    $subscription = $user->subscription();
+                    $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
                     \Log::info('User subscription:', [$subscription]);
                 @endphp
             
