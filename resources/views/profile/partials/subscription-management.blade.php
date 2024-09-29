@@ -44,9 +44,12 @@
                     // Fetch subscriptions where type is 'default' or 'canceled'
                     $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
                     \Log::info('User subscription:', [$subscription]);
+                    
+                    // Check if the subscription has ended based on the current date and the ends_at field
+                    $subscriptionExpired = $subscription && $subscription->ends_at && $subscription->ends_at->isPast();
                 @endphp
-            
-                @if(!$subscription || ($subscription->canceled() && $subscription->ended()))
+
+                @if(!$subscription || $subscriptionExpired)
                     <!-- Show subscribe button if no active subscription or subscription has ended -->
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
@@ -70,11 +73,11 @@
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
             
                         <!-- Display the appropriate subscription status -->
-                        @if($subscription->type === 'canceled' && $subscription->ends_at && $subscription->ends_at->isFuture())
+                        @if($subscription->type === 'canceled' && !$subscriptionExpired)
                             <p>{{ __('Status:') }} {{ __('Canceled (Active until ') }} {{ $subscription->ends_at->format('F j, Y') }}{{ __(')') }}</p>
                         @elseif($subscription->type === 'default' && $subscription->active())
                             <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
-                        @elseif($subscription->canceled() && $subscription->ended())
+                        @elseif($subscriptionExpired)
                             <p>{{ __('Status: Expired') }}</p>
                         @endif
             
