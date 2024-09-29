@@ -38,7 +38,7 @@
 
             <div class="space-y-4 mt-4">
                 @inject('planService', 'App\Services\PlanService') <!-- Inject the PlanService -->
-            
+                
                 <!-- Custom check for subscription status -->
                 @php
                     $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
@@ -67,7 +67,13 @@
                     <div class="bg-gray-100 p-4 rounded-lg">
                         <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
-                        <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
+                        
+                        <!-- Adjust how the status is displayed to avoid confusion after a cancellation -->
+                        @if($subscription->canceled() && $subscription->ends_at)
+                            <p>{{ __('Status:') }} {{ __('Canceled (Active until ') }} {{ $subscription->ends_at->format('F j, Y') }}{{ __(')') }}</p>
+                        @elseif($subscription->active())
+                            <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
+                        @endif
             
                         @if($subscription->active() && $subscription->ends_at)
                             <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
