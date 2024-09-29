@@ -157,7 +157,6 @@ class StripeController extends Controller
         }
     }
 
-
     // Method to handle creating a subscription in your local database after successful payment
     private function createSubscriptionForUser($user, $session)
     {
@@ -189,8 +188,8 @@ class StripeController extends Controller
                 }
 
                 try {
-                    // Use Cashier's built-in subscription creation method
-                    $user->subscriptions()->create([
+                    // Use Cashier's subscription creation method, store the local subscription
+                    $subscription = $user->subscriptions()->create([
                         'type' => 'default', // Cashier expects this to be 'default' for regular subscriptions
                         'stripe_id' => $stripeSubscription->id,
                         'stripe_status' => $stripeSubscription->status,
@@ -201,10 +200,10 @@ class StripeController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                    // Now create the subscription items if necessary (only if you want to track individual items)
+                    // Now create the subscription items, using the local subscription ID
                     foreach ($stripeSubscription->items->data as $item) {
                         \DB::table('subscription_items')->insert([
-                            'subscription_id' => $subscription->id,  // Use the local subscription ID from Cashier
+                            'subscription_id' => $subscription->id,  // Use the local subscription ID
                             'stripe_id' => $item->id,
                             'stripe_product' => $item->price->product,
                             'stripe_price' => $item->price->id,
