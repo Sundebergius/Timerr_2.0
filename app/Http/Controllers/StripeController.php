@@ -165,17 +165,22 @@ class StripeController extends Controller
                 // Set up Stripe client
                 \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
                 $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
-
+    
                 // Only proceed if the subscription is active
                 if ($stripeSubscription->status === 'active') {
-                    // Check if the subscription already exists in the local DB
-                    $existingSubscription = $user->subscriptions()->where('stripe_id', $stripeSubscription->id)->first();
+                    // Find an existing subscription for this user (based on stripe_price or other identifiers, not just stripe_id)
+                    $existingSubscription = $user->subscriptions()
+                        ->where('stripe_price', $stripeSubscription->items->data[0]->price->id)
+                        ->orWhere('stripe_id', $stripeSubscription->id)
+                        ->first();
+    
                     $localSubscription = null;
-
+    
                     if ($existingSubscription) {
-                        // Update the existing subscription with the new data
+                        // Update the existing subscription with the new Stripe subscription details
                         $existingSubscription->update([
-                            'type' => 'default', // Reset to default
+                            'stripe_id' => $stripeSubscription->id,  // Update to the new Stripe subscription ID
+                            'type' => 'default', // Reset to default (no longer canceled)
                             'stripe_status' => $stripeSubscription->status,
                             'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                             'quantity' => $stripeSubscription->items->data[0]->quantity,
@@ -183,10 +188,10 @@ class StripeController extends Controller
                             'updated_at' => now(),
                         ]);
                         $localSubscription = $existingSubscription;
-
+    
                         \Log::info("Updated existing subscription for user: {$user->id}");
                     } else {
-                        // Create a new subscription if it doesn't exist
+                        // Create a new subscription if no matching subscription was found
                         $localSubscription = $user->subscriptions()->create([
                             'stripe_id' => $stripeSubscription->id,
                             'type' => 'default', // Set type to default
@@ -197,11 +202,11 @@ class StripeController extends Controller
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-
+    
                         \Log::info("Created new subscription for user: {$user->id}");
                     }
-
-                    // Ensure subscription exists before processing items
+    
+                    // Ensure the subscription exists before updating subscription items
                     if ($localSubscription) {
                         // Manually update or insert subscription items
                         foreach ($stripeSubscription->items->data as $item) {
@@ -211,12 +216,13 @@ class StripeController extends Controller
                                     'stripe_product' => $item->price->product,
                                     'stripe_price' => $item->price->id,
                                     'quantity' => $item->quantity,
+                                    'created_at' => $localSubscription->created_at ?? now(),  // Set created_at if new
                                     'updated_at' => now(),
                                 ]
                             );
                         }
-
-                        \Log::info("Successfully created or updated subscription items for user: {$user->id}");
+    
+                        \Log::info("Successfully updated subscription items for user: {$user->id}");
                     }
                 } else {
                     \Log::warning("Subscription for user {$user->id} is not active, status: " . $stripeSubscription->status);
@@ -228,8 +234,7 @@ class StripeController extends Controller
             \Log::error("Error in createSubscriptionForUser for user {$user->id}: " . $e->getMessage());
         }
     }
-
-
+    
     public function subscribe(Request $request)
     {
         $user = $request->user();
