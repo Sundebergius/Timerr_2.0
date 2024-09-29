@@ -38,14 +38,14 @@
 
             <div class="space-y-4 mt-4">
                 @inject('planService', 'App\Services\PlanService') <!-- Inject the PlanService -->
-                
+            
                 <!-- Custom check for subscription status -->
                 @php
                     $subscription = $user->subscription();
                 @endphp
             
-                @if(!$subscription || $subscription->canceled() && !$subscription->onGracePeriod())
-                    <!-- If no subscription or subscription is fully canceled (past grace period), show subscribe button -->
+                @if(!$subscription || ($subscription->canceled() && $subscription->ended()))
+                    <!-- If no subscription or subscription has fully ended, show subscribe button -->
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
                         <x-primary-button>
@@ -53,7 +53,7 @@
                         </x-primary-button>
                     </form>
                 @else
-                    <!-- If user has an active or canceled subscription within the grace period, direct to Stripe's billing portal -->
+                    <!-- If user has an active or canceled subscription within grace period, direct to Stripe's billing portal -->
                     <form method="GET" action="{{ route('billing.portal') }}">
                         <x-primary-button>
                             {{ __('Manage Subscription') }}
