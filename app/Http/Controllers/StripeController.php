@@ -157,7 +157,6 @@ class StripeController extends Controller
         }
     }
 
-    // Method to handle creating a subscription in your local database after successful payment
     private function createSubscriptionForUser($user, $session)
     {
         if ($user && isset($session->subscription)) {
@@ -188,10 +187,10 @@ class StripeController extends Controller
                 }
 
                 try {
-                    // Use Cashier's subscription creation method, store the local subscription
-                    $subscription = $user->subscriptions()->create([
-                        'type' => 'default', // Cashier expects this to be 'default' for regular subscriptions
+                    // Use Cashier's subscription creation method to sync the subscription
+                    $user->subscriptions()->create([
                         'stripe_id' => $stripeSubscription->id,
+                        'type' => 'default',  // Set the subscription type as 'default'
                         'stripe_status' => $stripeSubscription->status,
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                         'quantity' => $stripeSubscription->items->data[0]->quantity,
@@ -200,20 +199,26 @@ class StripeController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                    // Now create the subscription items, using the local subscription ID
-                    foreach ($stripeSubscription->items->data as $item) {
-                        \DB::table('subscription_items')->insert([
-                            'subscription_id' => $subscription->id,  // Use the local subscription ID
-                            'stripe_id' => $item->id,
-                            'stripe_product' => $item->price->product,
-                            'stripe_price' => $item->price->id,
-                            'quantity' => $item->quantity,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                    $localSubscription = $user->subscriptions()->where('stripe_id', $stripeSubscription->id)->first();
+                    
+                    if ($localSubscription) {
+                        // Now create the subscription items, using the local subscription ID
+                        foreach ($stripeSubscription->items->data as $item) {
+                            \DB::table('subscription_items')->insert([
+                                'subscription_id' => $localSubscription->id,  // Use the local subscription ID
+                                'stripe_id' => $item->id,
+                                'stripe_product' => $item->price->product,
+                                'stripe_price' => $item->price->id,
+                                'quantity' => $item->quantity,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                        \Log::info("Successfully created local subscription and subscription items for user: {$user->id}");
+                    } else {
+                        \Log::error("Local subscription not found after creation for user {$user->id}");
                     }
 
-                    \Log::info("Successfully created local subscription and subscription items for user: {$user->id}");
                 } catch (\Exception $e) {
                     \Log::error("Error creating local subscription for user {$user->id}: " . $e->getMessage());
                 }
@@ -224,6 +229,7 @@ class StripeController extends Controller
             \Log::error("Failed to create subscription: user or session subscription missing.");
         }
     }
+
 
     public function subscribe(Request $request)
     {
