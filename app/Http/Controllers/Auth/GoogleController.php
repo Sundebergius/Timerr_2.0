@@ -31,26 +31,64 @@ class GoogleController extends Controller
             $googleUser = Socialite::driver('google')->user();
             Log::info('Received Google user data:', ['user' => $googleUser]);
 
-            // Check if the user already exists
-            $user = User::where('email', $googleUser->getEmail())->orWhere('google_id', $googleUser->getId())->first();
-            Log::info('User lookup result:', ['user' => $user]);
+            // Try to find the user by Google ID first
+            $user = User::where('google_id', $googleUser->getId())->first();
 
-            if ($user) {
-                // Update Google token if necessary
-                $user->update([
-                    'google_token' => $googleUser->token,
-                ]);
-                Log::info('Existing user updated:', ['user_id' => $user->id]);
+            if (!$user) {
+                // If no user found by Google ID, check by email
+                $user = User::where('email', $googleUser->getEmail())->first();
+
+                if ($user) {
+                    // If a user exists by email but not Google ID, update their Google ID and token
+                    $user->update([
+                        'google_id' => $googleUser->getId(),
+                        'google_token' => $googleUser->token,
+                    ]);
+                    Log::info('Existing user updated with Google ID:', ['user_id' => $user->id]);
+                } else {
+                    // If no user found by email, create a new user without a password
+                    $user = User::create([
+                        'name' => $googleUser->getName(),
+                        'email' => $googleUser->getEmail(),
+                        'google_id' => $googleUser->getId(),
+                        'google_token' => $googleUser->token,
+                        'password' => null, // No password is needed for Google login
+                    ]);
+                    Log::info('New user registered:', ['user_id' => $user->id]);
+
+                    // Create personal team for the user
+                    $team = Team::create([
+                        'user_id' => $user->id,
+                        'name' => $user->name . "'s Team",
+                        'personal_team' => true,
+                    ]);
+
+                    // Assign the team to the user
+                    $user->ownedTeams()->save($team);
+
+                    // Set the current team ID for the user
+                    $user->current_team_id = $team->id;
+                    $user->save();
+
+                    // Optionally, make the user a member of their own team
+                    $user->teams()->attach($team, ['role' => 'owner']);
+
+                    // Create a customer in Stripe without subscription for free users
+                    \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                    $stripeCustomer = \Stripe\Customer::create([
+                        'email' => $user->email,
+                    ]);
+
+                    // Save the Stripe customer ID to the user model
+                    $user->stripe_id = $stripeCustomer->id;
+                    $user->save();
+
+                    Log::info('Personal team and Stripe customer created for Google user.', ['user_id' => $user->id]);
+                }
             } else {
-                // Register the new user
-                $user = User::create([
-                    'name' => $googleUser->getName(),
-                    'email' => $googleUser->getEmail(),
-                    'google_id' => $googleUser->getId(),
-                    'google_token' => $googleUser->token,
-                    'password' => Hash::make(str_random(24)), // Generate a random password
-                ]);
-                Log::info('New user registered:', ['user_id' => $user->id]);
+                // Update Google token if necessary for existing user
+                $user->update(['google_token' => $googleUser->token]);
+                Log::info('Existing user updated:', ['user_id' => $user->id]);
             }
 
             // Log the user in
