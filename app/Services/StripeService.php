@@ -64,7 +64,7 @@ class StripeService
 
             // Handle different statuses and adjust the type accordingly
             $type = match ($subscriptionObject->status) {
-                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'active',  // Mark as canceled if cancel_at_period_end is true
+                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',  // Mark as canceled if cancel_at_period_end is true, otherwise use 'default'
                 'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled', // Mark as expired if ends_at has passed
                 default => $subscription->type,  // Retain the type if status is unrecognized
             };
@@ -152,7 +152,7 @@ class StripeService
                 // Update the subscription to ensure the status is correct, but keep `ends_at`
                 $subscription->update([
                     'stripe_status' => 'active',  // Mark the subscription as active again
-                    'type' => 'active',  // Change the type back to active
+                    'type' => 'default',  // Change the type back to 'default'
                     'updated_at' => now(),
                 ]);
 

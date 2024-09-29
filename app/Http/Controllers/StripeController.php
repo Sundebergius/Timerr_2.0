@@ -177,7 +177,7 @@ class StripeController extends Controller
                 }
 
                 // Get the current billing period end from Stripe
-                $currentPeriodEnd = isset($stripeSubscription->current_period_end) 
+                $currentPeriodEnd = isset($stripeSubscription->current_period_end)
                     ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end)
                     : null;
 
@@ -189,11 +189,10 @@ class StripeController extends Controller
                 }
 
                 try {
-                    // Insert subscription data into the `subscriptions` table
-                    $subscriptionId = \DB::table('subscriptions')->insertGetId([
-                        'user_id' => $user->id,
+                    // Use Cashier's built-in subscription creation method
+                    $user->subscriptions()->create([
+                        'name' => 'default', // Cashier expects this to be 'default' for regular subscriptions
                         'stripe_id' => $stripeSubscription->id,
-                        'type' => 'default',  // Assuming 'default' is the subscription type
                         'stripe_status' => $stripeSubscription->status,
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                         'quantity' => $stripeSubscription->items->data[0]->quantity,
@@ -202,10 +201,10 @@ class StripeController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                    // Now create the subscription items
+                    // Now create the subscription items if necessary (only if you want to track individual items)
                     foreach ($stripeSubscription->items->data as $item) {
                         \DB::table('subscription_items')->insert([
-                            'subscription_id' => $subscriptionId, // Link to the created subscription
+                            'subscription_id' => $stripeSubscription->id,
                             'stripe_id' => $item->id,
                             'stripe_product' => $item->price->product,
                             'stripe_price' => $item->price->id,
@@ -226,9 +225,6 @@ class StripeController extends Controller
             \Log::error("Failed to create subscription: user or session subscription missing.");
         }
     }
-
-
-
 
     public function subscribe(Request $request)
     {

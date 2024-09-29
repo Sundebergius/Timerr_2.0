@@ -38,10 +38,14 @@
 
             <div class="space-y-4 mt-4">
                 @inject('planService', 'App\Services\PlanService') <!-- Inject the PlanService -->
+                
+                <!-- Custom check for subscription status -->
+                @php
+                    $subscription = $user->subscription();
+                @endphp
             
-                <!-- Check if the user has a subscription -->
-                @if(!$user->subscribed())
-                    <!-- If no subscription, show subscribe button -->
+                @if(!$subscription || $subscription->canceled() && !$subscription->onGracePeriod())
+                    <!-- If no subscription or subscription is fully canceled (past grace period), show subscribe button -->
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
                         <x-primary-button>
@@ -49,37 +53,36 @@
                         </x-primary-button>
                     </form>
                 @else
-                    <!-- If user has a subscription, direct to Stripe's billing portal -->
+                    <!-- If user has an active or canceled subscription within the grace period, direct to Stripe's billing portal -->
                     <form method="GET" action="{{ route('billing.portal') }}">
                         <x-primary-button>
                             {{ __('Manage Subscription') }}
                         </x-primary-button>
                     </form>
                 @endif
-
-                <!-- Display subscription details if the user has an active subscription -->
-                @if($subscription = $user->subscription())
+            
+                <!-- Display subscription details if the user has a subscription -->
+                @if($subscription)
                     <div class="bg-gray-100 p-4 rounded-lg">
                         <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
                         <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
-
+            
                         @if($subscription->active() && $subscription->ends_at)
                             <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @elseif($subscription->canceled() && $subscription->ends_at)
                             <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @endif
-
+            
                         @if($subscription->onTrial())
                             <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
                         @endif
-
+            
                         <!-- Show add-ons if they exist -->
                         @if(!empty($subscription->items))
                             <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
                             <ul>
                                 @foreach($subscription->items as $item)
-                                    <!-- Only display add-ons, skipping base subscription details -->
                                     @if($item['stripe_product'] !== 'base_subscription_product_id') <!-- Use your base product ID -->
                                         <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
                                     @endif
@@ -88,7 +91,7 @@
                         @endif
                     </div>
                 @endif
-            </div>
+            </div>            
         </div>
     </div>
 </section>
