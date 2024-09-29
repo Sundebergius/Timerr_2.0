@@ -158,8 +158,8 @@ Route::middleware('auth')->group(function () {
         Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     
-        // Corrected toggleCompletion route
-        Route::post('/toggleCompletion/{project}', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
+        // Toggle Completion Route (changed back to PATCH)
+        Route::patch('/{project}/toggleCompletion', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
     
         // Notes Routes for Projects
         Route::prefix('/{project}/notes')->group(function () {
@@ -189,20 +189,18 @@ Route::middleware('auth')->group(function () {
             Route::get('/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
             Route::put('/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
             Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
-    
-            // Registration Routes for Tasks
+            
+            // Registration Routes for Tasks (back inside {task}/registrations)
             Route::prefix('/{task}/registrations')->group(function () {
                 Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
                 Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
                 Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance');
-                Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
                 Route::post('/store-product', [RegistrationController::class, 'storeProductRegistration'])->name('projects.tasks.registrations.storeProduct');
+                Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
             });
         });
     });
     
-
-
     /*
     |--------------------------------------------------------------------------
     | Webhook Management Routes
