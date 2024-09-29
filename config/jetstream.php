@@ -65,6 +65,37 @@ return [
         Features::accountDeletion(),
     ],
 
+    // Add this section for roles
+    'roles' => [
+        'owner' => [
+            'key' => 'owner',
+            'name' => 'Owner',
+            'permissions' => [
+                'manage_team',
+                'delete_team',
+                'create_projects',
+                'view_projects',
+                'manage_billing',
+            ],
+        ],
+        'admin' => [
+            'key' => 'admin',
+            'name' => 'Admin',
+            'permissions' => [
+                'manage_team',
+                'create_projects',
+                'view_projects',
+            ],
+        ],
+        'member' => [
+            'key' => 'member',
+            'name' => 'Member',
+            'permissions' => [
+                'view_projects',
+            ],
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Profile Photo Disk

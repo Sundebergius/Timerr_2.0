@@ -11,6 +11,7 @@ use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Jetstream\HasTeams;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Cashier\Billable;
+use App\Services\PlanService;
 
 class User extends Authenticatable
 {
@@ -109,6 +110,27 @@ class User extends Authenticatable
     public function teams()
     {
         return $this->belongsToMany(Team::class, 'team_user'); // Assuming you have a pivot table named 'team_user'
+    }
+
+    // Add this method to your User model
+    public function subscriptionPlan(): string
+    {
+        // Inject PlanService
+        $planService = app(PlanService::class);
+
+        // Get the user's active subscription
+        $subscription = $this->subscription('default'); // 'default' is the subscription name in Cashier
+
+        // If the user doesn't have a subscription, default to 'free'
+        if (!$subscription || !$subscription->active()) {
+            return 'free';
+        }
+
+        // Get the Stripe price ID from the subscription
+        $stripePriceId = $subscription->stripe_price;
+
+        // Use PlanService to get the plan name by price ID
+        return $planService->getPlanNameByPriceId($stripePriceId);
     }
 
     public function subscriptionItems()
