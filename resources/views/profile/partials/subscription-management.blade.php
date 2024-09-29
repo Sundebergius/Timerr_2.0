@@ -41,12 +41,13 @@
                 
                 <!-- Custom check for subscription status -->
                 @php
+                    // Fetch subscriptions where type is 'default' or 'canceled'
                     $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
                     \Log::info('User subscription:', [$subscription]);
                 @endphp
             
                 @if(!$subscription || ($subscription->canceled() && $subscription->ended()))
-                    <!-- If no subscription or subscription has fully ended, show subscribe button -->
+                    <!-- Show subscribe button if no active subscription or subscription has ended -->
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
                         <x-primary-button>
@@ -68,19 +69,23 @@
                         <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
             
-                        <!-- Adjust how the status is displayed to avoid confusion after a cancellation -->
-                        @if($subscription->type === 'canceled' && $subscription->ends_at)
+                        <!-- Display the appropriate subscription status -->
+                        @if($subscription->type === 'canceled' && $subscription->ends_at && $subscription->ends_at->isFuture())
                             <p>{{ __('Status:') }} {{ __('Canceled (Active until ') }} {{ $subscription->ends_at->format('F j, Y') }}{{ __(')') }}</p>
                         @elseif($subscription->type === 'default' && $subscription->active())
                             <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
+                        @elseif($subscription->canceled() && $subscription->ended())
+                            <p>{{ __('Status: Expired') }}</p>
                         @endif
             
+                        <!-- Display period end dates -->
                         @if($subscription->active() && $subscription->ends_at)
                             <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @elseif($subscription->canceled() && $subscription->ends_at)
                             <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @endif
             
+                        <!-- Display trial period if applicable -->
                         @if($subscription->onTrial())
                             <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
                         @endif
