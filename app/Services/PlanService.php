@@ -7,14 +7,35 @@ class PlanService
     // Define both product and price IDs in one place
     protected $plans = [
         'free' => [
-            'product' => 'prod_QuGyOeNHPgpG9w',         // Free plan product ID
-            'price' => 'price_1Q3yTZEEh64CES4Ebu3507de' // Free plan price ID
+            'limits' => [
+                'clients' => 5,
+                'projects' => 3,
+                'products' => 5,
+                'teams' => 1, // Free plan can only have 1 team (personal team)
+            ]
         ],
         'freelancer' => [
-            'product' => 'prod_QuFyGzwZRxDsqV',         // Freelancer plan product ID
-            'price' => 'price_1Q2RSpEEh64CES4EjOr0VQvr' // Freelancer plan price ID
+            'product' => 'prod_QuFyGzwZRxDsqV',
+            'price' => 'price_1Q2RSpEEh64CES4EjOr0VQvr',
+            'limits' => [
+                'clients' => 25,
+                'projects' => 10,
+                'products' => 20,
+                'teams' => 1, // Freelancer plan can only have 1 team (personal team)
+            ]
         ],
-        // Add more plans here as needed
+        'freelancer_pro' => [
+            'product' => 'prod_ProPlanID', // Example product ID for future plan
+            'price' => 'price_ProPlanPriceID',
+            'limits' => [
+                'clients' => 75,
+                'projects' => 15,
+                'products' => 50,
+                'teams' => 2, // Freelancer Pro can create up to 10 teams
+                'team_members' => 10 // Freelancer Pro can have up to 10 team members
+            ]
+        ],
+                // Add more plans here as needed
     ];
 
     // Method to get the Stripe price ID for a given plan
@@ -32,13 +53,21 @@ class PlanService
     // Method to get the plan name from a Stripe price ID
     public function getPlanNameByPriceId($priceId)
     {
+        // If there's no priceId (new user without a subscription), default to 'free'
+        if (is_null($priceId)) {
+            return 'free';
+        }
+
+        // Iterate through the plans and match the price ID
         foreach ($this->plans as $plan => $details) {
-            if ($details['price'] === $priceId) {
+            if (isset($details['price']) && $details['price'] === $priceId) {
                 return $plan;
             }
         }
+
         return 'unknown';
     }
+
 
     // Method to get the plan name from a Stripe product ID
     public function getPlanNameByProductId($productId)
@@ -49,6 +78,12 @@ class PlanService
             }
         }
         return 'unknown';
+    }
+
+    public function getPlanLimits($planName)
+    {
+        // Return the limits array for the given plan
+        return $this->plans[$planName]['limits'] ?? [];
     }
 
     // Return all plans (optional if needed)

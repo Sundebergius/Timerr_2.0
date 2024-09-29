@@ -14,6 +14,31 @@
                         <i class="fas fa-plus mr-2"></i> Create New Product
                     </button>
 
+                    <!-- Product Counter -->
+                    <div class="text-center mb-8">
+                        <h1 class="text-4xl font-bold text-blue-500 mb-4">Products</h1>
+                        
+                        <!-- Product Counter -->
+                        <div class="mb-6">
+                            <p class="text-lg font-semibold text-gray-800">
+                                You have created <span class="text-blue-500">{{ $productCount }}</span> out of <span class="text-blue-500">{{ $productLimit }}</span> products.
+                            </p>
+
+                            @if ($productCount < $productLimit)
+                                <p class="text-green-500">You can create {{ $productLimit - $productCount }} more products.</p>
+                            @else
+                                <p class="text-red-500">You have reached your product limit.</p>
+                            @endif
+                        </div>
+
+                        <!-- Create Product Button -->
+                        <button type="button" @click="showModal = true"
+                            class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $productCount >= $productLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
+                            @if ($productCount >= $productLimit) disabled @endif>
+                            <i class="fas fa-plus mr-2"></i> Create New Product
+                        </button>
+                    </div>
+
                     <!-- Product Modal -->
                     <product-modal v-if="showModal" :user-id="userId" :team-id="teamId" @close="showModal = false"
                         @product-created="handleProductCreated"></product-modal>

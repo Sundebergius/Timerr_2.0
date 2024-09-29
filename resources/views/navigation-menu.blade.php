@@ -1,4 +1,6 @@
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+    @inject('planService', 'App\Services\PlanService')
+
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -65,11 +67,14 @@
                                         </x-dropdown-link>
                                     @endif
 
-                                    @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
-                                        <x-dropdown-link href="{{ route('teams.create') }}">
-                                            {{ __('Create New Team') }}
-                                        </x-dropdown-link>
-                                    @endcan
+                                    <!-- Restrict "Create New Team" based on the plan -->
+                                    @if (Auth::check() && $planService->getPlanLimits(Auth::user()->subscriptionPlan())['teams'] > 1)
+                                        @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
+                                            <x-dropdown-link href="{{ route('teams.create') }}">
+                                                {{ __('Create New Team') }}
+                                            </x-dropdown-link>
+                                        @endcan
+                                    @endif
 
                                     <!-- Team Switcher -->
                                     @if (Auth::check() && Auth::user()->allTeams()->count() > 1)

@@ -104,16 +104,31 @@
                         </div>
                     </form>
 
-                    <div class="mb-4">
-                        <p class="text-sm text-gray-700">
-                            You have <strong>{{ $clientCount }}/{{ $clientLimit }}</strong> clients.
+                    <!-- Header Section for Clients -->
+                    <div class="text-center mb-8">
+                        <h1 class="text-4xl font-bold text-blue-500 mb-4">Clients</h1>
+
+                        <!-- Client Counter -->
+                        <div class="mb-6">
+                            <p class="text-lg font-semibold text-gray-800">
+                                You have created <span class="text-blue-500">{{ $clientCount }}</span> out of <span class="text-blue-500">{{ $clientLimit }}</span> clients.
+                            </p>
+
                             @if ($clientCount < $clientLimit)
-                                You can add {{ $clientLimit - $clientCount }} more.
+                                <p class="text-green-500">You can add {{ $clientLimit - $clientCount }} more clients.</p>
                             @else
-                                You have reached your client limit.
+                                <p class="text-red-500">You have reached your client limit.</p>
                             @endif
-                        </p>
-                    </div>                    
+                        </div>
+
+                        <!-- Create Client Button -->
+                        <a href="{{ route('clients.create') }}"
+                            class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $clientCount >= $clientLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
+                            @if ($clientCount >= $clientLimit) disabled @endif>
+                            Create Client
+                        </a>
+                    </div>
+                                        
 
                     <!-- Search tags -->
                     <div class="tags flex flex-wrap mb-6">

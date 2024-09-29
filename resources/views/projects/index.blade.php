@@ -27,11 +27,28 @@
                 </div>
             </template>
         </div>
+        
         <!-- Header Section -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-500 mb-4">Projects</h1>
+
+            <!-- Project Counter -->
+            <div class="mb-6">
+                <p class="text-lg font-semibold text-gray-800">
+                    You have created <span class="text-blue-500">{{ $projectCount }}</span> out of <span class="text-blue-500">{{ $projectLimit }}</span> projects.
+                </p>
+
+                @if ($projectCount < $projectLimit)
+                    <p class="text-green-500">You can create {{ $projectLimit - $projectCount }} more projects.</p>
+                @else
+                    <p class="text-red-500">You have reached your project limit.</p>
+                @endif
+            </div>
+
+            <!-- Create Project Button -->
             <a href="{{ route('projects.create') }}"
-                class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $projectCount >= $projectLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
+                @if ($projectCount >= $projectLimit) disabled @endif>
                 Create Project
             </a>
         </div>

@@ -8,12 +8,20 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
+use App\Services\PlanService;
 use App\Models\Webhook;
 
 use Illuminate\Support\Facades\Validator;
 
 class ClientController extends Controller
 {
+    protected $planService;
+
+    public function __construct(PlanService $planService)
+    {
+        $this->planService = $planService;
+    }
+
     public function index(Request $request)
     {
         // dd($request->all());
@@ -27,10 +35,14 @@ class ClientController extends Controller
 
         $user = auth()->user();
     
-        // Fetch the current user and calculate client count and limit
-        $clientCount = $user->clients()->count();
-        $clientLimit = 5; // Example: This can be fetched dynamically based on the user's plan if needed
+        // Fetch the current user and get the subscription plan name (e.g., 'free', 'freelancer')
+        $subscriptionPlan = $this->planService->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
 
+        // Get the client limit from PlanService based on the user's subscription plan
+        $clientLimit = $this->planService->getPlanLimits($subscriptionPlan)['clients'] ?? 5;
+
+        // Get the current client count for the user
+        $clientCount = $user->clients()->count();
 
         // Ensure $searches is always an array
         $searches = (array) $request->input('search', []);

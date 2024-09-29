@@ -160,6 +160,15 @@ class ProductController extends Controller
         
         $user = auth()->user(); // Get the authenticated user
 
+        // Get the user's subscription plan
+        $subscriptionPlan = app(\App\Services\PlanService::class)->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
+
+        // Get the product limit for the user's plan
+        $productLimit = app(\App\Services\PlanService::class)->getPlanLimits($subscriptionPlan)['products'] ?? 5; // Default to 5 for 'free' plan
+
+        // Get the current number of products created by the user
+        $productCount = $user->products()->count();
+
         // Check if the user is working in their personal team or a team
         if ($user->currentTeam && $user->currentTeam->personal_team) {
             // Fetch personal products
@@ -169,7 +178,11 @@ class ProductController extends Controller
             $products = Product::where('team_id', $user->current_team_id)->paginate($pageSize);
         }
 
-        return view('products.index', ['products' => $products]);
+        return view('products.index', [
+            'products' => $products,
+            'productCount' => $productCount,
+            'productLimit' => $productLimit,
+        ]);
     }
 
     public function destroy(Product $product)

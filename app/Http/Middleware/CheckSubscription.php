@@ -25,31 +25,23 @@ class CheckSubscription
     {
         $user = $request->user();
 
-        // Get the user's translated subscription plan (e.g., 'free', 'freelancer')
+        // Get the user's subscription plan (e.g., 'free', 'freelancer')
         $subscriptionPlan = $this->getUserSubscriptionPlan($user);
 
-        // Apply restrictions based on the subscription plan
-        switch ($subscriptionPlan) {
-            case 'free':
-                if ($user->clients()->count() >= 5) {
-                    return redirect()->back()->withErrors(['error' => 'You have reached the maximum number of clients for the Free plan.']);
-                }
-                if ($user->projects()->count() >= 3) {
-                    return redirect()->back()->withErrors(['error' => 'You have reached the maximum number of projects for the Free plan.']);
-                }
-                if ($user->products()->count() >= 5) {
-                    return redirect()->back()->withErrors(['error' => 'You have reached the maximum number of products/services for the Free plan.']);
-                }
-                break;
+        // Get the plan limits from PlanService
+        $limits = $this->planService->getPlanLimits($subscriptionPlan);
 
-            case 'freelancer':
-                if ($user->clients()->count() >= 15) {
-                    return redirect()->back()->withErrors(['error' => 'You have reached the maximum number of clients for the Freelancer plan.']);
-                }
-                // Additional restrictions for 'freelancer' can go here.
-                break;
+        // Apply restrictions dynamically based on the limits
+        if (isset($limits['clients']) && $user->clients()->count() >= $limits['clients']) {
+            return redirect()->back()->withErrors(['error' => "You have reached the maximum number of clients for the $subscriptionPlan plan."]);
+        }
 
-            // Add future plans (e.g., 'enterprise') as needed
+        if (isset($limits['projects']) && $user->projects()->count() >= $limits['projects']) {
+            return redirect()->back()->withErrors(['error' => "You have reached the maximum number of projects for the $subscriptionPlan plan."]);
+        }
+
+        if (isset($limits['products']) && $user->products()->count() >= $limits['products']) {
+            return redirect()->back()->withErrors(['error' => "You have reached the maximum number of products for the $subscriptionPlan plan."]);
         }
 
         return $next($request);
@@ -63,23 +55,30 @@ class CheckSubscription
      */
     protected function getUserSubscriptionPlan($user): ?string
     {
-        // Fetch the user's active subscription
-        $subscription = $user->subscription('default'); // 'default' is the name of the default subscription plan in Cashier
+        // Fetch the user's subscription based on your local 'type' field
+        $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
 
-        if (!$subscription || !$subscription->active()) {
-            \Log::info("No active subscription found for user: {$user->id}");
-            return 'free'; // Assume 'free' if no active subscription
+        // If no subscription exists, assume the user is on the 'free' plan
+        if (!$subscription) {
+            return 'free';
         }
 
-        // Get the Stripe price ID from the active subscription
-        $stripePrice = $subscription->stripe_price; // Use $subscription->stripe_price to get the price ID
+        // Check if the subscription has ended (i.e., it's expired)
+        if ($subscription->ends_at && $subscription->ends_at->isPast() && $subscription->type === 'canceled') {
+            return 'free'; // Expired subscriptions revert to 'free'
+        }
 
-        // Use the PlanService to get the plan name from the price ID
-        $plan = $this->planService->getPlanNameByPriceId($stripePrice);
+        // If the subscription is canceled but still within the grace period
+        if ($subscription->type === 'canceled' && !$subscription->ends_at->isPast()) {
+            \Log::info("User {$user->id} is on a grace period after cancellation.");
+            return $this->planService->getPlanNameByPriceId($subscription->stripe_price);
+        }
 
-        \Log::info("Subscription plan for user {$user->id}: " . $plan);
+        // If the subscription is active (i.e., 'default')
+        if ($subscription->type === 'default') {
+            return $this->planService->getPlanNameByPriceId($subscription->stripe_price);
+        }
 
-        return $plan;
+        return 'free'; // Default to 'free' if no other conditions match
     }
-
 }

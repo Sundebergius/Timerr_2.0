@@ -288,13 +288,27 @@ class ProjectController extends Controller
 
     public function index()
     {
-        $projects = Project::where('user_id', auth()->id())->paginate(10);
-        $clients = Client::where('user_id', auth()->id())->get();
-    
+        $user = auth()->user();
+
+        // Fetch the current user's projects, paginated
+        $projects = Project::where('user_id', $user->id)->paginate(10);
+
+        // Fetch the current user's clients
+        $clients = Client::where('user_id', $user->id)->get();
+
+        // Get the user's subscription plan
+        $subscriptionPlan = app(\App\Services\PlanService::class)->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
+
+        // Get the project limit for the user's plan
+        $projectLimit = app(\App\Services\PlanService::class)->getPlanLimits($subscriptionPlan)['projects'] ?? 3; // Default to 3 for 'free' plan
+
+        // Get the current number of projects created by the user
+        $projectCount = $projects->total();
+
         foreach ($projects as $project) {
             // Update project status
             $project->updateStatus();
-    
+
             // Iterate over each task of the project
             foreach ($project->tasks as $task) {
                 \Log::info("Checking taskable relation", [
@@ -302,13 +316,12 @@ class ProjectController extends Controller
                     'taskable_id' => $task->taskable_id,
                     'taskable_type' => $task->taskable_type
                 ]);
-    
+
                 // Check if the task type is 'TaskProduct'
                 if ($task->taskable_type === 'App\Models\TaskProduct') {
-                    // Since TaskProduct can include multiple products and doesn't use taskable_id,
-                    // fetch related products manually.
+                    // Fetch related products manually for TaskProduct
                     $relatedProducts = TaskProduct::where('task_id', $task->id)->with('product')->get();
-    
+
                     // Log task and related product details
                     foreach ($relatedProducts as $taskProduct) {
                         \Log::info("Task ID: {$task->id} is of type TaskProduct with related product.", [
@@ -319,9 +332,11 @@ class ProjectController extends Controller
                 }
             }
         }
-    
-        return view('projects.index', compact('projects', 'clients'));
+
+        // Pass data to the view
+        return view('projects.index', compact('projects', 'clients', 'projectCount', 'projectLimit'));
     }
+
 
     public function show(Project $project)
     {
