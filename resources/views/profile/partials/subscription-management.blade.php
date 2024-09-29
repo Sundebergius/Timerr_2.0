@@ -5,7 +5,7 @@
                 {{ __('Manage Your Subscription') }}
             </h2>
             <p class="mt-1 text-sm text-gray-600">
-                {{ __('View and manage your subscription plan in the billing portal.') }}
+                {{ __('View and manage your subscription plan and add-ons in the billing portal.') }}
             </p>
         </div>
     </div>
@@ -17,7 +17,7 @@
                     <strong class="font-bold">Success!</strong>
                     <span class="block sm:inline">{{ session('success') }}</span>
                     <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                        <svg class="fill-current h-6 w-6 text-white" role="button" id="close-success-alert" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.348 5.652a.999.999 0 10-1.414-1.414L10 7.172 7.066 4.238a.999.999 0 10-1.414 1.414l2.934 2.934-2.934 2.934a.999.999 0 101.414 1.414l2.934-2.934 2.934 2.934a.999.999 0 101.414-1.414L11.414 10l2.934-2.934z"/></svg>
+                        <svg class="fill-current h-6 w-6 text-white" role="button" id="close-success-alert" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.348 5.652a.999.999 0 10-1.414-1.414L10 7.172 7.066 4.238a.999.999 0 10-1.414 1.414l2.934 2.934-2.934 2.934a.999.999 0 101.414 1.414L11.414 10l2.934-2.934z"/></svg>
                     </span>
                 </div>
             @endif
@@ -27,10 +27,11 @@
                     <strong class="font-bold">Error!</strong>
                     <span class="block sm:inline">{{ implode(', ', $errors->all()) }}</span>
                     <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                        <svg class="fill-current h-6 w-6 text-white" role="button" id="close-danger-alert" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.348 5.652a.999.999 0 10-1.414-1.414L10 7.172 7.066 4.238a.999.999 0 10-1.414 1.414l2.934 2.934-2.934 2.934a.999.999 0 101.414 1.414l2.934-2.934 2.934 2.934a.999.999 0 101.414-1.414L11.414 10l2.934-2.934z"/></svg>
+                        <svg class="fill-current h-6 w-6 text-white" role="button" id="close-danger-alert" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M14.348 5.652a.999.999 0 10-1.414-1.414L10 7.172 7.066 4.238a.999.999 0 10-1.414 1.414l2.934 2.934-2.934 2.934a.999.999 0 101.414 1.414L11.414 10l2.934-2.934z"/></svg>
                     </span>
                 </div>
             @endif
+
             <p class="mt-4 text-sm text-gray-600">
                 {{ __('Manage your subscription and billing details in the secure Stripe portal.') }}
             </p>
@@ -38,7 +39,9 @@
             <div class="space-y-4 mt-4">
                 @inject('planService', 'App\Services\PlanService') <!-- Inject the PlanService -->
             
-                @if(!$user->subscribed('default'))
+                <!-- Check if the user has a subscription -->
+                @if(!$user->subscribed())
+                    <!-- If no subscription, show subscribe button -->
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
                         <x-primary-button>
@@ -46,99 +49,46 @@
                         </x-primary-button>
                     </form>
                 @else
-                    <!-- Manage Subscription Button -->
+                    <!-- If user has a subscription, direct to Stripe's billing portal -->
                     <form method="GET" action="{{ route('billing.portal') }}">
                         <x-primary-button>
                             {{ __('Manage Subscription') }}
                         </x-primary-button>
                     </form>
                 @endif
-            
-                @if($subscription = $user->subscription('active'))
-                <div class="bg-gray-100 p-4 rounded-lg">
-                    <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
-                    <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
-                    <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
 
-                    @if($subscription->active() && $subscription->ends_at)
-                        <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
-                    @elseif($subscription->canceled() && $subscription->ends_at)
-                        <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
-                    @endif
+                <!-- Display subscription details if the user has an active subscription -->
+                @if($subscription = $user->subscription())
+                    <div class="bg-gray-100 p-4 rounded-lg">
+                        <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
+                        <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
+                        <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
 
-                    @if($subscription->onTrial())
-                        <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
-                    @endif
+                        @if($subscription->active() && $subscription->ends_at)
+                            <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
+                        @elseif($subscription->canceled() && $subscription->ends_at)
+                            <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
+                        @endif
 
-                    <!-- Show subscription items if necessary -->
-                    @if(!empty($subscription->items))
-                        <h4 class="mt-2 font-bold">{{ __('Subscription Items') }}</h4>
-                        <ul>
-                            @foreach($subscription->items as $item)
-                                <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
-                            @endforeach
-                        </ul>
-                    @endif
+                        @if($subscription->onTrial())
+                            <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
+                        @endif
 
-                    <!-- Display the message if they try to add a new card but already have a subscription -->
-                    @if($subscription->active() || $subscription->canceled())
-                        <p class="text-red-500">{{ __('You already have a subscription. You cannot add a new payment method or subscribe again.') }}</p>
-                    @else
-                        <!-- Allow adding a new payment method or card if no active or canceled subscription -->
-                        <form method="POST" action="{{ route('subscription.updatePaymentMethod') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-primary">{{ __('Add Payment Method') }}</button>
-                        </form>
-                    @endif
-                </div>
-            @endif
-
-            
-                <!-- Resume Subscription Button (Only show if the subscription is canceled but within the grace period) -->
-                @if($subscription && $subscription->canceled() && !$subscription->ended())
-                    <form method="POST" action="{{ route('subscription.resume') }}">
-                        @csrf
-                        <x-primary-button>
-                            {{ __('Resume Subscription') }}
-                        </x-primary-button>
-                    </form>
+                        <!-- Show add-ons if they exist -->
+                        @if(!empty($subscription->items))
+                            <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
+                            <ul>
+                                @foreach($subscription->items as $item)
+                                    <!-- Only display add-ons, skipping base subscription details -->
+                                    @if($item['stripe_product'] !== 'base_subscription_product_id') <!-- Use your base product ID -->
+                                        <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @endif
+                    </div>
                 @endif
             </div>
-            
-            
         </div>
     </div>
 </section>
-
-<!-- JavaScript to handle fade out and close button functionality -->
-<script>
-    // Fade out success message after 5 seconds
-    setTimeout(function() {
-        let successAlert = document.getElementById('alert-success');
-        if (successAlert) {
-            successAlert.style.transition = 'opacity 1s ease-out';
-            successAlert.style.opacity = '0';
-            setTimeout(() => successAlert.remove(), 1000);
-        }
-    }, 5000);
-
-    // Close success alert manually
-    document.getElementById('close-success-alert')?.addEventListener('click', function() {
-        document.getElementById('alert-success').remove();
-    });
-
-    // Fade out error message after 5 seconds
-    setTimeout(function() {
-        let dangerAlert = document.getElementById('alert-danger');
-        if (dangerAlert) {
-            dangerAlert.style.transition = 'opacity 1s ease-out';
-            dangerAlert.style.opacity = '0';
-            setTimeout(() => dangerAlert.remove(), 1000);
-        }
-    }, 5000);
-
-    // Close error alert manually
-    document.getElementById('close-danger-alert')?.addEventListener('click', function() {
-        document.getElementById('alert-danger').remove();
-    });
-</script>
