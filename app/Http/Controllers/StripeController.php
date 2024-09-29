@@ -204,7 +204,7 @@ class StripeController extends Controller
                     // Now create the subscription items if necessary (only if you want to track individual items)
                     foreach ($stripeSubscription->items->data as $item) {
                         \DB::table('subscription_items')->insert([
-                            'subscription_id' => $stripeSubscription->id,
+                            'subscription_id' => $subscription->id,  // Use the local subscription ID from Cashier
                             'stripe_id' => $item->id,
                             'stripe_product' => $item->price->product,
                             'stripe_price' => $item->price->id,

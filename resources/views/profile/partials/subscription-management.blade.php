@@ -42,6 +42,7 @@
                 <!-- Custom check for subscription status -->
                 @php
                     $subscription = $user->subscription();
+                    \Log::info('User subscription:', [$subscription]);
                 @endphp
             
                 @if(!$subscription || ($subscription->canceled() && $subscription->ended()))
