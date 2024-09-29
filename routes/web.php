@@ -191,7 +191,7 @@ Route::middleware('auth')->group(function () {
                 Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
 
                 // Registration Routes for Tasks
-                Route::prefix('/registrations')->group(function () {
+                Route::prefix('/')->group(function () {
                     Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
                     Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
                     Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance');
