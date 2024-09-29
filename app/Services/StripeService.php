@@ -58,26 +58,35 @@ class StripeService
             // Get the current billing period end
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
-            
-            // Always update the `ends_at` field with the current period end from Stripe
-            $endsAt = $currentPeriodEnd;
 
-            // Handle different statuses and adjust the type accordingly
+            // Determine the new type and the logic for `ends_at`
             $type = match ($subscriptionObject->status) {
-                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',  // Mark as canceled if cancel_at_period_end is true, otherwise use 'default'
-                'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled', // Mark as expired if ends_at has passed
-                default => $subscription->type,  // Retain the type if status is unrecognized
+                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',
+                'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled',
+                default => $subscription->type,
             };
 
-            // Update the local subscription with the new status, 'ends_at' date, and 'type'
-            $subscription->update([
-                'stripe_status' => $subscriptionObject->status,  // Update to reflect actual Stripe status
-                'ends_at' => $endsAt,  // Always set ends_at to the current billing period end
-                'type' => $type,  // Update the subscription type based on the status
-                'updated_at' => now(),
-            ]);
+            // Handle immediate cancellation logic
+            if ($subscriptionObject->status === 'canceled' && !$isCancelAtPeriodEnd) {
+                // Immediate cancellation: Set `ends_at` to now, since the user loses access immediately
+                $subscription->update([
+                    'stripe_status' => $subscriptionObject->status,
+                    'ends_at' => now(), // Ends now since it is immediate cancellation
+                    'type' => 'canceled',
+                    'updated_at' => now(),
+                ]);
+                \Log::info("Subscription for user {$user->id} has been immediately canceled.");
+            } else {
+                // Otherwise, update `ends_at` based on the current period end and handle other cases
+                $subscription->update([
+                    'stripe_status' => $subscriptionObject->status,
+                    'ends_at' => $currentPeriodEnd, // This handles standard cancellation at period end or resumption scenarios
+                    'type' => $type,
+                    'updated_at' => now(),
+                ]);
+            }
 
-            \Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}, type {$type}, and ends_at {$endsAt}.");
+            \Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}, type {$type}, and ends_at {$currentPeriodEnd}.");
         } else {
             \Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
         }
