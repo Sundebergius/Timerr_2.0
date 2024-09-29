@@ -149,54 +149,58 @@ Route::middleware('auth')->group(function () {
         Route::middleware('check.subscription')->group(function () {
             Route::get('/create', [ProjectController::class, 'create'])->name('projects.create');
             Route::post('/', [ProjectController::class, 'store'])->name('projects.store');
-            });
-        
-            // Other project-related routes
-            Route::get('/', [ProjectController::class, 'index'])->name('projects.index');
-            Route::get('/{project}', [ProjectController::class, 'show'])->name('projects.show');
-            Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
-            Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
-            Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-
-            // Corrected toggleCompletion route
-            Route::post('/toggleCompletion/{project}', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
-     
-            // Notes Routes for Projects
-            Route::prefix('/{project}/notes')->group(function () {
-                Route::get('/create', [NoteController::class, 'create'])->name('projects.notes.create');
-                Route::post('/', [NoteController::class, 'store'])->name('projects.notes.store');
-                Route::get('/{note}', [NoteController::class, 'show'])->name('projects.notes.show');
-                Route::get('/{note}/edit', [NoteController::class, 'edit'])->name('projects.notes.edit');
-                Route::put('/{note}', [NoteController::class, 'update'])->name('projects.notes.update');
-                Route::delete('/{note}', [NoteController::class, 'destroy'])->name('projects.notes.destroy');
-            });
-
-            // Contracts Routes for Projects
-            Route::prefix('/{project}/contracts')->group(function () {
-                Route::get('/create', [ContractController::class, 'create'])->name('projects.contracts.create');
-                Route::post('/', [ContractController::class, 'store'])->name('projects.contracts.store');
-                Route::get('/{contract}', [ContractController::class, 'show'])->name('projects.contracts.show');
-                Route::get('/{contract}/edit', [ContractController::class, 'edit'])->name('projects.contracts.edit');
-                Route::put('/{contract}', [ContractController::class, 'update'])->name('projects.contracts.update');
-                Route::delete('/{contract}', [ContractController::class, 'destroy'])->name('projects.contracts.destroy');
-            });
-
-            // Task Routes for Projects
-            Route::prefix('/{project}/tasks')->group(function () {
-                Route::get('/create', [TaskController::class, 'create'])->name('projects.tasks.create');
-                Route::post('/', [TaskController::class, 'store'])->name('projects.tasks.store');
-                Route::get('/{task}', [TaskController::class, 'show'])->name('projects.tasks.show');
-                Route::get('/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
-                Route::put('/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
-                Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
-                    Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
-                    Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
-                    Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance');
-                    Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
-                    Route::post('/store-product', [RegistrationController::class, 'storeProductRegistration'])->name('projects.tasks.registrations.storeProduct');
-                
+        });
+    
+        // Other project-related routes
+        Route::get('/', [ProjectController::class, 'index'])->name('projects.index');
+        Route::get('/{project}', [ProjectController::class, 'show'])->name('projects.show');
+        Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
+        Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
+        Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+    
+        // Corrected toggleCompletion route
+        Route::post('/toggleCompletion/{project}', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
+    
+        // Notes Routes for Projects
+        Route::prefix('/{project}/notes')->group(function () {
+            Route::get('/create', [NoteController::class, 'create'])->name('projects.notes.create');
+            Route::post('/', [NoteController::class, 'store'])->name('projects.notes.store');
+            Route::get('/{note}', [NoteController::class, 'show'])->name('projects.notes.show');
+            Route::get('/{note}/edit', [NoteController::class, 'edit'])->name('projects.notes.edit');
+            Route::put('/{note}', [NoteController::class, 'update'])->name('projects.notes.update');
+            Route::delete('/{note}', [NoteController::class, 'destroy'])->name('projects.notes.destroy');
+        });
+    
+        // Contracts Routes for Projects
+        Route::prefix('/{project}/contracts')->group(function () {
+            Route::get('/create', [ContractController::class, 'create'])->name('projects.contracts.create');
+            Route::post('/', [ContractController::class, 'store'])->name('projects.contracts.store');
+            Route::get('/{contract}', [ContractController::class, 'show'])->name('projects.contracts.show');
+            Route::get('/{contract}/edit', [ContractController::class, 'edit'])->name('projects.contracts.edit');
+            Route::put('/{contract}', [ContractController::class, 'update'])->name('projects.contracts.update');
+            Route::delete('/{contract}', [ContractController::class, 'destroy'])->name('projects.contracts.destroy');
+        });
+    
+        // Task Routes for Projects
+        Route::prefix('/{project}/tasks')->group(function () {
+            Route::get('/create', [TaskController::class, 'create'])->name('projects.tasks.create');
+            Route::post('/', [TaskController::class, 'store'])->name('projects.tasks.store');
+            Route::get('/{task}', [TaskController::class, 'show'])->name('projects.tasks.show');
+            Route::get('/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
+            Route::put('/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
+            Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
+    
+            // Registration Routes for Tasks
+            Route::prefix('/{task}/registrations')->group(function () {
+                Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
+                Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
+                Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance');
+                Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
+                Route::post('/store-product', [RegistrationController::class, 'storeProductRegistration'])->name('projects.tasks.registrations.storeProduct');
             });
         });
+    });
+    
 
 
     /*
