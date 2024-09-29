@@ -189,15 +189,12 @@ Route::middleware('auth')->group(function () {
                 Route::get('/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
                 Route::put('/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
                 Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
-
-                // Registration Routes for Tasks
-                Route::prefix('/')->group(function () {
                     Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
                     Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
                     Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance');
                     Route::get('/create', [RegistrationController::class, 'createRegistration'])->name('projects.tasks.registrations.create');
                     Route::post('/store-product', [RegistrationController::class, 'storeProductRegistration'])->name('projects.tasks.registrations.storeProduct');
-                });
+                
             });
         });
 
