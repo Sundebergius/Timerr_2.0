@@ -30,10 +30,7 @@ Route::get('/', function () {
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::post('auth/google/disconnect', [GoogleController::class, 'disconnect'])->name('google.disconnect');
 Route::get('auth/google/redirect', [GoogleController::class, 'redirectToGoogle'])->name('google.redirect');
-Route::get('auth/google/callback', function() {
-    Log::info('Callback hit');
-    return 'Callback hit';
-});
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
 // Stripe Webhook Route (public, no auth required)
 // Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);
