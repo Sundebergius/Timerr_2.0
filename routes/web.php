@@ -157,7 +157,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
             Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
             Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-            
+
             // Corrected toggleCompletion route
             Route::post('/toggleCompletion/{project}', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
      
@@ -191,7 +191,7 @@ Route::middleware('auth')->group(function () {
                 Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
 
                 // Registration Routes for Tasks
-                Route::prefix('/{task}/registrations')->group(function () {
+                Route::prefix('/registrations')->group(function () {
                     Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');
                     Route::post('/store-hourly', [RegistrationController::class, 'storeHourlyRegistration'])->name('projects.tasks.registrations.storeHourly');
                     Route::post('/store-distance', [RegistrationController::class, 'storeDistanceRegistration'])->name('projects.tasks.registrations.storeDistance');
