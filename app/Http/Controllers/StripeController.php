@@ -191,7 +191,7 @@ class StripeController extends Controller
                 try {
                     // Use Cashier's built-in subscription creation method
                     $user->subscriptions()->create([
-                        'name' => 'default', // Cashier expects this to be 'default' for regular subscriptions
+                        'type' => 'default', // Cashier expects this to be 'default' for regular subscriptions
                         'stripe_id' => $stripeSubscription->id,
                         'stripe_status' => $stripeSubscription->status,
                         'stripe_price' => $stripeSubscription->items->data[0]->price->id,
