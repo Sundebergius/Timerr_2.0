@@ -73,12 +73,14 @@ class PlanService
     public function getPlanNameByProductId($productId)
     {
         foreach ($this->plans as $plan => $details) {
-            if ($details['product'] === $productId) {
+            // Check if the 'product' key exists before comparing
+            if (isset($details['product']) && $details['product'] === $productId) {
                 return $plan;
             }
         }
         return 'unknown';
     }
+
 
     public function getPlanLimits($planName)
     {
