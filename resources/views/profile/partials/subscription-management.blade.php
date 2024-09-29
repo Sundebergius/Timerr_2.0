@@ -67,11 +67,11 @@
                     <div class="bg-gray-100 p-4 rounded-lg">
                         <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
-                        
+            
                         <!-- Adjust how the status is displayed to avoid confusion after a cancellation -->
-                        @if($subscription->canceled() && $subscription->ends_at)
+                        @if($subscription->type === 'canceled' && $subscription->ends_at)
                             <p>{{ __('Status:') }} {{ __('Canceled (Active until ') }} {{ $subscription->ends_at->format('F j, Y') }}{{ __(')') }}</p>
-                        @elseif($subscription->active())
+                        @elseif($subscription->type === 'default' && $subscription->active())
                             <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
                         @endif
             
