@@ -122,11 +122,12 @@
                         </div>
 
                         <!-- Create Client Button -->
-                        <a href="{{ route('clients.create') }}"
+                        <button type="button" 
+                            onclick="window.location.href='{{ route('clients.create') }}'" 
                             class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $clientCount >= $clientLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
                             @if ($clientCount >= $clientLimit) disabled @endif>
                             Create Client
-                        </a>
+                        </button>
                     </div>
                                         
 
@@ -159,11 +160,11 @@
 
                 
                 <div class="flex space-x-4 mb-6">
-                    <!-- Add new client button -->
+                    {{-- <!-- Add new client button -->
                     <a href="{{ route('clients.create') }}"
                         class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                         Add Client
-                    </a>
+                    </a> --}}
 
                     <!-- Import clients button -->
                     <button id="importButton"

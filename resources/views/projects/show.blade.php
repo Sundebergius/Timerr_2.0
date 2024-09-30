@@ -8,7 +8,7 @@
                 <div class="flex flex-wrap gap-2 sm:gap-4">
                     <a href="{{ route('projects.tasks.create', $project) }}" class="btn-primary">Add Task</a>
                     <a href="{{ route('projects.notes.create', $project) }}" class="btn-secondary">Add Note</a>
-                    <a href="{{ route('projects.contracts.create', $project) }}" class="btn-secondary">Add Contract</a>
+                    {{-- <a href="{{ route('projects.contracts.create', $project) }}" class="btn-secondary">Add Contract</a> --}}
                 </div>
             </div>
 
