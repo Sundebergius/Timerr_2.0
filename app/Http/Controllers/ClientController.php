@@ -334,6 +334,27 @@ class ClientController extends Controller
         return redirect()->route('clients.index');
     }
 
+    public function searchCVR(Request $request)
+    {
+        $query = $request->input('query');
+
+        if (!$query) {
+            return response()->json([]);
+        }
+
+        $response = Http::get('https://cvrapi.dk/api', [
+            'search' => $query,
+            'country' => 'dk',
+            'format' => 'json',
+        ]);
+
+        if ($response->successful()) {
+            return response()->json($response->json());
+        }
+
+        return response()->json([]);
+    }
+
     public function fetchClients()
     {
         $clients = Client::where('user_id', auth()->id())->get(); // Adjust based on your logic

@@ -12,14 +12,14 @@
                     <form method="POST" action="{{ route('clients.store') }}">
                         @csrf
 
+                        <!-- Search Bar for CVR API -->
                         <div class="mb-4">
-                            <label for="client_type" class="block text-sm font-bold mb-2">{{ __('Client Type') }}</label>
-                            <select name="client_type" id="client_type" onchange="clientTypeChange(this)" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="individual">Individual</option>
-                                <option value="company">Company</option>
-                            </select>
+                            <label for="company_search" class="block text-sm font-bold mb-2">{{ __('Search for Company') }}</label>
+                            <input id="company_search" type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Search by company name or CVR" oninput="searchCompany(this.value)" />
+                            <ul id="company_results" class="bg-white border rounded w-full mt-2 max-h-40 overflow-y-auto"></ul>
                         </div>
 
+                        <!-- Client Info Fields (auto-filled when company is selected) -->
                         <div class="mb-4">
                             <label for="name" class="block text-sm font-bold mb-2">{{ __('Name') }}</label>
                             <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
@@ -30,18 +30,13 @@
                             <input id="email" type="text" name="email" value="{{ old('email') }}" autofocus class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                         </div>
 
-                        <div id="company_info">
-                            <div class="mb-4">
-                                <label for="cvr" class="block text-sm font-bold mb-2">{{ __('CVR') }}</label>
-                                <input id="cvr" type="text" name="cvr" value="{{ old('cvr') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                            </div>
+                        <div class="mb-4">
+                            <label for="cvr" class="block text-sm font-bold mb-2">{{ __('CVR') }}</label>
+                            <input id="cvr" type="text" name="cvr" value="{{ old('cvr') }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
                         </div>
 
-                        <!-- Additional Information -->
-                        <div class="mb-4" x-data="{ open: false }">
-                            <button @click="open = !open" class="text-white font-bold py-2 px-4 rounded border border-blue-500 bg-gray-300 hover:bg-gray-600 transition" type="button">
-                                Additional Information <i class="fas fa-chevron-down" x-show="!open"></i><i class="fas fa-chevron-up" x-show="open"></i>
-                            </button>
+                       <!-- Additional Client Info (optional) -->
+                       <div id="additional_info" class="mt-4">
                             <div x-show="open" class="mt-4 border rounded shadow">
                                 <div class="p-4">
                                     <div class="mb-4">
@@ -91,20 +86,39 @@
 </x-app-layout>
 
 <script>
-function clientTypeChange(selectObj) {
-    var idx = selectObj.selectedIndex;
-    var clientType = selectObj.options[idx].value;
+    async function searchCompany(query) {
+        const resultsContainer = document.getElementById('company_results');
+        resultsContainer.innerHTML = ''; // Clear previous results
 
-    var companyInfo = document.getElementById('company_info');
-    if (clientType === 'company') {
-        companyInfo.style.display = 'block';
-    } else {
-        companyInfo.style.display = 'none';
+        if (query.length < 3) return; // Only search if query is at least 3 characters
+
+        try {
+            const response = await fetch(`/api/cvr-search?query=${query}`);
+            const data = await response.json();
+
+            if (data && data.length > 0) {
+                data.forEach(company => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${company.name} (${company.cvr})`;
+                    listItem.classList.add('p-2', 'hover:bg-gray-200', 'cursor-pointer');
+                    listItem.onclick = () => selectCompany(company);
+                    resultsContainer.appendChild(listItem);
+                });
+            } else {
+                resultsContainer.innerHTML = '<li class="p-2">No results found</li>';
+            }
+        } catch (error) {
+            console.error('Error fetching company data:', error);
+        }
     }
-}
 
-// Call the function immediately after the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', (event) => {
-    clientTypeChange(document.getElementById('client_type'));
-});
+    function selectCompany(company) {
+        // Populate form fields with company data
+        document.getElementById('name').value = company.name;
+        document.getElementById('email').value = company.email || ''; // May be null
+        document.getElementById('cvr').value = company.cvr;
+
+        // Clear search results
+        document.getElementById('company_results').innerHTML = '';
+    }
 </script>
