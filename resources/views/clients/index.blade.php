@@ -167,10 +167,10 @@
                     </a> --}}
 
                     <!-- Import clients button -->
-                    <button id="importButton"
+                    {{-- <button id="importButton"
                         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                         Import Clients
-                    </button>
+                    </button> --}}
                 </div>
 
                 <!-- Import clients form (hidden by default) -->
