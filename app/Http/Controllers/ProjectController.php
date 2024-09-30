@@ -140,6 +140,87 @@ class ProjectController extends Controller
         return redirect()->route('projects.index');
     }
 
+    public function showTaskSelectionForm(Request $request, Project $project)
+    {
+        // Fetch tasks related to the project
+        $tasks = $project->tasks;
+
+        // Separate different task types (project-based, hourly, etc.)
+        $projectTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProject');
+        $hourlyTasks = $tasks->where('taskable_type', 'App\\Models\\TaskHourly');
+        // You can add more task types (distance, products, etc.) here if needed
+
+        // Pass tasks to the selection view
+        return view('reports.select_tasks', compact('project', 'projectTasks', 'hourlyTasks'));
+    }
+
+    public function generateReport(Project $project)
+    {
+        if ($project->status != 'completed') {
+            abort(404); // Or redirect to a different page with an error message
+        }
+
+        // Get the selected task IDs from the form
+        $selectedTasks = $request->input('selected_tasks', []);
+
+        // Fetch only the selected tasks
+        $tasks = $project->tasks()->whereIn('id', $selectedTasks)->get();
+
+        // Separate different task types (project-based, hourly, etc.)
+        $projectTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProject');
+        $hourlyTasks = $tasks->where('taskable_type', 'App\\Models\\TaskHourly');
+        $distanceTasks = $tasks->where('taskable_type', 'App\\Models\\TaskDistance');
+        $productTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProduct');
+        $otherTasks = $tasks->where('taskable_type', 'App\\Models\\TaskOther');
+
+        // Load related taskable entities
+        $productTasks->load('taskProduct.product');
+        $projectTasks->load('taskable');
+        $hourlyTasks->load('taskable.registrationHourly');
+        $distanceTasks->load('taskable.registrationDistances');
+        $productTasks->load('taskable');
+        $otherTasks->load('taskable');
+
+        // Calculate totals for the report
+        $total = 0;
+        foreach ($projectTasks as $task) {
+            $total += $task->taskable->price;
+        }
+        foreach ($hourlyTasks as $task) {
+            $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
+            $total += $hours * $task->taskable->rate_per_hour;
+        }
+        foreach ($productTasks as $task) {
+            foreach ($task->taskProduct as $taskProduct) {
+                $total += $taskProduct->product->price * $taskProduct->total_sold;
+            }
+        }
+        foreach ($distanceTasks as $task) {
+            $distance = $task->taskable->registrationDistances->sum('distance');
+            $total += $distance * $task->taskable->price_per_km;
+        }
+
+        // Optionally include VAT or any other totals as needed
+        $vat = $total * 0.25;
+        $totalWithVat = $total * 1.25;
+
+        // Prepare the data for the PDF report
+        $data = [
+            'project' => $project,
+            'tasks' => $tasks,
+            'total' => $total,
+            'vat' => $vat,
+            'totalWithVat' => $totalWithVat,
+        ];
+
+        // Generate the PDF using a view
+        $pdf = PDF::loadView('reports.project_report', $data);
+
+        // Return the generated PDF for download
+        return $pdf->download('project_report_' . $project->id . '.pdf');
+    }
+
+
     public function invoice(Project $project)
     {
         if ($project->status != 'completed') {

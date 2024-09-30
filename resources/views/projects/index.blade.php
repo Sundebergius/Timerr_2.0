@@ -429,6 +429,13 @@
                                             {{ $project->status == 'completed' ? 'Mark as Ongoing' : 'Mark as Completed' }}
                                         </button>
                                     </form>
+                                    <!-- Check if the project is completed -->
+                                    @if($project->status == 'completed')
+                                        <!-- Show the Select Tasks for Report Button -->
+                                        <a href="{{ route('projects.selectTasks', $project->id) }}" class="btn btn-primary">
+                                            Select Tasks for Report
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                         </div>

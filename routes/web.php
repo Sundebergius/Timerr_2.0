@@ -157,6 +157,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
         Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
+        Route::get('/projects/{project}/select-tasks', [ProjectController::class, 'showTaskSelectionForm'])->name('projects.selectTasks');
+        Route::post('/projects/{project}/generate-report', [ProjectController::class, 'generateReport'])->name('projects.generateReport');        
     
         // Toggle Completion Route (changed back to PATCH)
         Route::patch('/{project}/toggleCompletion', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
