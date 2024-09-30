@@ -108,19 +108,49 @@ class ProfileController extends Controller
             $this->stripeService->cancelAndArchiveUser($user);
             \Log::info("Stripe cancellation and archiving called for user ID: {$user->id}");
 
-            // Manually delete subscription items and subscriptions using DB queries
-            $subscriptions = \DB::table('subscriptions')->where('user_id', $user->id)->get();
-            \Log::info("Subscriptions retrieved for user ID: {$user->id}, Count: " . $subscriptions->count());
+            // Delete all user-related projects
+            \DB::table('projects')->where('user_id', $user->id)->delete();
+            \Log::info("Projects deleted for user ID: {$user->id}");
 
-            // Loop through subscriptions and delete related subscription items
-            foreach ($subscriptions as $subscription) {
-                \Log::info("Deleting subscription items for subscription ID: {$subscription->id}");
-                \DB::table('subscription_items')->where('subscription_id', $subscription->id)->delete();
-            }
+            // Delete all user-related tasks
+            \DB::table('tasks')->where('user_id', $user->id)->delete();
+            \Log::info("Tasks deleted for user ID: {$user->id}");
 
-            // Delete the user's subscriptions
-            \DB::table('subscriptions')->where('user_id', $user->id)->delete();
-            \Log::info("Subscriptions deleted for user ID: {$user->id}");
+            // Delete all user-related clients
+            \DB::table('clients')->where('user_id', $user->id)->delete();
+            \Log::info("Clients deleted for user ID: {$user->id}");
+
+            // Delete the user's personal team (if exists)
+            \DB::table('teams')->where('user_id', $user->id)->delete();
+            \Log::info("Personal team deleted for user ID: {$user->id}");
+
+            // Delete any other user-specific data here...
+
+            /**
+             * Future implementation for handling team-related deletions
+             * --------------------------------------------------------
+             * 1. If the user owns any teams:
+             *    - Transfer ownership of the team to another team member.
+             *    - If no other team members exist, archive the team.
+             *    Example code for transferring ownership:
+             *    foreach ($user->teams as $team) {
+             *        if ($user->ownsTeam($team)) {
+             *            $newOwner = $team->members()->first();
+             *            if ($newOwner) {
+             *                $team->owner_id = $newOwner->id;
+             *                $team->save();
+             *            } else {
+             *                // Archive the team if no other members exist
+             *            }
+             *        }
+             *    }
+             * 
+             * 2. Delete user-specific projects or tasks in their personal space:
+             *    - Only delete projects/tasks that are not part of a team.
+             *    - Ensure that team-related data (e.g., projects) is not deleted.
+             *    Example:
+             *    \DB::table('projects')->where('user_id', $user->id)->whereNull('team_id')->delete();
+             */
 
             Auth::logout();
 
@@ -145,6 +175,7 @@ class ProfileController extends Controller
             return Redirect::route('profile.edit')->withErrors(['error' => 'An error occurred while trying to delete your account. Please try again later.']);
         }
     }
+
 
 
 

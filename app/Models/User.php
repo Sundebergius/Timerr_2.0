@@ -31,8 +31,16 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
-        'password',
-    ];
+        'password',             // This allows setting passwords (though it can be null for Google users)
+        'google_id',            // Add this to store Google ID
+        'google_token',         // Add this to store Google token
+        'current_team_id',      // For setting the user's current team
+        'profile_photo_path',   // If you're using profile photos
+        'stripe_id',            // To store Stripe customer ID
+        'pm_type',              // Payment method type
+        'pm_last_four',         // Last four digits of payment method
+        'email_verified_at',    // If email verification is enabled
+    ];    
 
     /**
      * The attributes that should be hidden for serialization.
