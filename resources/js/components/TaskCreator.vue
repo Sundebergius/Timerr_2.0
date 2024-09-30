@@ -32,13 +32,13 @@
       <div v-if="task_type === 'project_based'" class="mb-4">
         <label for="projectPrice" class="block text-gray-700 text-sm font-bold mb-2">Project Price:</label>
         <div class="flex">
-          <select v-model="currency"
+          <!-- <select v-model="currency"
             class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ml-2 w-32">
             <option value="DKK">DKK </option>
             <option value="EUR">EUR </option>
-            <option value="USD">USD </option>
+            <option value="USD">USD </option> -->
             <!-- Add more options for other currencies as needed -->
-          </select>
+          <!-- </select> -->
           <div
             class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
             <input type="number" id="projectPrice" v-model="projectPrice" class="w-full">
@@ -75,96 +75,90 @@
             <label for="note" class="block text-gray-700 text-sm font-bold mb-2">Note:</label>
             <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea> -->
       
-
             <div v-if="task_type === 'product'" class="mb-4">
-  <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4">
-    <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
-    <div class="flex items-center">
-      <button type="button" @click="showModal = true"
-        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2">
-        <i class="fas fa-plus"></i>
-      </button>
-      <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
-        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-        <option v-for="product in products" :value="product.id">{{ product.title }}</option>
-      </select>
+    <div v-if="products.length === 0" class="mb-4 text-red-500">
+        <p>No products found. Please <a :href="productUrl" class="text-blue-500 underline">create a product or service</a> first.</p>
     </div>
 
-    <!-- If product is a physical product -->
-    <div v-if="taskProduct.type === 'product'" class="mt-4">
-      <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-      <input type="number" id="quantity" v-model="taskProduct.quantity"
-        class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-        min="1" />
-    </div>
-
-    <!-- If product is a service, allow attribute selection -->
-    <div v-if="taskProduct.type === 'service'" class="mt-4">
-      <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Select Attributes:</label>
-      <div v-for="(attribute, index) in taskProduct.attributes" :key="index" class="mb-2">
+    <!-- Display product dropdown -->
+    <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4" v-if="products.length > 0">
+        <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
         <div class="flex items-center">
-          <input type="checkbox" :id="attribute.key" v-model="taskProduct.selectedAttributes[attribute.key]" :true-value="1" :false-value="0" class="mr-2">
-          <label :for="attribute.key">{{ attribute.key }} - {{ attribute.value }} kr</label>
-
-          <div v-if="taskProduct.selectedAttributes[attribute.key] > 0" class="ml-4 flex items-center">
-            <label :for="attribute.key + '-quantity'" class="text-sm font-bold mr-2">Quantity:</label>
-            <input type="number" :id="attribute.key + '-quantity'" v-model="taskProduct.selectedAttributesQuantities[attribute.key]"
-              class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              min="1" />
-          </div>
+            <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <option v-for="product in products" :value="product.id">{{ product.title }}</option>
+            </select>
         </div>
-      </div>
+
+        <!-- Show the quantity input if a physical product is selected -->
+        <div v-if="taskProduct.type === 'product' && taskProduct.selectedProduct" class="mt-4">
+            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+            <input type="number" id="quantity" v-model="taskProduct.quantity"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                min="1" />
+        </div>
+
+        <!-- Show attributes selection if the selected product is a service -->
+        <div v-if="taskProduct.type === 'service' && taskProduct.selectedProduct" class="mt-4">
+            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Select Attributes:</label>
+            <div v-for="(attribute, index) in taskProduct.attributes" :key="index" class="mb-2">
+                <div class="flex items-center">
+                    <input type="checkbox" :id="attribute.key" v-model="taskProduct.selectedAttributes[attribute.key]" :true-value="1" :false-value="0" class="mr-2">
+                    <label :for="attribute.key">{{ attribute.key }} - {{ attribute.value }} kr</label>
+
+                    <div v-if="taskProduct.selectedAttributes[attribute.key] > 0" class="ml-4 flex items-center">
+                        <label :for="attribute.key + '-quantity'" class="text-sm font-bold mr-2">Quantity:</label>
+                        <input type="number" :id="attribute.key + '-quantity'" v-model="taskProduct.selectedAttributesQuantities[attribute.key]"
+                            class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            min="1" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Product Button -->
+        <button type="button" @click="validateAndAddProduct(index)"
+            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+            Add this product
+        </button>
     </div>
 
-    <button type="button" @click="addProduct(index)"
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-      Add this product
-    </button>
-  </div>
+    <!-- Display added products -->
+    <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
+        <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
 
-  <!-- Display added products -->
-  <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
-  <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
-  <p v-if="product.type === 'product'" class="text-gray-700 mb-1">
-    <span class="font-bold">Quantity Added:</span> {{ product.quantity }}
-  </p>
-  <div v-if="product.type === 'service'">
-    <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
-    <ul>
-      <li v-for="(attr, index) in product.selectedAttributes" :key="index">
-        {{ attr.attribute }} - {{ attr.quantity }} ({{ attr.price }} kr each)
-      </li>
-    </ul>
-    <p class="text-gray-700 mb-1"><span class="font-bold">Total Price:</span> {{ product.totalPrice }} kr</p>
-  </div>
+        <!-- Editable quantity for physical products -->
+        <div v-if="product.type === 'product'" class="text-gray-700 mb-1">
+            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+            <input type="number" v-model="product.quantity"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                min="1" />
+        </div>
 
-  <!-- Edit and Remove buttons -->
-  <button type="button" @click="editProduct(index)"
-    class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-    Edit
-  </button>
-  <button type="button" @click="removeProduct(index)"
-    class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-    Remove
-  </button>
+        <!-- Editable attributes and prices for services -->
+        <div v-if="product.type === 'service'">
+            <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
+            <ul>
+                <li v-for="(attr, attrIndex) in product.selectedAttributes" :key="attrIndex">
+                    <label :for="'attribute-' + index + '-' + attrIndex">{{ attr.attribute }}</label> - 
+                    <input type="number" v-model="attr.quantity"
+                        class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                        min="1" /> ({{ attr.price }} kr each)
+                </li>
+            </ul>
+            <p class="text-gray-700 mb-1"><span class="font-bold">Total Price:</span> {{ product.totalPrice }} kr</p>
+        </div>
+
+        <!-- Remove button -->
+        <button type="button" @click="removeProduct(index)"
+            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+            Remove
+        </button>
+    </div>
 </div>
 
-<!-- Edit Modal (hidden by default) -->
-<div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-  <div class="bg-white p-4 rounded shadow-lg">
-    <h3 class="text-lg font-bold mb-4">Edit Product</h3>
-    <!-- Your edit form goes here -->
-    <!-- Example fields for editing: -->
-    <label for="editQuantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-    <input type="number" id="editQuantity" v-model="editProductDetails.quantity" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" min="1" />
-    
-    <!-- More fields as needed for editing attributes -->
 
-    <button type="button" @click="updateProduct" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Update</button>
-    <button type="button" @click="showEditModal = false" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">Cancel</button>
-  </div>
-</div>
-</div>
+
 
 
       <div v-if="task_type === 'distance'" class="mb-4">
@@ -280,6 +274,10 @@ export default {
     project: {
       type: String,
       required: true
+    },
+    productUrl: {
+      type: String,
+      required: true // Make sure this prop is required so the warning is cleared
     },
     userId: {
       type: Number,
@@ -543,6 +541,27 @@ export default {
         this.handleFormSubmission();
       }
     },
+    validateAndAddProduct(index) {
+      const taskProduct = this.taskProducts[index];
+
+      // Validate for physical products
+      if (taskProduct.type === 'product' && taskProduct.quantity <= 0) {
+        alert("Please specify a valid quantity for the product.");
+        return;
+      }
+
+      // Validate for service products with attributes
+      if (taskProduct.type === 'service') {
+        for (const key in taskProduct.selectedAttributes) {
+          if (taskProduct.selectedAttributes[key] && (!taskProduct.selectedAttributesQuantities[key] || taskProduct.selectedAttributesQuantities[key] <= 0)) {
+            alert(`Please specify a valid quantity for the attribute: ${key}`);
+            return;
+          }
+        }
+      }
+
+      this.addProduct(index);
+    },
     editProduct(index) {
       this.editProductIndex = index;
       this.editProductDetails = {
@@ -620,7 +639,9 @@ export default {
       this.titleError = false;
     }
 
-      let route = '';
+    // Set the common route for task creation
+    let route = `/projects/${this.localProject.id}/tasks`;
+
       const nonEmptyChecklistSections = this.checklistSections
         .filter(section => section.title.trim() !== '' || section.items.length > 0)
         .map(section => ({
@@ -652,7 +673,6 @@ export default {
 
       switch (this.task_type) {
         case 'project_based':
-          route = `/projects/${this.localProject.id}/tasks/store-project`;
           data = {
             ...data,
             price: this.projectPrice,
@@ -664,7 +684,6 @@ export default {
           };
           break;
         case 'hourly':
-          route = `/projects/${this.localProject.id}/tasks/store-hourly`;
           data = {
             ...data,
             task_hourly_id: this.task_hourly_id,
@@ -675,7 +694,6 @@ export default {
           };
           break;
           case 'product':
-          route = `/projects/${this.localProject.id}/tasks/store-product`;
           data = {
             ...data,
             products: this.addedProducts.map(product => {
@@ -703,7 +721,6 @@ export default {
           };
           break;
         case 'distance':
-          route = `/projects/${this.localProject.id}/tasks/store-distance`;
           data = {
             ...data,
             price_per_km: this.pricePerKm,
@@ -711,7 +728,6 @@ export default {
           };
           break;
         case 'other':
-          route = `/projects/${this.localProject.id}/tasks/store-other`;
           data = {
             ...data,
             description: this.description,
