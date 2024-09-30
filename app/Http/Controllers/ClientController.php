@@ -15,12 +15,12 @@ use Illuminate\Support\Facades\Validator;
 
 class ClientController extends Controller
 {
-    protected $planService;
+    // protected $planService;
 
-    public function __construct(PlanService $planService)
-    {
-        $this->planService = $planService;
-    }
+    // public function __construct(PlanService $planService)
+    // {
+    //     $this->planService = $planService;
+    // }
 
     public function index(Request $request)
     {
@@ -36,10 +36,12 @@ class ClientController extends Controller
         $user = auth()->user();
     
         // Fetch the current user and get the subscription plan name (e.g., 'free', 'freelancer')
-        $subscriptionPlan = $this->planService->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
+        $subscriptionPlan = app(\App\Services\PlanService::class)->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
+        \Log::info("User {$user->id} is on plan: {$subscriptionPlan}");
 
         // Get the client limit from PlanService based on the user's subscription plan
-        $clientLimit = $this->planService->getPlanLimits($subscriptionPlan)['clients'] ?? 5;
+        $clientLimit = app(\App\Services\PlanService::class)->getPlanLimits($subscriptionPlan)['clients'] ?? 5;
+        \Log::info("Client limit: {$clientLimit}, Current client count: {$user->clients()->count()}");
 
         // Get the current client count for the user
         $clientCount = $user->clients()->count();
@@ -88,8 +90,8 @@ class ClientController extends Controller
         $clients = $query->orderBy($sortField, $sortDirection)
                         ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
 
-        return view('clients.index', ['clients' => $clients, 'clientCount' => $clientCount, 'clientLimit' => $clientLimit, 'colorClasses' => $colorClasses]);
-    }
+                        return view('clients.index', compact('clients', 'clientCount', 'clientLimit', 'colorClasses'));
+                    }
 
     public function store(Request $request)
     {

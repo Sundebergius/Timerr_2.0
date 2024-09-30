@@ -27,11 +27,15 @@ class CheckSubscription
 
         // Get the user's subscription plan (e.g., 'free', 'freelancer')
         $subscriptionPlan = $this->getUserSubscriptionPlan($user);
+        \Log::info("User {$user->id} subscription plan: $subscriptionPlan");
 
         // Get the plan limits from PlanService
         $limits = $this->planService->getPlanLimits($subscriptionPlan);
+        \Log::info("Plan limits: " . json_encode($limits));
 
         // Apply restrictions dynamically based on the limits
+        \Log::info("User {$user->id} has {$user->clients()->count()} clients. Limit for {$subscriptionPlan} plan: {$limits['clients']}");
+
         if (isset($limits['clients']) && $user->clients()->count() >= $limits['clients']) {
             return redirect()->back()->withErrors(['error' => "You have reached the maximum number of clients for the $subscriptionPlan plan."]);
         }
