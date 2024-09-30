@@ -18,8 +18,11 @@ class UpdateUserPassword implements UpdatesUserPasswords
      */
     public function update(User $user, array $input): void
     {
+        // Check if the user has a password set
+        $hasPassword = !is_null($user->password);
+
         Validator::make($input, [
-            'current_password' => ['required', 'string', 'current_password:web'],
+            'current_password' => $hasPassword ? ['required', 'string', 'current_password:web'] : [],
             'password' => $this->passwordRules(),
         ], [
             'current_password.current_password' => __('The provided password does not match your current password.'),
