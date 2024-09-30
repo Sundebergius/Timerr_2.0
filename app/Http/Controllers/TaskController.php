@@ -86,11 +86,11 @@ class TaskController extends Controller
         }
 
        // Trigger webhook after task creation
-        if ($task) {
-            $this->triggerTaskCreatedWebhook($task);
-        } else {
-            error_log('Task creation failed or task type was invalid.');
-        }
+        // if ($task) {
+        //     $this->triggerTaskCreatedWebhook($task);
+        // } else {
+        //     error_log('Task creation failed or task type was invalid.');
+        // }
     }
 
     protected function triggerTaskCreatedWebhook(Task $task)
@@ -197,7 +197,7 @@ class TaskController extends Controller
                 'start_date' => $validatedData['start_date'],
                 'end_date' => $validatedData['end_date'],
                 'price' => $validatedData['price'],
-                'currency' => $validatedData['currency'],
+                'currency' => 'DKK',  // Hardcode currency as 'DKK'
                 'project_location' => $validatedData['project_location'],
             ]);
         
@@ -252,29 +252,29 @@ class TaskController extends Controller
         });
     }
 
-    public function createDistanceTask(Request $request)
+    public function createDistanceTask(array $data)
     {
         // Validate the data
-        $validatedData = Validator::make($request->all(), [
+        $validatedData = Validator::make($data, [
             'project_id' => 'required|integer',
             'task_title' => 'required|string',
             'price_per_km' => 'required|numeric',
+            'user_id' => 'required|integer', // Add this validation for user_id
         ])->validate();
 
         // Fetch the project
-        $project = Project::findOrFail($request->project_id);
-
-        DB::transaction(function () use ($validatedData, $request, $project) {
+        $project = Project::findOrFail($validatedData['project_id']);
+        
+        DB::transaction(function () use ($validatedData, $project) {
             // Create a new TaskDistance without task_id
             $taskDistance = TaskDistance::create([
-                //'distance' => $validatedData['distance'] ?? 0,
                 'price_per_km' => $validatedData['price_per_km'],
             ]);
-    
+
             // Create a new task
             $task = Task::create([
-                'project_id' => $request->project_id,
-                'user_id' => $request->user_id,
+                'project_id' => $validatedData['project_id'],
+                'user_id' => $validatedData['user_id'],
                 'title' => $validatedData['task_title'],
                 'task_type' => 'distance',
                 'taskable_id' => $taskDistance->id,
@@ -284,11 +284,13 @@ class TaskController extends Controller
         });
     }
 
-    public function createProductTask(Request $request)
-    {
-        Log::info('Request data: ', $request->all());
 
-        $validatedData = Validator::make($request->all(), [
+    public function createProductTask(array $data)
+    {
+        Log::info('Request data: ', $data);
+
+        // Validate the data
+        $validatedData = Validator::make($data, [
             'project_id' => 'required|integer',
             'task_title' => 'required|string',
             'products' => 'required|array',
@@ -299,23 +301,27 @@ class TaskController extends Controller
             'products.*.attributes.*.attribute' => 'required_if:products.*.type,service|string|max:255',
             'products.*.attributes.*.quantity' => 'required_if:products.*.type,service|integer|min:0',
             'products.*.attributes.*.price' => 'required_if:products.*.type,service|numeric|min:0',
+            'user_id' => 'required|integer',  // Add validation for user_id
         ])->validate();
 
         Log::info('Validated data: ', $validatedData);
 
-        $project = Project::findOrFail($request->project_id);
+        // Fetch the project
+        $project = Project::findOrFail($validatedData['project_id']);
 
-        DB::transaction(function () use ($validatedData, $request, $project) {
+        DB::transaction(function () use ($validatedData, $project) {
             try {
+                // Create the main task for the product
                 $task = Task::create([
-                    'project_id' => $request->project_id,
-                    'user_id' => $request->user_id,
+                    'project_id' => $validatedData['project_id'],
+                    'user_id' => $validatedData['user_id'],
                     'title' => $validatedData['task_title'],
                     'task_type' => 'product',
                     'client_id' => $project->client_id ?? null,
                     'taskable_type' => TaskProduct::class,
                 ]);
 
+                // Loop through the products and handle each one
                 foreach ($validatedData['products'] as $productData) {
                     Log::info('Processing product data: ', $productData);
 
@@ -324,6 +330,7 @@ class TaskController extends Controller
                         ? json_encode($productData['attributes']) 
                         : null;
 
+                    // Create a TaskProduct entry for each product
                     $taskProduct = TaskProduct::create([
                         'task_id' => $task->id,
                         'product_id' => $productData['product_id'],
@@ -343,6 +350,7 @@ class TaskController extends Controller
             }
         });
     }
+
 
 
 
@@ -430,7 +438,7 @@ class TaskController extends Controller
                 'start_date' => $validatedData['startDate'],
                 'end_date' => $validatedData['endDate'],
                 'price' => $validatedData['price'],
-                'currency' => $validatedData['currency'],
+                'currency' => 'DKK',  // Hardcode currency as 'DKK'
                 'project_location' => $validatedData['location'],
             ]);
     
@@ -534,297 +542,290 @@ class TaskController extends Controller
     }
 
     public function updateProductTask(Request $request, Task $task)
-    {
-        Log::info('Request data: ', $request->all());
+{
+    Log::info('Request data: ', $request->all());
 
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string',
-            'items' => 'array',
-            'new_products' => 'array',
-            'new_products.*.product_id' => 'exists:products,id',
-            'new_products.*.total_sold' => 'integer|min:1',
-        ]);
+    // Validation rules for both products and services
+    $validator = Validator::make($request->all(), [
+        'title' => 'required|string',
+        'items' => 'array',
+        'items.*.product_id' => 'required|exists:products,id',
+        'items.*.type' => 'required|in:product,service',
+        'items.*.quantity' => 'nullable|integer|min:1',
+        'items.*._delete' => 'nullable|in:true,false', // Allow deletion flag for products
+        'items.*.attributes' => 'nullable|array', // For services
+        'items.*.attributes.*.quantity' => 'nullable|integer|min:1', // Attribute quantities for services
+        'items.*.attributes.*.price' => 'nullable|numeric|min:0', // Attribute prices for services
+        'items.*.attributes.*._delete' => 'nullable|in:true,false', // Allow deletion flag for service attributes
+    ]);
 
-        $validator->sometimes('items', 'required|array', function ($input) {
-            return empty($input->new_products);
-        });
-
-        if ($request->has('items')) {
-            $validator->sometimes('items.*.product_id', 'required|integer|exists:products,id', function ($input) {
-                return !empty($input->items);
-            });
-
-            $validator->sometimes('items.*.total_sold', 'required|integer|min:1', function ($input) {
-                return !empty($input->items);
-            });
-
-            // Modify the validation rule for _delete field to allow 'true' as a string
-            $validator->sometimes('items.*._delete', 'sometimes|string|in:true,false', function ($input) {
-                return !empty($input->items);
-            });
-        }
-
-        if ($validator->fails()) {
-            Log::info('Validation failed: ', $validator->errors()->all());
-            return response()->json($validator->errors(), 400);
-        }
-
-        $validatedData = $validator->validated();
-
-        Log::info('Validation passed');
-        Log::info('Validated Data: ', $validatedData);
-
-        DB::transaction(function () use ($validatedData, $request, $task) {
-            try {
-                $task->update([
-                    'user_id' => $request->user_id,
-                    'title' => $validatedData['title'],
-                ]);
-        
-                $allProducts = array_merge($validatedData['items'] ?? [], $validatedData['new_products'] ?? []);
-        
-                // Retrieve existing TaskProduct entries
-                $existingTaskProducts = TaskProduct::where('task_id', $task->id)->get()->keyBy('product_id');
-
-                foreach ($allProducts as $productData) {
-                    $productID = $productData['product_id'];
-                    $newTotalSold = $productData['total_sold'] ?? 0;
-                    $product = Product::find($productID);
-                
-                    if ($existingTaskProducts->has($productID)) {
-                        $existingTaskProduct = $existingTaskProducts->get($productID);
-                        $currentTotalSold = $existingTaskProduct->total_sold;
-                
-                        if (isset($productData['_delete']) && $productData['_delete'] === 'true') {
-                            // Decrease quantitySold in Product by the current total_sold before deletion
-                            $product->decrement('quantitySold', $currentTotalSold);
-                            $existingTaskProduct->delete();
-                        } else {
-                            // Calculate the difference correctly
-                            $difference = $newTotalSold - $currentTotalSold;
-                            // Adjust quantitySold in Product based on the difference
-                            if ($difference > 0) {
-                                $product->increment('quantitySold', $difference);
-                            } else {
-                                $product->decrement('quantitySold', abs($difference));
-                            }
-                            $existingTaskProduct->update(['total_sold' => $newTotalSold]);
-                        }
-                    } else {
-                        if (!isset($productData['_delete']) || $productData['_delete'] !== 'true') {
-                            // For new TaskProduct, add the new total_sold to quantitySold in Product
-                            TaskProduct::create([
-                                'task_id' => $task->id,
-                                'product_id' => $productID,
-                                'total_sold' => $newTotalSold
-                            ]);
-                            $product->increment('quantitySold', $newTotalSold);
-                        }
-                    }
-                }
-
-                // Optionally, handle deletion of TaskProducts not present in the request
-                // This depends on your application's requirements
-
-            } catch (\Exception $e) {
-                Log::error('Failed to update task and task product: ' . $e->getMessage());
-                throw $e;
-            }
-        });
-
-        return response()->json(['message' => 'Task updated successfully.']);
+    // Check if validation fails
+    if ($validator->fails()) {
+        Log::info('Validation failed: ', $validator->errors()->all());
+        return response()->json($validator->errors(), 400);
     }
 
-    public function createOtherTask(Request $request)
-    {
-        Log::info('createOtherTask method called');
-        // Validate the data
-        $validatedData = Validator::make($request->all(), [
-            'task_title' => 'required|string',
-            'description' => 'required|string',
-            'customFields' => 'nullable|array',
-            'checklistSections' => 'nullable|array',
-        ])->validate();
+    $validatedData = $validator->validated();
 
-        // Fetch the project
-        $project = Project::findOrFail($request->project_id);
+    Log::info('Validation passed');
+    Log::info('Validated Data: ', $validatedData);
 
-        DB::transaction(function () use ($validatedData, $request, $project) {
-            // Create a new OtherTask without task_id
-            $taskOther = TaskOther::create([
-                'description' => $validatedData['description'],
-            ]);
-    
-            // Create a new task
-            $task = Task::create([
-                'project_id' => $request->project_id,
-                'user_id' => $request->user_id,
-                'title' => $validatedData['task_title'],
-                'task_type' => 'other',
-                'taskable_id' => $taskOther->id,
-                'taskable_type' => TaskOther::class,
-                'client_id' => $project->client_id ?? null,
-            ]);
-
-             // Handle customFields and checklistSections
-            if (isset($validatedData['customFields'])) {
-                $position = 0;
-                foreach ($validatedData['customFields'] as $field) {
-                    $value = $field['value'];
-                    $position = $field['position'];
-
-                    CustomField::create([
-                        'task_id' => $task->id,
-                        'field' => trim($value) !== '' ? $value : null, // Set 'field' to null if it's empty
-                        'position' => $position,
-                    ]);
-            
-                    Log::info('Position: '.$position);
-                    $position++; // Increment the counter for each custom field
-                }
-            }
-
-            if (isset($validatedData['checklistSections'])) {
-                foreach ($validatedData['checklistSections'] as $section) {
-                    if (trim($section['title']) !== '') {
-                        $createdSection = ChecklistSection::create([
-                            'title' => $section['title'],
-                            'task_id' => $task->id,
-                        ]);
-            
-                        // Check if the ChecklistSection was created successfully
-                        if (!$createdSection) {
-                            Log::error('Failed to create ChecklistSection');
-                            continue;
-                        }
-            
-                        $position = 0;
-                        foreach ($section['items'] as $item) {
-                            if (trim($item) !== '') {
-                                $createdItem = ChecklistItem::create([
-                                    'checklist_section_id' => $createdSection->id,
-                                    'item' => $item,
-                                    'position' => $position,
-                                ]);
-            
-                                // Check if the ChecklistItem was created successfully
-                                if (!$createdItem) {
-                                    Log::error('Failed to create ChecklistItem for section: ' . $createdSection->id);
-                                }
-                                $position++;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    private function updateOtherTask(array $data, Task $task)
-    {
-        // Validate the data
-        Log::info('updateOtherTask method called');
-
-        $validator = Validator::make($data, [
-            'title' => 'required|string',
-            'description' => 'required|string',
-            'customFields' => 'nullable|array',
-            'checklistSections' => 'nullable|array',
-        ]);
-
-        if ($validator->fails()) {
-            Log::error('Validation failed: ', $validator->errors()->toArray());
-            return;
-        }
-
-        $validatedData = $validator->validated();
-        Log::info('Validated Data: '.print_r($validatedData, true));
-
-        DB::transaction(function () use ($validatedData, $task) {
-            // Update the TaskOther
-            $task->taskable->update([
-                'description' => $validatedData['description'],
-            ]);
-
-            // Update the task
+    // Start transaction to update task and its products/services
+    DB::transaction(function () use ($validatedData, $task) {
+        try {
+            // Update the task's title
             $task->update([
+                'user_id' => request()->user_id,
                 'title' => $validatedData['title'],
             ]);
 
-        
+            // Retrieve existing TaskProduct entries
+            $existingTaskProducts = TaskProduct::where('task_id', $task->id)->get()->keyBy('product_id');
+
+            // Loop through all products/services
+            foreach ($validatedData['items'] as $productData) {
+                $productID = $productData['product_id'];
+                $type = $productData['type'];
+
+                // Check if the product is marked for deletion
+                if (isset($productData['_delete']) && $productData['_delete'] === 'true') {
+                    if ($existingTaskProducts->has($productID)) {
+                        $existingTaskProducts->get($productID)->delete();
+                    }
+                    continue; // Skip further processing if product is deleted
+                }
+
+                // Handle service attribute deletions
+                $newQuantity = $productData['quantity'] ?? 0;
+                $attributes = [];
+
+                if ($type === 'service' && isset($productData['attributes'])) {
+                    foreach ($productData['attributes'] as $attribute => $data) {
+                        // Check if the attribute is marked for deletion
+                        if (!isset($data['_delete']) || $data['_delete'] !== 'true') {
+                            // Keep attributes not marked for deletion
+                            $attributes[] = [
+                                'attribute' => $attribute,
+                                'quantity' => $data['quantity'],
+                                'price' => $data['price'] ?? 0, // Default to 0 if price is missing
+                            ];
+                        }
+                    }
+
+                    // Recalculate total quantity based on remaining attributes
+                    $newQuantity = array_sum(array_column($attributes, 'quantity'));
+
+                    // If all attributes are deleted, mark the entire service for deletion
+                    if (empty($attributes)) {
+                        $existingTaskProducts->get($productID)->delete();
+                        continue;
+                    }
+                }
+
+                if ($existingTaskProducts->has($productID)) {
+                    $existingTaskProduct = $existingTaskProducts->get($productID);
+
+                    // Update quantity and attributes
+                    $existingTaskProduct->update([
+                        'quantity' => $newQuantity,
+                        'attributes' => isset($attributes) ? json_encode($attributes) : null,
+                    ]);
+                } else {
+                    // Handle new products/services
+                    TaskProduct::create([
+                        'task_id' => $task->id,
+                        'product_id' => $productID,
+                        'type' => $type,
+                        'quantity' => $newQuantity,
+                        'attributes' => isset($attributes) ? json_encode($attributes) : null,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to update task and task product: ' . $e->getMessage());
+            throw $e;
+        }
+    });
+
+    return response()->json(['message' => 'Task updated successfully.']);
+}
+
+public function createOtherTask(array $data)
+{
+    Log::info('createOtherTask method called');
+
+    // Validate the array data
+    $validator = Validator::make($data, [
+        'project_id' => 'required|integer',
+        'task_title' => 'required|string',
+        'description' => 'required|string',
+        'user_id' => 'required|integer',
+        'customFields' => 'nullable|array',
+        'checklistSections' => 'nullable|array',
+    ]);
+
+    if ($validator->fails()) {
+        Log::error('Validation failed: ', $validator->errors()->toArray());
+        return response()->json($validator->errors(), 400);
+    }
+
+    $validatedData = $validator->validated();
+    Log::info('Validated Data: ' . print_r($validatedData, true));
+
+    // Start a database transaction for creating a new task
+    $task = DB::transaction(function () use ($validatedData) {
+        try {
+            // Create a new TaskOther model
+            $otherTask = TaskOther::create([
+                'description' => $validatedData['description'],
+            ]);
+
+            // Create the main task with the newly created TaskOther ID
+            $task = Task::create([
+                'title' => $validatedData['task_title'],
+                'task_type' => 'other',
+                'taskable_type' => TaskOther::class,
+                'taskable_id' => $otherTask->id,
+                'project_id' => $validatedData['project_id'],
+                'user_id' => $validatedData['user_id'],
+            ]);
 
             // Handle customFields
             if (isset($validatedData['customFields'])) {
-                foreach ($validatedData['customFields'] as $fieldId => $fieldData) {
-                    if (strpos($fieldId, 'new_') === 0) {
-                        // This is a new custom field
-                        // Get the current maximum position
-                        $maxPosition = CustomField::where('task_id', $task->id)->max('position');
-
-                        // If there are no custom fields yet, start at 0
-                        if ($maxPosition === null) {
-                            $maxPosition = 0;
-                        }
-
-                        // Check if the 'field' value is not empty
-                        if (!empty(trim($fieldData['field']))) {
-                            Log::info('Creating new custom field with task_id: '.$task->id.' and field: '.$fieldData['field']);
-                            CustomField::create([
-                                'task_id' => $task->id,
-                                'field' => $fieldData['field'],
-                                'position' => ++$maxPosition, // Increment the position for the new custom field
-                            ]);
-                        }
-                    } else {
-                        // This is an existing custom field
-                        if (isset($fieldData['_delete']) && $fieldData['_delete'] === 'true') {
-                            CustomField::where('id', $fieldId)->delete();
-                        } else {
-                            CustomField::updateOrCreate(
-                                ['id' => $fieldId, 'task_id' => $task->id],
-                                ['field' => $fieldData['field']]
-                            );
-                        }
+                foreach ($validatedData['customFields'] as $fieldData) {
+                    if (!empty(trim($fieldData['value']))) {
+                        Log::info('Creating new custom field for task_id: ' . $task->id . ' with field: ' . $fieldData['value']);
+                        CustomField::create([
+                            'task_id' => $task->id,
+                            'field' => $fieldData['value'],
+                            'position' => CustomField::where('task_id', $task->id)->max('position') + 1,
+                        ]);
                     }
                 }
             }
 
             // Handle checklistSections
             if (isset($validatedData['checklistSections'])) {
-                foreach ($validatedData['checklistSections'] as $sectionId => $sectionData) {
-                    if (isset($sectionData['_delete']) && $sectionData['_delete'] === 'true') {
-                        ChecklistSection::where('id', $sectionId)->delete();
+                foreach ($validatedData['checklistSections'] as $sectionData) {
+                    $createdSection = ChecklistSection::create([
+                        'task_id' => $task->id,
+                        'title' => $sectionData['title'],
+                    ]);
+
+                    if (isset($sectionData['items'])) {
+                        foreach ($sectionData['items'] as $itemData) {
+                            ChecklistItem::create([
+                                'checklist_section_id' => $createdSection->id,
+                                'item' => $itemData,
+                                'position' => ChecklistItem::where('checklist_section_id', $createdSection->id)->max('position') + 1,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            Log::info('Other task successfully created.');
+            return $task; // Return the created task
+        } catch (\Exception $e) {
+            Log::error('Failed to create other task: ' . $e->getMessage());
+            throw $e;
+        }
+    });
+
+    // Return a success response
+    return response()->json(['message' => 'Task created successfully.']);
+}
+
+
+
+
+private function updateOtherTask(array $data, Task $task)
+{
+    // Validate the data
+    Log::info('updateOtherTask method called');
+
+    $validator = Validator::make($data, [
+        'title' => 'required|string',
+        'description' => 'required|string',
+        'customFields' => 'nullable|array',
+        'checklistSections' => 'nullable|array',
+    ]);
+
+    if ($validator->fails()) {
+        Log::error('Validation failed: ', $validator->errors()->toArray());
+        return;
+    }
+
+    $validatedData = $validator->validated();
+    Log::info('Validated Data: ' . print_r($validatedData, true));
+
+    DB::transaction(function () use ($validatedData, $task) {
+        // Update the TaskOther
+        $task->taskable->update([
+            'description' => $validatedData['description'],
+        ]);
+
+        // Update the task
+        $task->update([
+            'title' => $validatedData['title'],
+        ]);
+
+        // Handle customFields
+        if (isset($validatedData['customFields'])) {
+            foreach ($validatedData['customFields'] as $fieldId => $fieldData) {
+                if (strpos($fieldId, 'new_') === 0) {
+                    // Create a new custom field
+                    $maxPosition = CustomField::where('task_id', $task->id)->max('position') ?? 0;
+                    if (!empty(trim($fieldData['field']))) {
+                        CustomField::create([
+                            'task_id' => $task->id,
+                            'field' => $fieldData['field'],
+                            'position' => ++$maxPosition,
+                        ]);
+                    }
+                } else {
+                    // Existing custom field
+                    if (isset($fieldData['_delete']) && $fieldData['_delete'] === 'true') {
+                        CustomField::where('id', $fieldId)->delete();
                     } else {
-                        $createdSection = ChecklistSection::updateOrCreate(
-                            ['id' => $sectionId, 'task_id' => $task->id],
-                            ['title' => $sectionData['title']] // No 'position' for sections
+                        CustomField::updateOrCreate(
+                            ['id' => $fieldId, 'task_id' => $task->id],
+                            ['field' => $fieldData['field']]
                         );
+                    }
+                }
+            }
+        }
 
-                        if (isset($sectionData['items'])) {
-                            foreach ($sectionData['items'] as $itemId => $itemData) {
-                                if (isset($itemData['_delete']) && $itemData['_delete'] === 'true') {
-                                    ChecklistItem::where('id', $itemId)->delete();
-                                } else {
-                                    // Get the current maximum position for items in this section
-                                    $maxItemPosition = ChecklistItem::where('checklist_section_id', $createdSection->id)->max('position');
+        // Handle checklistSections
+        if (isset($validatedData['checklistSections'])) {
+            foreach ($validatedData['checklistSections'] as $sectionId => $sectionData) {
+                if (isset($sectionData['_delete']) && $sectionData['_delete'] === 'true') {
+                    ChecklistSection::where('id', $sectionId)->delete();
+                } else {
+                    $createdSection = ChecklistSection::updateOrCreate(
+                        ['id' => $sectionId, 'task_id' => $task->id],
+                        ['title' => $sectionData['title']]
+                    );
 
-                                    // If there are no items yet, start at 0
-                                    if ($maxItemPosition === null) {
-                                        $maxItemPosition = 0;
-                                    }
-
-                                    ChecklistItem::updateOrCreate(
-                                        ['id' => $itemId, 'checklist_section_id' => $createdSection->id],
-                                        ['item' => $itemData['item'], 'position' => ++$maxItemPosition] // Increment the position for the new item
-                                    );
-                                }
+                    if (isset($sectionData['items'])) {
+                        foreach ($sectionData['items'] as $itemId => $itemData) {
+                            if (isset($itemData['_delete']) && $itemData['_delete'] === 'true') {
+                                ChecklistItem::where('id', $itemId)->delete();
+                            } else {
+                                $maxItemPosition = ChecklistItem::where('checklist_section_id', $createdSection->id)->max('position') ?? 0;
+                                ChecklistItem::updateOrCreate(
+                                    ['id' => $itemId, 'checklist_section_id' => $createdSection->id],
+                                    ['item' => $itemData['item'], 'position' => ++$maxItemPosition]
+                                );
                             }
                         }
                     }
                 }
             }
-        });
-    }
+        }
+    });
+}
 
 
 

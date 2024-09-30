@@ -189,7 +189,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{task}/edit', [TaskController::class, 'edit'])->name('projects.tasks.edit');
             Route::put('/{task}', [TaskController::class, 'update'])->name('projects.tasks.update');
             Route::delete('/{task}', [TaskController::class, 'destroy'])->name('projects.tasks.destroy');
-            
+           
             // Registration Routes for Tasks (back inside {task}/registrations)
             Route::prefix('/{task}/registrations')->group(function () {
                 Route::post('/store-project', [RegistrationController::class, 'storeProjectRegistration'])->name('projects.tasks.registrations.storeProject');

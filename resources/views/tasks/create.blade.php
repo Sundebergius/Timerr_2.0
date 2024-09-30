@@ -4,7 +4,7 @@
         <div id="app">
             <form id="taskForm" action="{{ route('projects.tasks.store', json_decode($project)->id) }}" method="POST" @submit.prevent="$refs.taskCreator.handleFormSubmission">
                 @csrf
-                <task-creator ref="taskCreator" v-bind:project="JSON.stringify(project)" v-bind:user-id="userId" @formSubmitted></task-creator>
+                <task-creator :product-url="'{{ route('products.index') }}'" ref="taskCreator" v-bind:project="JSON.stringify(project)" v-bind:user-id="userId" @formSubmitted></task-creator>
                 <input type="hidden" id="hiddenInput" name="formData">
                 <div class="flex items-center justify-between">
                 </div>

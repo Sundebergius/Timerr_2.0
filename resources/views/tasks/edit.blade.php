@@ -35,7 +35,7 @@
                                             value="{{ $task->taskable->price }}"
                                             class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                     </div>
-                                    <div>
+                                    {{-- <div>
                                         <label for="currency"
                                             class="block text-gray-700 text-sm font-bold mb-2">Currency:</label>
                                         <select id="currency" name="currency"
@@ -47,7 +47,7 @@
                                             <option value="USD"
                                                 {{ $task->taskable->currency == 'USD' ? 'selected' : '' }}>USD </option>
                                         </select>
-                                    </div>
+                                    </div> --}}
                                     <div>
                                         <label for="startDate" class="block text-gray-700 text-sm font-bold mb-2">Start
                                             Date:</label>
@@ -56,10 +56,9 @@
                                             class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                     </div>
                                     <div>
-                                        <label for="endDate" class="block text-gray-700 text-sm font-bold mb-2">End
-                                            Date:</label>
+                                        <label for="endDate" class="block text-gray-700 text-sm font-bold mb-2">End Date:</label>
                                         <input type="date" id="endDate" name="endDate"
-                                            value="{{ date('Y-m-d', strtotime($task->taskable->end_date)) }}"
+                                            value="{{ $task->taskable->end_date ? date('Y-m-d', strtotime($task->taskable->end_date)) : '' }}"
                                             class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                     </div>
                                     <div class="col-span-2">
@@ -138,37 +137,75 @@
                         @endif
 
                         @if ($task->task_type == 'product')
+    <div class="mb-4">
+        <h2 class="text-xl font-bold mb-2">Existing Products/Services</h2>
+        <p class="text-gray-600 text-sm mb-4">You can update the quantity or attributes for each item below. Use the "Remove" button to delete an item from the task. You can cancel by clicking the same button again.</p>
+        
+        <div id="existing-product-container" class="p-4">
+            @foreach ($task->taskProduct as $taskProduct)
+                <div class="item mb-4 p-4 border border-gray-300 rounded" data-task-type="{{ $taskProduct->type }}" data-product-id="{{ $taskProduct->product->id }}">
+                    <input type="hidden" name="items[{{ $taskProduct->product->id }}][product_id]" value="{{ $taskProduct->product->id }}">
+                    <input type="hidden" name="items[{{ $taskProduct->product->id }}][type]" value="{{ $taskProduct->type }}">
+
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        {{ $taskProduct->type == 'product' ? 'Product' : 'Service' }} #{{ $loop->iteration }}: {{ $taskProduct->product->title }}
+                    </label>
+
+                    <!-- Show quantity for physical products -->
+                    @if ($taskProduct->type == 'product')
+                        <div class="flex space-x-4">
+                            <label for="product_quantity_{{ $taskProduct->id }}" class="block text-gray-700 text-sm font-bold">Quantity:</label>
+                            <input type="number" id="product_quantity_{{ $taskProduct->id }}" name="items[{{ $taskProduct->product->id }}][quantity]" value="{{ $taskProduct->quantity }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <button type="button" class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
+                        </div>
+                    @endif
+
+                    @if ($taskProduct->type == 'service')
+                        @php
+                            $attributes = json_decode($taskProduct->attributes, true); // Decode JSON attributes
+                        @endphp
+                        @if (is_array($attributes) && !empty($attributes))
                             <div class="mb-4">
-                                <h2 class="text-xl font-bold mb-2">Existing Products</h2>
-                                <div id="existing-product-container" class="p-4">
-                                    @foreach ($task->taskProduct as $taskProduct)
-                                        <div class="item mb-4" data-task-type="product"
-                                            data-product-id="{{ $taskProduct->product->id }}">
-                                            <label class="block text-gray-700 text-sm font-bold mb-2">Product
-                                                #{{ $loop->iteration }}: {{ $taskProduct->product->title }}</label>
-                                            <div class="flex space-x-2">
-                                                <input type="hidden"
-                                                    name="items[{{ $taskProduct->product->id }}][product_id]"
-                                                    value="{{ $taskProduct->product->id }}">
-                                                <input type="number" id="product_quantity_{{ $taskProduct->id }}"
-                                                    name="items[{{ $taskProduct->product->id }}][total_sold]"
-                                                    value="{{ $taskProduct->total_sold }}"
-                                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                                <button type="button"
-                                                    class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Service Attributes:</label>
+                                @foreach ($attributes as $attribute)
+                                    <div class="mb-4 p-4 bg-gray-50 rounded-md shadow-sm" data-attribute-name="{{ $attribute['attribute'] }}">
+                                        <label class="block text-gray-800 font-semibold mb-2">{{ $attribute['attribute'] }}</label>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <!-- Quantity Field -->
+                                            <div class="flex flex-col">
+                                                <label for="attribute_{{ $attribute['attribute'] }}_quantity" class="text-sm text-gray-600 mb-1">Quantity</label>
+                                                <input type="number" id="attribute_{{ $attribute['attribute'] }}_quantity" name="items[{{ $taskProduct->product->id }}][attributes][{{ $attribute['attribute'] }}][quantity]" value="{{ $attribute['quantity'] }}" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                            </div>
+
+                                            <!-- Price Field -->
+                                            <div class="flex flex-col">
+                                                <label for="attribute_{{ $attribute['attribute'] }}_price" class="text-sm text-gray-600 mb-1">Price</label>
+                                                <input type="number" id="attribute_{{ $attribute['attribute'] }}_price" name="items[{{ $taskProduct->product->id }}][attributes][{{ $attribute['attribute'] }}][price]" value="{{ $attribute['price'] }}" step="0.01" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                                             </div>
                                         </div>
-                                    @endforeach
-                                </div>
+
+                                        <!-- Remove Attribute Button -->
+                                        <div class="mt-4">
+                                            <button type="button" class="remove-attribute bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                                                Remove Attribute
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endforeach
                             </div>
-                            <div class="mb-4" id="new-products-section" style="display: none;">
-                                <h2 class="text-xl font-bold mb-2">Add New Products</h2>
-                                <div id="new-product-container" class="p-4"></div>
-                            </div>
-                            <button type="button" id="add-product"
-                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-2">Add
-                                Product</button>
+                        @else
+                            <p class="text-red-500">No attributes found for this service.</p>
                         @endif
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    </div>
+@endif
+
+                    
+
 
                         @if ($task->task_type == 'distance')
                             <div class="mb-6">
@@ -325,228 +362,294 @@
     // });
 
     document.addEventListener('DOMContentLoaded', function() {
-        var products = @json($products);
-        var newProductCounter = 0;
+    document.addEventListener('click', function(event) {
+        // Handle product/service removal
+        if (event.target.classList.contains('remove-item')) {
+            handleItemRemoval(event.target);
+        }
 
-        document.addEventListener('click', function(event) {
-            if (event.target.classList.contains('remove-item')) {
-                console.log('Remove button clicked');
-                var parentElement = event.target.closest('.item');
-                console.log('Parent Element:', parentElement);
+        // Handle attribute removal within a service
+        if (event.target.classList.contains('remove-attribute')) {
+            handleAttributeRemoval(event.target);
+        }
+    });
 
-                var taskType = parentElement.dataset.taskType;
-                console.log('Task Type:', taskType);
+    /**
+     * Handle marking and unmarking a product or service for deletion.
+     */
+    function handleItemRemoval(button) {
+        var parentElement = button.closest('.item');
+        if (!parentElement) return; // Safeguard if parent element is not found
+        
+        var input = parentElement.querySelector('input[name^="items["]');
+        var inputName, deleteInput;
 
-                var input;
-                var id;
-                var inputName;
+        if (input) {
+            var match = input.name.match(/\[(\d+)\]/);
+            if (match) {
+                var id = match[1];
+                inputName = 'items[' + id + '][_delete]';
+                deleteInput = parentElement.querySelector(`input[name="${inputName}"]`);
 
-                switch (taskType) {
-                    case 'product':
-                        input = parentElement.querySelector('input[name^="items["]');
-                        break;
-                    case 'distance':
-                    case 'hourly':
-                        input = parentElement.querySelector('input[name^="registrations["]');
-                        break;
-                    case 'other':
-                        input = parentElement.querySelector(
-                            'input[name^="customFields["], input[name^="checklistSections["], input[name^="checklistItems["]'
-                        );
-                        break;
-                }
-
-                if (input) {
-                    var match = input.name.match(/\[(\d+)\]/);
-                    if (match) {
-                        id = match[1];
-
-                        // Handle removal of newly created sections, items, and custom fields
-                        if (id.startsWith('new_')) {
-                            parentElement.remove();
-                            return;
-                        }
-                    }
-                
-
-                    switch (taskType) {
-                        case 'product':
-                            inputName = 'items[' + id + '][_delete]';
-                            break;
-                        case 'distance':
-                        case 'hourly':
-                            inputName = 'registrations[' + id + '][_delete]';
-                            break;
-                            case 'other':
-                            if (input.name.startsWith('customFields')) {
-                                inputName = 'customFields[' + id + '][_delete]';
-                            } else if (input.name.startsWith('checklistSections')) {
-                                if (parentElement.dataset.checklistItemId) {
-                                    var sectionElement = parentElement.closest('.item[data-checklist-section-id]');
-                                    if (sectionElement) {
-                                        var sectionId = sectionElement.dataset.checklistSectionId;
-                                        var itemId = parentElement.dataset.checklistItemId;
-                                        inputName = 'checklistSections[' + sectionId + '][items][' + itemId + '][_delete]';
-                                    }
-                                } else {
-                                    inputName = 'checklistSections[' + id + '][_delete]';
-                                }
-                            }
-                            break;
-                    }
-
+                if (!deleteInput) {
+                    // Mark for deletion
                     var hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';
                     hiddenInput.name = inputName;
                     hiddenInput.value = 'true';
                     parentElement.appendChild(hiddenInput);
-                }
 
-                parentElement.classList.add('bg-red-200', 'transition', 'duration-500', 'ease-in-out');
-                event.target.textContent = 'Cancel';
-                event.target.classList.remove('remove-item', 'bg-red-500', 'hover:bg-red-700');
-                event.target.classList.add('cancel-removal', 'bg-red-600', 'hover:bg-red-800');
-            } else if (event.target.classList.contains('cancel-removal')) {
-                var parentElement = event.target.closest('.item');
-                var input = parentElement.querySelector('input[name*="_delete"]');
-                if (input) {
-                    input.remove();
+                    parentElement.classList.add('bg-red-200', 'transition', 'duration-500', 'ease-in-out');
+                    button.textContent = 'Cancel';
+                } else {
+                    // Unmark for deletion
+                    deleteInput.remove();
+                    parentElement.classList.remove('bg-red-200', 'transition', 'duration-500', 'ease-in-out');
+                    button.textContent = 'Remove';
                 }
+            }
+        }
+    }
+
+    /**
+     * Handle marking and unmarking an attribute within a service for deletion.
+     */
+    function handleAttributeRemoval(button) {
+        var attributeElement = button.closest('.attribute-item');
+        var parentElement = button.closest('.item');
+
+        if (!attributeElement || !parentElement) {
+            console.error('Could not find attribute or parent element');
+            return; // Safeguard if attribute or parent element is not found
+        }
+
+        var attributeName = attributeElement.dataset.attributeName;
+        var inputName = 'items[' + parentElement.dataset.productId + '][attributes][' + attributeName + '][_delete]';
+        var deleteInput = attributeElement.querySelector(`input[name="${inputName}"]`);
+
+        if (!deleteInput) {
+            // Mark attribute for deletion
+            var hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = inputName;
+            hiddenInput.value = 'true';
+            attributeElement.appendChild(hiddenInput);
+
+            attributeElement.classList.add('bg-red-200', 'transition', 'duration-500', 'ease-in-out');
+            button.textContent = 'Undo Attribute Deletion';
+        } else {
+            // Unmark attribute for deletion
+            deleteInput.remove();
+            attributeElement.classList.remove('bg-red-200', 'transition', 'duration-500', 'ease-in-out');
+            button.textContent = 'Remove Attribute';
+        }
+
+        // Check if all attributes are marked for deletion and mark the whole service if necessary
+        checkAllAttributesMarked(parentElement);
+    }
+
+    /**
+     * Check if all attributes are marked for deletion and mark the whole service for deletion if necessary.
+     */
+    function checkAllAttributesMarked(parentElement) {
+        var attributeItems = parentElement.querySelectorAll('.attribute-item');
+        var markedForDeletion = parentElement.querySelectorAll('.attribute-item input[name*="_delete"]').length;
+
+        if (markedForDeletion === attributeItems.length && attributeItems.length > 0) {
+            // Mark the entire service for deletion if all attributes are deleted
+            var removeButton = parentElement.querySelector('.remove-item');
+            if (removeButton && removeButton.textContent !== 'Cancel') {
+                removeButton.click();  // Trigger the remove-item logic to mark the whole service
+            }
+        } else if (markedForDeletion < attributeItems.length) {
+            // Unmark the service if not all attributes are deleted
+            var serviceDeleteInput = parentElement.querySelector('input[name*="[_delete]"]');
+            if (serviceDeleteInput) {
+                serviceDeleteInput.remove();
                 parentElement.classList.remove('bg-red-200', 'transition', 'duration-500', 'ease-in-out');
-                event.target.textContent = 'Remove';
-                event.target.classList.remove('cancel-removal', 'bg-red-600', 'hover:bg-red-800');
-                event.target.classList.add('remove-item', 'bg-red-500', 'hover:bg-red-700');
+                parentElement.querySelector('.remove-item').textContent = 'Remove';
             }
-        });
+        }
+    }
+    
+    var addProductButton = document.getElementById('add-product');
 
-        var addProductButton = document.getElementById('add-product');
+    if (addProductButton) {
+        addProductButton.addEventListener('click', function() {
+            var productContainer = document.getElementById('new-product-container');
 
-        if (addProductButton) {
-            addProductButton.addEventListener('click', function() {
-                var productContainer = document.getElementById('new-product-container');
+            var div = document.createElement('div');
+            div.className = 'product mb-4 flex items-center space-x-4';
 
-                var div = document.createElement('div');
-                div.className = 'product mb-4 flex items-center space-x-4';
+            var select = document.createElement('select');
+            select.className =
+                'block appearance-none w-1/2 bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500';
+            select.name = 'new_products[' + newProductCounter + '][product_id]';
 
-                var select = document.createElement('select');
-                select.className =
-                    'block appearance-none w-1/2 bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500';
-                select.name = 'new_products[' + newProductCounter + '][product_id]';
-
-                products.forEach(function(product) {
-                    var option = document.createElement('option');
-                    option.value = product.id;
-                    option.text = product.title;
-                    select.appendChild(option);
-                });
-
-                var totalSoldInput = document.createElement('input');
-                totalSoldInput.type = 'number';
-                totalSoldInput.value = 1;
-                totalSoldInput.className =
-                    'block appearance-none w-1/2 bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500';
-                totalSoldInput.name = 'new_products[' + newProductCounter + '][total_sold]';
-
-                var removeButton = document.createElement('button');
-                removeButton.type = 'button';
-                removeButton.textContent = 'Remove';
-                removeButton.className =
-                    'remove-product ml-4 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-700';
-
-                div.appendChild(select);
-                div.appendChild(totalSoldInput);
-                div.appendChild(removeButton);
-
-                productContainer.appendChild(div);
-
-                document.getElementById('new-products-section').style.display = 'block';
-
-                newProductCounter++;
+            products.forEach(function(product) {
+                var option = document.createElement('option');
+                option.value = product.id;
+                option.text = product.title;
+                option.dataset.type = product.type; // Ensure each option has a type
+                select.appendChild(option);
             });
-        }
-    });
 
-    document.getElementById('addCustomField').addEventListener('click', function() {
-        var customFieldsContainer = document.getElementById('customFieldsContainer');
-        var newFieldId = 'new_' + Date.now();
+            var totalSoldInput = document.createElement('input');
+            totalSoldInput.type = 'number';
+            totalSoldInput.value = 1;
+            totalSoldInput.className =
+                'block appearance-none w-1/2 bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500';
+            totalSoldInput.name = 'new_products[' + newProductCounter + '][total_sold]';
 
-        var newFieldDiv = document.createElement('div');
-        newFieldDiv.classList.add('item', 'mb-4', 'bg-gray-100', 'p-4', 'rounded', 'shadow');
-        newFieldDiv.dataset.customFieldId = newFieldId;
-        newFieldDiv.dataset.taskType = "other";
+            var typeInput = document.createElement('input'); // Hidden input for product type
+            typeInput.type = 'hidden';
+            typeInput.name = 'new_products[' + newProductCounter + '][type]';
+            typeInput.value = products[0].type; // Assuming first product's type initially, update based on selection
 
-        newFieldDiv.innerHTML = `
-            <label for="custom_field_${newFieldId}" class="block text-gray-700 text-sm font-bold mb-2">New Custom Field:</label>
+            select.addEventListener('change', function(e) {
+                var selectedOption = e.target.options[e.target.selectedIndex];
+                typeInput.value = selectedOption.dataset.type;
+            });
+
+            var removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.textContent = 'Remove';
+            removeButton.className =
+                'remove-product ml-4 py-2 px-4 bg-red-500 text-white rounded hover:bg-red-700';
+
+            div.appendChild(select);
+            div.appendChild(totalSoldInput);
+            div.appendChild(typeInput); // Add hidden input for the type
+            div.appendChild(removeButton);
+
+            productContainer.appendChild(div);
+
+            document.getElementById('new-products-section').style.display = 'block';
+
+            newProductCounter++;
+        });
+    }
+});
+
+
+
+
+document.getElementById('addCustomField').addEventListener('click', function() {
+    var customFieldsContainer = document.getElementById('customFieldsContainer');
+    var newFieldId = 'new_' + Date.now();
+
+    var newFieldDiv = document.createElement('div');
+    newFieldDiv.classList.add('item', 'mb-4', 'bg-gray-100', 'p-4', 'rounded', 'shadow');
+    newFieldDiv.dataset.customFieldId = newFieldId;
+    newFieldDiv.dataset.taskType = "other";
+
+    newFieldDiv.innerHTML = `
+        <label for="custom_field_${newFieldId}" class="block text-gray-700 text-sm font-bold mb-2">New Custom Field:</label>
+        <div class="flex space-x-2">
+            <input type="text" id="custom_field_${newFieldId}" name="customFields[new_${newFieldId}][field]" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <button type="button" class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
+        </div>
+    `;
+
+    customFieldsContainer.appendChild(newFieldDiv);
+});
+
+document.getElementById('addChecklistSection').addEventListener('click', function() {
+    var checklistSectionsContainer = document.getElementById('checklistSectionsContainer');
+    var newSectionId = 'new_' + Date.now();
+
+    var newSectionDiv = document.createElement('div');
+    newSectionDiv.classList.add('item', 'mb-4', 'bg-gray-100', 'p-4', 'rounded', 'shadow');
+    newSectionDiv.dataset.checklistSectionId = newSectionId;
+    newSectionDiv.dataset.taskType = "other";
+
+    newSectionDiv.innerHTML = `
+        <label for="checklist_section_${newSectionId}" class="block text-gray-700 text-sm font-bold mb-2">New Checklist Section:</label>
+        <div class="flex space-x-2">
+            <input type="text" id="checklist_section_${newSectionId}" name="checklistSections[${newSectionId}][title]" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            <button type="button" class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
+        </div>
+        <div class="checklistItemsContainer">
+            <!-- Add Checklist Item Button -->
+            <button type="button" class="add-checklist-item bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Add Checklist Item
+            </button>
+        </div>
+    `;
+
+    checklistSectionsContainer.appendChild(newSectionDiv);
+});
+
+// Add new checklist item
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('add-checklist-item')) {
+        var checklistItemsContainer = e.target.closest('.item').querySelector('.checklistItemsContainer');
+        var newSectionId = e.target.closest('.item').getAttribute('data-checklist-section-id');
+        var newItemId = 'new_' + Date.now();
+
+        var newItemDiv = document.createElement('div');
+        newItemDiv.classList.add('item', 'mb-4', 'bg-white', 'p-2', 'rounded', 'shadow-inner');
+        newItemDiv.dataset.checklistItemId = newItemId;
+        newItemDiv.dataset.taskType = "other";
+
+        newItemDiv.innerHTML = `
+            <label for="checklist_item_${newItemId}" class="block text-gray-700 text-sm font-bold mb-2">New Checklist Item:</label>
             <div class="flex space-x-2">
-                <input type="text" id="custom_field_${newFieldId}" name="customFields[new_${newFieldId}][field]" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                <input type="text" id="checklist_item_${newItemId}" name="checklistSections[${newSectionId}][items][${newItemId}][item]" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                 <button type="button" class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
             </div>
         `;
 
-        customFieldsContainer.appendChild(newFieldDiv);
-    });
+        checklistItemsContainer.appendChild(newItemDiv);
+    }
+});
 
-    document.getElementById('addChecklistSection').addEventListener('click', function() {
-        var checklistSectionsContainer = document.getElementById('checklistSectionsContainer');
-        var newSectionId = 'new_' + Date.now();
+// Mark or unmark for deletion
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('remove-item')) {
+        var parentElement = e.target.closest('.item');  // Get the parent element
+        var id = parentElement.getAttribute('data-custom-field-id') || 
+                 parentElement.getAttribute('data-checklist-section-id') || 
+                 parentElement.getAttribute('data-checklist-item-id'); // Identify the element type
+        var inputName;
 
-        var newSectionDiv = document.createElement('div');
-        newSectionDiv.classList.add('item', 'mb-4', 'bg-gray-100', 'p-4', 'rounded', 'shadow');
-        newSectionDiv.dataset.checklistSectionId = newSectionId;
-        newSectionDiv.dataset.taskType = "other";
+        if (id && id.startsWith('new_')) {
+            // If it's a new item, remove it directly from the DOM
+            parentElement.remove();
+        } else if (id) {
+            // Check if this item is already marked for deletion
+            var deleteInput = parentElement.querySelector('input[name*="_delete"]');
+            if (deleteInput) {
+                // Unmark for deletion by removing the hidden input and the red background
+                deleteInput.remove();
+                parentElement.classList.remove('bg-red-200');  // Remove red background
+                e.target.textContent = 'Remove';  // Change button text back to 'Remove'
+            } else {
+                // Mark for deletion by adding a hidden input and changing background color to red
+                if (parentElement.getAttribute('data-checklist-item-id')) {
+                    // Checklist item deletion
+                    inputName = `checklistSections[${parentElement.closest('.item[data-checklist-section-id]').dataset.checklistSectionId}][items][${id}][_delete]`;
+                } else if (parentElement.getAttribute('data-checklist-section-id')) {
+                    // Checklist section deletion
+                    inputName = `checklistSections[${id}][_delete]`;
+                } else if (parentElement.getAttribute('data-custom-field-id')) {
+                    // Custom field deletion
+                    inputName = `customFields[${id}][_delete]`;
+                }
 
-        newSectionDiv.innerHTML = `
-            <label for="checklist_section_${newSectionId}" class="block text-gray-700 text-sm font-bold mb-2">New Checklist Section:</label>
-            <div class="flex space-x-2">
-                <input type="text" id="checklist_section_${newSectionId}" name="checklistSections[${newSectionId}][title]" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <button type="button" class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
-            </div>
-            <div class="checklistItemsContainer">
-                <!-- Add Checklist Item Button -->
-                <button type="button" class="add-checklist-item bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                    Add Checklist Item
-                </button>
-            </div>
-        `;
+                var hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = inputName;
+                hiddenInput.value = 'true';
+                parentElement.appendChild(hiddenInput);
 
-        checklistSectionsContainer.appendChild(newSectionDiv);
-    });
-
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('add-checklist-item')) {
-            var checklistItemsContainer = e.target.closest('.item').querySelector('.checklistItemsContainer');
-            var newSectionId = e.target.closest('.item').getAttribute('data-checklist-section-id');
-            var newItemId = 'new_' + Date.now();
-
-            var newItemDiv = document.createElement('div');
-            newItemDiv.classList.add('item', 'mb-4', 'bg-white', 'p-2', 'rounded', 'shadow-inner');
-            newItemDiv.dataset.checklistItemId = newItemId;
-            newItemDiv.dataset.taskType = "other";
-
-            newItemDiv.innerHTML = `
-                <label for="checklist_item_${newItemId}" class="block text-gray-700 text-sm font-bold mb-2">New Checklist Item:</label>
-                <div class="flex space-x-2">
-                    <input type="text" id="checklist_item_${newItemId}" name="checklistSections[${newSectionId}][items][${newItemId}][item]" value="" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    <button type="button" class="remove-item bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Remove</button>
-                </div>
-            `;
-
-            checklistItemsContainer.appendChild(newItemDiv);
-        }
-    });
-
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-item')) {
-            var parentElement = e.target.closest('.item');
-            var id = parentElement.getAttribute('data-custom-field-id') || parentElement.getAttribute('data-checklist-section-id') || parentElement.getAttribute('data-checklist-item-id');
-
-            if (id && id.startsWith('new_')) {
-                parentElement.remove();
-            } else if (!id) {
-                console.error('ID is null');
+                // Apply red background to indicate deletion
+                parentElement.classList.add('bg-red-200');
+                e.target.textContent = 'Undo';  // Change button text to 'Undo'
             }
         }
-    });
+    }
+});
 
     function openRegistrationModal() {
         document.getElementById('registration-modal').classList.remove('hidden');
