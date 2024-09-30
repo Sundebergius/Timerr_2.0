@@ -339,11 +339,12 @@ class ClientController extends Controller
         $query = $request->input('query');
 
         if (!$query) {
-            return response()->json([]);
+            return response()->json([]); // Return empty if no query is provided
         }
 
+        // Perform the API request with the general 'search' parameter
         $response = Http::get('https://cvrapi.dk/api', [
-            'search' => $query,
+            'search' => $query, // Allow searching by name or CVR number
             'country' => 'dk',
             'format' => 'json',
         ]);

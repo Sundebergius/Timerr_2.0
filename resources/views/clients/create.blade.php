@@ -96,14 +96,13 @@
             const response = await fetch(`/api/cvr-search?query=${query}`);
             const data = await response.json();
 
-            if (data && data.length > 0) {
-                data.forEach(company => {
-                    const listItem = document.createElement('li');
-                    listItem.textContent = `${company.name} (${company.cvr})`;
-                    listItem.classList.add('p-2', 'hover:bg-gray-200', 'cursor-pointer');
-                    listItem.onclick = () => selectCompany(company);
-                    resultsContainer.appendChild(listItem);
-                });
+            if (data && data.name) {
+                // We have a single result from the API; let's populate the form fields
+                const listItem = document.createElement('li');
+                listItem.textContent = `${data.name} (${data.vat})`;
+                listItem.classList.add('p-2', 'hover:bg-gray-200', 'cursor-pointer');
+                listItem.onclick = () => selectCompany(data); // Call the selectCompany function
+                resultsContainer.appendChild(listItem);
             } else {
                 resultsContainer.innerHTML = '<li class="p-2">No results found</li>';
             }
@@ -113,12 +112,16 @@
     }
 
     function selectCompany(company) {
-        // Populate form fields with company data
-        document.getElementById('name').value = company.name;
-        document.getElementById('email').value = company.email || ''; // May be null
-        document.getElementById('cvr').value = company.cvr;
+        // Populate form fields with company data from the CVR API response
+        document.getElementById('name').value = company.name || '';
+        document.getElementById('email').value = company.email || '';
+        document.getElementById('cvr').value = company.vat || '';
+        document.getElementById('address').value = company.address || '';
+        document.getElementById('city').value = company.city || '';
+        document.getElementById('zip_code').value = company.zipcode || '';
+        document.getElementById('country').value = 'DK'; // Assuming Denmark as default
 
-        // Clear search results
+        // Clear search results after a selection is made
         document.getElementById('company_results').innerHTML = '';
     }
 </script>
