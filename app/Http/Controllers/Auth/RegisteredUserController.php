@@ -30,18 +30,21 @@ class RegisteredUserController extends Controller
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
-    {
-        // Convert email to lowercase before validation
-        $request->merge([
-            'email' => strtolower($request->email),
-        ]);
+{
+    // Convert email to lowercase before validation
+    $request->merge([
+        'email' => strtolower($request->email),
+    ]);
 
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+        'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    ]);
 
+    DB::beginTransaction(); // Start a database transaction
+
+    try {
         // Create the user
         $user = User::create([
             'name' => $request->name,
@@ -77,12 +80,23 @@ class RegisteredUserController extends Controller
         $user->stripe_id = $stripeCustomer->id;
         $user->save();
 
-        // Free users are not subscribed to any plan, so no subscription creation here
+        // Commit the transaction if everything is successful
+        DB::commit();
 
+        // Fire registered event and log the user in
         event(new Registered($user));
-
         Auth::login($user);
 
         return redirect(RouteServiceProvider::HOME);
+
+    } catch (Exception $e) {
+        // Rollback the transaction if something goes wrong
+        DB::rollBack();
+
+        // Log the error message for debugging
+        \Log::error('Registration failed: ' . $e->getMessage());
+
+        return redirect()->back()->withErrors('Registration failed. Please try again.');
     }
+}
 }
