@@ -4,12 +4,14 @@
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
 
+
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Client Management') }}
         </h2>
     </x-slot>
+    <div x-data="{ showDeleteModal: false, showSettingsModal: false, showImportModal: false }">
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -124,13 +126,29 @@
                         <!-- Create Client Button -->
                         <button type="button" 
                             onclick="window.location.href='{{ route('clients.create') }}'" 
-                            class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $clientCount >= $clientLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
+                            class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transform transition-transform hover:scale-105 focus:outline-none focus:shadow-outline duration-300 ease-in-out {{ $clientCount >= $clientLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
                             @if ($clientCount >= $clientLimit) disabled @endif>
                             Create Client
                         </button>
                     </div>
-                                        
 
+                    <!-- Secondary Action Buttons (Right-aligned with Icons) -->
+                    <div class="flex justify-end mb-4 space-x-4">
+                        <!-- Settings button with gear icon -->
+                        <button @click="showSettingsModal = true" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded flex items-center space-x-2">
+                            <i class="fas fa-cog"></i> <!-- Font Awesome gear icon -->
+                            <span>Customize</span>
+                        </button>
+
+                        <!-- Import Clients button with cloud upload icon -->
+                        <button @click="showImportModal = true"
+                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded flex items-center space-x-2">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Import</span>
+                        </button>
+                    </div>
+                                        
                     <!-- Search tags -->
                     <div class="tags flex flex-wrap mb-6">
                         @foreach (is_array(request('search')) ? request('search') : (request('search') ? [request('search')] : []) as $search)
@@ -143,315 +161,364 @@
                             @endif
                         @endforeach
                     </div>
-
-
-
-
-                    {{-- Test delete 2 tags  --}}
-                    {{-- @if (request('status'))
-                        <span class="tag bg-gray-400 text-white px-2 py-1 m-1 rounded">
-                            Status: {{ ucfirst(request('status')) }}
-                            <a href="{{ url('clients') }}" class="ml-1 text-white">x</a>
-                        </span>
-                    @endif --}}
                 </div>
 
-
-
-                
-                <div class="flex space-x-4 mb-6">
-                    {{-- <!-- Add new client button -->
-                    <a href="{{ route('clients.create') }}"
-                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                        Add Client
-                    </a> --}}
-
-                    <!-- Import clients button -->
-                    {{-- <button id="importButton"
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Import Clients
-                    </button> --}}
-                </div>
-
-                <!-- Import clients form (hidden by default) -->
-                <form id="importForm" action="{{ route('clients.import') }}" method="post"
-                    enctype="multipart/form-data" class="mb-6 hidden">
-                    @csrf
-                    <div class="form-group">
-                        <p class="text-gray-700 text-sm mb-2">
-                            To import a list of clients, please upload a CSV or a TXT file with the following columns in
-                            this exact order: name, email, cvr, phone, address. The first line should be the column
-                            names. The 'name' column is the only required field. You can add multiple clients at once by
-                            filling out the data for each client on a new line, as long as the 'name' field is on its
-                            own line or entry. Please refrain from adding any additional headers besides the ones
-                            listed. The order of the columns is crucial and should match the order in the template.
-                        </p>
-                        <p>
-                            <strong>Accepted file types:</strong> .csv, .txt
-                        </p>
-                        <p>
-                            <strong>Max file size:</strong> 2MB
-                        </p>
-                        <br>
-                        <p>
-                            You can download a <a href="{{ asset('csv/template.csv') }}"
-                                class="text-blue-500 hover:underline">template here</a>
-                        </p>
-                        <br>
-                        <label for="file" class="block text-gray-700 text-sm font-bold mb-2">Upload file:</label>
-                        <input type="file" name="file" id="file" accept=".csv,.txt"
-                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                    </div>
-                    <button type="submit"
-                        class="mt-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                        Submit
-                    </button>
-                </form>
-
-                <!-- Client cards -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @foreach ($clients as $client)
-                        <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
+                <div class="flex flex-wrap justify-center">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-center">
+                        @foreach ($clients as $client)
+                        <div x-data="{ showDeleteModal: false }" class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col w-full max-w-md">
                             <div class="px-6 py-4 flex-grow">
                                 <div class="mb-2">
-                                    <h2 class="text-lg font-semibold text-gray-800">{{ $client->name }}</h2>
+                                    <h2 class="text-xl font-bold text-gray-800">{{ $client->name }}</h2>
                                 </div>
                                 <div class="mb-2 text-sm text-gray-500">
-                                    <strong>Phone:</strong> {{ $client->phone }}
+                                    <strong>Phone:</strong> {{ $client->phone ?? 'N/A' }}
                                 </div>
                                 <div class="mb-2 text-sm text-gray-500">
-                                    <strong>Email:</strong> {{ $client->email }}
+                                    <strong>Email:</strong> {{ $client->email ?? 'N/A' }}
                                 </div>
                                 <div class="mb-2 text-sm text-gray-500">
-                                    <strong>Address:</strong> {{ $client->address }}
+                                    <strong>Address:</strong> {{ $client->address ?? 'N/A' }}
                                 </div>
                                 <div class="mb-2 text-sm text-gray-500">
-                                    <strong>Status:</strong> {{ $client->status }}
+                                    <strong>Status:</strong> {{ ucfirst($client->status) }}
                                 </div>
-
-                                <!-- Client tags -->
+                
+                                <!-- Client Tags -->
                                 @if ($client->tags->isNotEmpty())
-                                    <div class="tags-container mt-2">
-                                        <p class="text-lg mb-2">Tags:</p>
-                                        <div class="flex flex-wrap mb-2">
-                                            @foreach ($client->tags->take(5) as $tag)
-                                                <span
-                                                    class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
-                                            @endforeach
-                                        </div>
-                                        @if ($client->tags->count() > 5)
-                                            <button id="moreTagsButton-{{ $client->id }}"
-                                                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mb-2"
-                                                type="button" onclick="toggleTags({{ $client->id }}, event);">
-                                                +{{ $client->tags->count() - 5 }}
-                                            </button>
-                                            <div style="display: none" id="hidden-tags-{{ $client->id }}"
-                                                class="hidden-tags">
-                                                @foreach ($client->tags->slice(5) as $tag)
-                                                    <span
-                                                        class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200 text-gray-800' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
-                                                @endforeach
-                                            </div>
-                                        @endif
+                                <div class="tags-container mt-2">
+                                    <p class="text-sm text-gray-600 mb-1">Tags:</p>
+                                    <div class="flex flex-wrap mb-2">
+                                        @foreach ($client->tags->take(5) as $tag)
+                                        <span class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
+                                        @endforeach
                                     </div>
+                                    @if ($client->tags->count() > 5)
+                                    <button id="moreTagsButton-{{ $client->id }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded mb-2" type="button" onclick="toggleTags({{ $client->id }}, event);">
+                                        +{{ $client->tags->count() - 5 }}
+                                    </button>
+                                    <div style="display: none" id="hidden-tags-{{ $client->id }}" class="hidden-tags">
+                                        @foreach ($client->tags->slice(5) as $tag)
+                                        <span class="inline-block {{ $colorClasses[$tag->color] ?? 'bg-gray-200' }} rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">{{ $tag->name }}</span>
+                                        @endforeach
+                                    </div>
+                                    @endif
+                                </div>
                                 @endif
                             </div>
-
-                            <!-- Dropdown for changing status -->
+                
+                            <!-- Dropdown for Changing Status -->
                             <div class="px-6 py-2 border-t border-gray-200 flex items-center bg-gray-100">
                                 <div class="status-dropdown flex-grow mr-4">
                                     <form method="POST" action="{{ route('clients.updateStatus', $client) }}">
                                         @csrf
-                                        <select name="status"
-                                            class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                                            data-client-id="{{ $client->id }}">
-                                            <option value="{{ Client::STATUS_LEAD }}"
-                                                {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>Lead
-                                            </option>
-                                            <option value="{{ Client::STATUS_CONTACTED }}"
-                                                {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>Contacted
-                                            </option>
-                                            <option value="{{ Client::STATUS_INTERESTED }}"
-                                                {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>Interested
-                                            </option>
-                                            <option value="{{ Client::STATUS_NEGOTIATION }}"
-                                                {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>Negotiation
-                                            </option>
-                                            <option value="{{ Client::STATUS_DEAL_MADE }}"
-                                                {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>Deal Made
-                                            </option>
+                                        <select name="status" class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md" data-client-id="{{ $client->id }}">
+                                            <option value="{{ Client::STATUS_LEAD }}" {{ $client->status == Client::STATUS_LEAD ? 'selected' : '' }}>Lead</option>
+                                            <option value="{{ Client::STATUS_CONTACTED }}" {{ $client->status == Client::STATUS_CONTACTED ? 'selected' : '' }}>Contacted</option>
+                                            <option value="{{ Client::STATUS_INTERESTED }}" {{ $client->status == Client::STATUS_INTERESTED ? 'selected' : '' }}>Interested</option>
+                                            <option value="{{ Client::STATUS_NEGOTIATION }}" {{ $client->status == Client::STATUS_NEGOTIATION ? 'selected' : '' }}>Negotiation</option>
+                                            <option value="{{ Client::STATUS_DEAL_MADE }}" {{ $client->status == Client::STATUS_DEAL_MADE ? 'selected' : '' }}>Deal Made</option>
                                         </select>
                                     </form>
                                 </div>
-
-                                <!-- Edit and Delete buttons -->
-                                <!-- Wrapper for Alpine.js state -->
-                                <div x-data="{ showDeleteModal: false }">
-                                    <!-- Edit and Delete buttons -->
-                                    <div class="flex items-center space-x-2">
-                                        <a href="{{ route('clients.edit', $client) }}"
-                                        class="inline-flex items-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                                        Edit
-                                        </a>
-
-                                        <!-- Trigger for the delete confirmation modal -->
-                                        <button @click="showDeleteModal = true"
-                                                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                                            Delete
-                                        </button>
-                                    </div>
-
-                                    <!-- Delete confirmation modal -->
-                                    <div x-show="showDeleteModal" class="fixed inset-0 flex items-center justify-center z-50">
-                                        <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="showDeleteModal = false"></div>
-
-                                        <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
-                                            <h2 class="text-xl font-bold mb-4">Confirm Deletion</h2>
-                                            <p class="mb-6">Are you sure you want to delete this client? This action cannot be undone.</p>
-
-                                            <div class="flex justify-end space-x-4">
-                                                <!-- Cancel button -->
-                                                <button @click="showDeleteModal = false" class="bg-gray-300 hover:bg-gray-400 text-black font-bold py-2 px-4 rounded">
-                                                    Cancel
-                                                </button>
-
-                                                <!-- Confirm Delete button -->
-                                                <form method="POST" action="{{ route('clients.destroy', $client) }}">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
-                                                        Confirm
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
+                
+                                <!-- Edit and Delete Buttons -->
+                                <div class="flex items-center space-x-2">
+                                    <a href="{{ route('clients.edit', $client) }}" class="inline-flex items-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit</a>
+                                    <button @click="showDeleteModal = true" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Delete</button>
+                                </div>
+                            </div>
+                
+                            <!-- Delete Confirmation Modal -->
+                            <div x-show="showDeleteModal" class="fixed inset-0 flex items-center justify-center z-50">
+                                <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="showDeleteModal = false"></div>
+                                <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
+                                    <h2 class="text-xl font-bold mb-4">Confirm Deletion</h2>
+                                    <p class="mb-6">Are you sure you want to delete this client? This action cannot be undone.</p>
+                                    <div class="flex justify-end space-x-4">
+                                        <button type="button" @click="showDeleteModal = false" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
+                                        <form method="POST" action="{{ route('clients.destroy', $client) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded">Confirm</button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    @endforeach
+                        @endforeach
+                    </div>
+                </div>                
+
+                <!-- Import Clients Modal -->
+                <div x-show="showImportModal" class="fixed inset-0 flex items-center justify-center z-50">
+                    <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="showImportModal = false"></div>
+                    <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
+                        <h2 class="text-xl font-bold mb-4">Import Clients</h2>
+                        <form id="importForm" action="{{ route('clients.import') }}" method="post" enctype="multipart/form-data" class="mb-6">
+                            @csrf
+                            <div class="form-group">
+                                <!-- Tooltip for file structure instructions -->
+                                <p class="text-gray-700 text-sm mb-2">
+                                    To import a list of clients, please upload a CSV or a TXT file with the following columns:
+                                    <span class="underline cursor-pointer" data-tooltip="The order should be: name, email, cvr, phone, address. The name column is required.">Correct Column Order</span>
+                                </p>
+
+                                <!-- Tooltip for accepted file types -->
+                                <p>
+                                    <strong>Accepted file types:</strong> 
+                                    <span class="underline cursor-pointer" title="Only .csv and .txt formats are allowed.">.csv, .txt</span>
+                                </p>
+
+                                <!-- Tooltip for file size -->
+                                <p>
+                                    <strong>Max file size:</strong> 
+                                    <span class="underline cursor-pointer" title="File should not exceed 2MB.">2MB</span>
+                                </p>
+
+                                <br>
+
+                                <p>
+                                    You can download a 
+                                    <a href="{{ asset('csv/template.csv') }}" class="text-blue-500 hover:underline" title="Download a CSV template file to ensure correct formatting.">template here</a>.
+                                </p>
+
+                                <br>
+
+                                <!-- File Upload Section -->
+                                <label for="file" class="block text-gray-700 text-sm font-bold mb-2">Upload file:</label>
+                                <input type="file" name="file" id="file" accept=".csv,.txt"
+                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            </div>
+
+                            <button type="submit" class="mt-3 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Submit
+                            </button>
+                        </form>
+
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" @click="showImportModal = false" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Pagination links -->
-                <div class="mt-6 flex items-center justify-between">
-                    {{ $clients->links() }}
-                    <form method="GET" action="{{ route('clients.index') }}">
-                        <div class="inline-block relative w-32">
-                            <select name="pageSize" onchange="this.form.submit()"
-                                class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
-                                <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option>
-                            </select>
-                        </div>
-                    </form>
+                <!-- Settings Modal -->
+                <div x-show="showSettingsModal" class="fixed inset-0 flex items-center justify-center z-50">
+                    <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="showSettingsModal = false"></div>
+                    <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
+                        <h2 class="text-xl font-bold mb-4">Customize Client Display</h2>
+                        <form id="settings-form">
+                            <div class="mb-4">
+                                <input type="checkbox" id="show_phone" name="show_phone" checked>
+                                <label for="show_phone" class="text-gray-700">Show Phone</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="checkbox" id="show_email" name="show_email" checked>
+                                <label for="show_email" class="text-gray-700">Show Email</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="checkbox" id="show_address" name="show_address" checked>
+                                <label for="show_address" class="text-gray-700">Show Address</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="checkbox" id="show_status" name="show_status" checked>
+                                <label for="show_status" class="text-gray-700">Show Status</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="checkbox" id="show_notes" name="show_notes" checked>
+                                <label for="show_notes" class="text-gray-700">Show Notes</label>
+                            </div>
+                            <div class="flex justify-end space-x-4">
+                                <button type="button" @click="showSettingsModal = false" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Apply</button>
+                                <button type="button" @click="showSettingsModal = false" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
+
+                @if ($clients->total() > 10)
+                    <!-- Pagination links -->
+                    <div class="mt-6 flex items-center justify-between">
+                        {{ $clients->links() }}
+                        <form method="GET" action="{{ route('clients.index') }}">
+                            <div class="inline-block relative w-32">
+                                <select name="pageSize" onchange="this.form.submit()"
+                                    class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                                    <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
+                                    <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
+                                    <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
-    </div>
+</div>
 </x-app-layout>
 
 <style>
-    .header {
-        width: 100%;
-        min-width: 120px;
-        max-width: 250px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .header-name {
-        width: 100%;
-        min-width: 80px;
-        max-width: 150px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .client-details {
-        width: 100%;
-        min-width: 120px;
-        max-width: 400px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
     .card {
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 16px;
-        background-color: white;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
+    border: 1px solid #e2e8f0;
+    border-radius: 12px; /* Softer edges for a modern look */
+    padding: 20px;
+    margin-bottom: 16px;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Stronger shadow for a more elevated look */
+    transition: box-shadow 0.3s ease, transform 0.3s ease; /* Smooth hover effect */
+}
 
-    .card-header {
-        font-size: 18px;
-        font-weight: 600;
-        margin-bottom: 8px;
-    }
+.card:hover {
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px); /* Gentle lift on hover */
+}
 
-    .card-body {
-        font-size: 14px;
-        line-height: 1.5;
-    }
+/* Card Header */
+.card-header {
+    font-size: 20px;
+    font-weight: 700; /* Bolder for stronger emphasis */
+    margin-bottom: 10px;
+    color: #1a202c; /* Darker gray for better contrast */
+}
 
-    .card-actions {
-        margin-top: 8px;
-    }
+/* Card Body */
+.card-body {
+    font-size: 16px; /* Slightly larger for better readability */
+    color: #4a5568; /* Neutral gray for body text */
+    line-height: 1.6;
+}
 
-    @media only screen and (max-width: 600px) {
-        .header {
-            font-size: 14px;
-        }
+/* Tags */
+.tags-container {
+    margin-top: 12px;
+}
 
-        .client-row {
-            font-size: 14px;
-        }
-    }
+.tags-container span {
+    margin-right: 8px;
+    margin-bottom: 8px;
+}
 
-    .radio-group {
-        display: flex;
-        gap: 10px;
-    }
+/* Button Styling */
+button,
+.status-dropdown select {
+    font-size: 16px; /* Make buttons and dropdown more prominent */
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+}
+
+/* Dropdown Consistency */
+.status-dropdown select {
+    border: 1px solid #cbd5e0;
+    background-color: white;
+    font-size: 16px;
+    padding: 8px;
+    width: 100%; /* Ensure it fits within its container */
+    border-radius: 8px;
+    transition: border-color 0.2s ease;
+}
+
+.status-dropdown select:focus {
+    border-color: #3182ce; /* Blue highlight on focus */
+    outline: none;
+}
+
+/* General Improvements */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Ensure cards fill the space evenly */
+    gap: 20px; /* Increase gap between cards for better separation */
+}
+
+.flex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+/* Ensure dropdown and buttons are aligned */
+.status-dropdown {
+    display: inline-flex;
+    align-items: center;
+}
+
+.flex.items-center {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Ensure equal spacing */
+}
 </style>
 
 {{-- <script src="//unpkg.com/alpinejs" defer></script> --}}
 
 <script>
+    // Initialize tooltips using data attributes
     document.addEventListener('DOMContentLoaded', function() {
-        // Toggle import form visibility
-        const importButton = document.getElementById('importButton');
-        if (importButton) {
-            importButton.addEventListener('click', function() {
-                const importForm = document.getElementById('importForm');
-                importForm.classList.toggle('hidden');
+    // Initialize tooltips using data attributes
+    function initializeTooltips() {
+        const tooltipElements = document.querySelectorAll('[data-tooltip]');
+
+        tooltipElements.forEach(function(el) {
+            el.addEventListener('mouseenter', function() {
+                const tooltipText = el.getAttribute('data-tooltip');
+                const tooltipDiv = document.createElement('div');
+                tooltipDiv.classList.add('tooltip');
+                tooltipDiv.textContent = tooltipText;
+                document.body.appendChild(tooltipDiv);
+
+                const rect = el.getBoundingClientRect();
+                tooltipDiv.style.left = rect.left + 'px';
+                tooltipDiv.style.top = rect.top - tooltipDiv.offsetHeight - 10 + 'px';
+
+                el.addEventListener('mouseleave', function() {
+                    tooltipDiv.remove();
+                });
             });
+        });
+    }
+
+    // Call the function to initialize tooltips on page load
+    initializeTooltips();
+
+    // Toggle Modals and reinitialize tooltips when a modal is shown
+    function toggleModal(modalId, show) {
+        const modal = document.getElementById(modalId);
+        if (show) {
+            modal.classList.remove('hidden');
+            initializeTooltips(); // Reinitialize tooltips when modal opens
+        } else {
+            modal.classList.add('hidden');
         }
+    }
+});
+
+
+    // Alpine.js data function for managing modals
+    function data() {
+        return {
+            showImportModal: false,
+            showSettingsModal: false
+        };
+    }
 
         // Toggle client details visibility on mobile
         document.querySelectorAll('.client-row').forEach(function(clientRow) {
             clientRow.addEventListener('click', function(event) {
-                if (window.innerWidth <= 768 && event.target.classList.contains(
-                    'client-name')) {
+                if (window.innerWidth <= 768 && event.target.classList.contains('client-name')) {
                     clientRow.querySelector('.client-details').classList.toggle('hidden');
                 }
             });
         });
 
         // Prevent click events from propagating up to .client-row when a button or other interactive element is clicked
-        document.querySelectorAll('.client-row .client-details, .client-row .client-details *').forEach(
-            function(element) {
-                element.addEventListener('click', function(event) {
-                    event.stopPropagation();
-                });
+        document.querySelectorAll('.client-row .client-details, .client-row .client-details *').forEach(function(element) {
+            element.addEventListener('click', function(event) {
+                event.stopPropagation();
             });
+        });
 
         // Toggle tags visibility
         document.querySelectorAll('[id^="moreTagsButton-"]').forEach(function(button) {
@@ -490,8 +557,6 @@
                     'status': status
                 },
                 success: function(response) {
-                    // Update the UI or show a message based on the response
-                    // alert(response.message); // Display the success message
                     console.log('Status updated successfully', response);
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
@@ -521,18 +586,14 @@
                 let alreadyExists = Array.from(existingInputs).some(input => input.value === newSearch);
 
                 if (!alreadyExists) {
-                    // Create a new hidden input for the new search term
                     const newHiddenInput = document.createElement('input');
                     newHiddenInput.type = 'hidden';
                     newHiddenInput.name = 'search[]';
                     newHiddenInput.value = newSearch;
-
-                    // Append the new hidden input to the form
                     searchForm.appendChild(newHiddenInput);
                 }
             }
 
-            // Submit the form
             searchForm.submit();
         });
 
@@ -541,23 +602,17 @@
 
         radios.forEach(radio => {
             radio.addEventListener('change', function() {
-                // Get all existing search tags
                 let searchTags = Array.from(document.querySelectorAll('input[name="search[]"]'))
                     .map(input => input.value);
-                    
-                // Remove any existing status tags
+
                 searchTags = searchTags.filter(tag => !tag.startsWith('status:'));
 
-                // If the radio button is selected and not "All"
                 if (this.value) {
-                    // Add the new status tag
                     searchTags.push('status:' + this.value);
                 }
 
-                // Remove all existing search inputs
                 document.querySelectorAll('input[name="search[]"]').forEach(input => input.remove());
 
-                // Add all search tags back as hidden inputs
                 searchTags.forEach(tag => {
                     const newHiddenInput = document.createElement('input');
                     newHiddenInput.type = 'hidden';
@@ -566,83 +621,34 @@
                     searchForm.appendChild(newHiddenInput);
                 });
 
-                // Submit the form
                 searchForm.submit();
             });
         });
 
-        // Handle adding multiple search terms
-        searchForm.addEventListener('submit', function(event) {
-            event.preventDefault();
-            const newSearch = searchInput.value.trim();
-
-            if (newSearch) {
-                // Check if the new search term already exists
-                let existingInputs = document.querySelectorAll('input[name="search[]"]');
-                let alreadyExists = Array.from(existingInputs).some(input => input.value === newSearch);
-
-                if (!alreadyExists) {
-                    // Create a new hidden input for the new search term
-                    const newHiddenInput = document.createElement('input');
-                    newHiddenInput.type = 'hidden';
-                    newHiddenInput.name = 'search[]';
-                    newHiddenInput.value = newSearch;
-
-                    // Append the new hidden input to the form
-                    searchForm.appendChild(newHiddenInput);
-                }
+        // To toggle the modals (both settings and delete)
+        function toggleModal(modalId, show) {
+            const modal = document.getElementById(modalId);
+            if (show) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
             }
+        }
 
-            // Submit the form after adding the search term
-            searchForm.submit();
+        // Toggle the settings modal
+        const settingsButton = document.getElementById('settingsButton');
+        if (settingsButton) {
+            settingsButton.addEventListener('click', function() {
+                toggleModal('settingsModal', true);
+            });
+        }
+
+        // Toggle the delete modal
+        document.querySelectorAll('[data-delete-id]').forEach(button => {
+            button.addEventListener('click', function() {
+                toggleModal('deleteModal', true);
+            });
         });
-
-        // //radio button search
-        // // Get the radio buttons and the search form
-        // let radios = document.querySelectorAll('.radio-group input[type="radio"]');
-        // let searchForm = document.querySelector('.mb-3.flex');
-
-        // // Function to get URL parameters
-        // function getUrlParams() {
-        //     let params = {};
-        //     window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(str, key, value) {
-        //         params[key] = value;
-        //     });
-        //     return params;
-        // }
-
-        // // Check URL parameters and set corresponding radio buttons as checked
-        // let params = getUrlParams();
-        // radios.forEach(radio => {
-        //     if (params['search[]'] && params['search[]'].includes(radio.value)) {
-        //         radio.checked = true;
-        //     }
-        // });
-
-        // // Add a change event listener to each radio button
-        // radios.forEach(radio => {
-        //     radio.addEventListener('change', function() {
-        //         // If the radio button is selected
-        //         if (this.checked) {
-        //             // Create a new hidden input
-        //             let input = document.createElement('input');
-        //             input.type = 'hidden';
-        //             input.name = 'search[]';
-        //             input.value = this.value;
-        //             input.id = 'input-' + this.id;
-
-        //             // Append the input to the search form
-        //             searchForm.appendChild(input);
-        //         } else {
-        //             // If the radio button is deselected, remove the corresponding hidden input
-        //             let input = document.querySelector('#input-' + this.id);
-        //             searchForm.removeChild(input);
-        //         }
-
-        //         // Submit the form
-        //         searchForm.submit();
-        //     });
-        // });
 
         // Handle has_email and has_phone filters
         $('#has_email, #has_phone').change(function() {
@@ -660,5 +666,4 @@
                 }
             });
         });
-    });
 </script>
