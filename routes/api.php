@@ -38,7 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/webhooks/{webhook}', [WebhookController::class, 'destroy'])->name('webhooks.destroy');
 });
 
-Route::get('/api/cvr-search', [ClientController::class, 'searchCVR']);
+Route::get('/cvr-search', [ClientController::class, 'searchCVR']);
 
 Route::post('/tag', [TagController::class, 'store']);
 Route::delete('/tag/{id}', [TagController::class, 'delete']);
