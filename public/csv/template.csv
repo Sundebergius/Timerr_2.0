@@ -1,8 +1,8 @@
-name;email;cvr;phone;address
-Michael Scott;michael_scott@dundermifflin.com;12345678;555-1234;Dunder Mifflin Paper Company
-Dwight Schrute;dwight_schrute@dundermifflin.com;98765432;555-5678;Schrute Farms
-Jim Halpert;jimothy@dundermifflin.com;24681357;555-9876;1337 Desk Lane
-Pam Beesly;pamela_beesly@dundermifflin.com;36925814;555-4321;Art Studio
-Creed Bratton;creed@creedthoughts.gov;55555555;555-1111;Under the Bridge
-Stanley Hudson;stanley_hudson@dundermifflin.com;77777777;555-7777;The Break Room
-Angela Martin;lil_angela@dundermifflin.com;44444444;555-9999;Accounting Department
+name;email;cvr;phone;address;city;zip_code;country;notes
+Michael Scott;michael_scott@dundermifflin.com;12345678;45 12 34 56;Dunder Mifflin Paper Company;Aalborg;1000;DK;"World's best boss, self-proclaimed. Always ready to lead team-building activities."
+Dwight Schrute;dwight_schrute@dundermifflin.com;98765432;45 56 78 90;Schrute Farms;Horsens;8600;DK;"Assistant (to the) Regional Manager. Specializes in beet farming and workplace surveillance."
+Jim Halpert;jimothy@dundermifflin.com;24681357;45 98 76 54;1337 Desk Lane;Aarhus;8000;DK;"Known for pranks on Dwight. Loves sports and has a great eye for marketing."
+Pam Beesly;pamela_beesly@dundermifflin.com;36925814;45 43 21 12;Art Studio;Odense;5000;DK;"Talented artist. Big plans beyond her desk job. Super friendly and great with clients."
+Creed Bratton;creed@creedthoughts.gov;55555555;45 11 11 11;Under the Bridge;Roskilde;4000;DK;"Nobody is really sure what Creed does at the office... or outside it. Quite mysterious."
+Stanley Hudson;stanley_hudson@dundermifflin.com;77777777;45 77 77 77;The Break Room;Esbjerg;6700;DK;"Loves crosswords and pretends not to care. Best reached when the workday is almost over."
+Angela Martin;lil_angela@dundermifflin.com;44444444;45 99 99 99;Accounting Department;Vejle;7100;DK;"Very strict with cats and rules. Beware of tiny yet powerful glares."
