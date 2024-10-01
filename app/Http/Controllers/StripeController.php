@@ -251,7 +251,7 @@ class StripeController extends Controller
             ]],
             'mode' => 'subscription',
             'success_url' => route('dashboard') . '?session_id={CHECKOUT_SESSION_ID}', // Redirect URL after successful payment
-            'cancel_url' => route('profile.edit'), // Redirect URL for canceled payment
+            'cancel_url' => route('dashboard'), // Redirect URL for canceled payment
         ]);
 
         // Redirect the user to the Stripe Checkout page
