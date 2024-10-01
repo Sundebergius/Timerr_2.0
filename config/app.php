@@ -172,6 +172,9 @@ return [
         App\Providers\RouteServiceProvider::class,
         App\Providers\JetstreamServiceProvider::class,
         App\Providers\FortifyServiceProvider::class,
+        Laravel\Sanctum\SanctumServiceProvider::class, 
+        Laravel\Cashier\CashierServiceProvider::class,
+        
     ])->toArray(),
 
     /*
