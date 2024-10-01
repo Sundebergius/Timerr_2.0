@@ -120,6 +120,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Team::class, 'team_user'); // Assuming you have a pivot table named 'team_user'
     }
 
+    public function settings()
+    {
+        return $this->hasOne(UserSettings::class);
+    }
+
     // Add this method to your User model
     public function subscriptionPlan(): string
     {
