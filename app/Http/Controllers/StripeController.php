@@ -6,6 +6,7 @@ use App\Services\StripeService;
 use App\Services\PlanService;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use \Stripe\Webhook;
 use Stripe\StripeClient;
@@ -80,8 +81,11 @@ class StripeController extends Controller
                         ->trialDays(30) // Apply 30-day trial period
                         ->create($paymentIntent->payment_method);
 
-                    // Mark that the user has used their trial
-                    $user->update(['trial_used' => true]);
+                    // Mark that the user has used their trial and save the trial end date
+                    $user->update([
+                        'trial_used' => true,
+                        'trial_ends_at' => now()->addDays(30), // Store the trial end date locally
+                    ]);
                 } else {
                     // No trial for users who have already used it
                     $user->newSubscription('default', $priceId)
@@ -150,40 +154,53 @@ class StripeController extends Controller
             return;
         }
 
-        switch ($event->type) {
-            case 'checkout.session.completed':
-                \Log::info("Processing checkout.session.completed for user: " . $user->id);
-                $this->createSubscriptionForUser($user, $object);  // Use session object
-                break;
+        // Wrap event processing in a transaction
+        DB::beginTransaction();
+        try {
+            switch ($event->type) {
+                case 'checkout.session.completed':
+                    \Log::info("Processing checkout.session.completed for user: " . $user->id);
+                    $this->createSubscriptionForUser($user, $object);  // Use session object
+                    break;
 
-            case 'customer.subscription.created':
-                \Log::info("Processing customer.subscription.created for user: " . $user->id);
-                $this->createSubscriptionForUser($user, $object);  // Use subscription object
-                break;
+                case 'customer.subscription.created':
+                    \Log::info("Processing customer.subscription.created for user: " . $user->id);
+                    $this->createSubscriptionForUser($user, $object);  // Use subscription object
+                    break;
 
-            case 'customer.subscription.updated':
-                \Log::info("Processing customer.subscription.updated for user: " . $user->id);
-                $this->stripeService->updateSubscription($user, $object);  // Use subscription object
-                break;
+                case 'customer.subscription.updated':
+                    $subscription = $user->subscriptions()->where('stripe_id', $object->id)->first();
+                    if (!$subscription) {
+                        \Log::error("Subscription not found for user {$user->id} during update. Delaying handling.");
+                        // You can decide to retry this webhook later, or log the issue and investigate.
+                        return;
+                    }
+                    $this->stripeService->updateSubscription($user, $object);
+                    break;
 
-            case 'customer.subscription.deleted':
-                \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
-                $this->stripeService->cancelSubscription($user, $object);  // Use subscription object, but don't archive the user
-                break;
+                case 'customer.subscription.deleted':
+                    \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
+                    $this->stripeService->cancelSubscription($user, $object);  // Use subscription object, but don't archive the user
+                    break;
 
-            case 'invoice.payment_succeeded':
-                \Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
-                \Log::info("Invoice status: " . $object->status);  // Log the payment status
-                break;
+                case 'invoice.payment_succeeded':
+                    \Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
+                    \Log::info("Invoice status: " . $object->status);  // Log the payment status
+                    break;
 
-            case 'invoice.payment_failed':
-                \Log::error("Processing invoice.payment_failed for user: " . $user->id);
-                \Log::error("Failure reason: " . $object->last_payment_error->message);  // Log why the payment failed
-                break;
+                case 'invoice.payment_failed':
+                    \Log::error("Processing invoice.payment_failed for user: " . $user->id);
+                    \Log::error("Failure reason: " . $object->last_payment_error->message);  // Log why the payment failed
+                    break;
 
-            default:
-                \Log::warning("Unhandled event type: " . $event->type);
-                break;
+                default:
+                    \Log::warning("Unhandled event type: " . $event->type);
+                    break;
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            \Log::error('Error processing event: ' . $e->getMessage());
+            DB::rollBack();
         }
     }
 
@@ -196,10 +213,19 @@ class StripeController extends Controller
                 \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
                 $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
 
+                // Log detailed info about the subscription object
+                \Log::info("Stripe subscription retrieved: " . json_encode($stripeSubscription));
+
                 // Log trial period if applicable
                 if ($stripeSubscription->trial_end) {
                     $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
                     \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
+                    
+                    // Store the trial end locally in the user's subscription
+                    $user->subscriptions()->updateOrCreate(
+                        ['stripe_id' => $stripeSubscription->id],
+                        ['trial_ends_at' => $trialEnd]  // Save the trial end in local subscription
+                    );
                 }
     
                 // Only proceed if the subscription is active
