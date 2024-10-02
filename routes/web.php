@@ -13,6 +13,9 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\StripeController;
+use App\Http\Controllers\ClientNoteController;
+use App\Http\Controllers\ContactPersonController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,10 +45,10 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 */
 Route::middleware('auth')->group(function () {
 
-    // Dashboard Route
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->middleware(['verified'])->name('dashboard');
+    // Dashboard Route (replace the old route with this one)
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->middleware(['verified'])
+        ->name('dashboard');
 
     // Billing and Subscription Routes
     Route::get('/billing-portal', [ProfileController::class, 'redirectToBillingPortal'])->name('billing.portal');
@@ -85,16 +88,28 @@ Route::middleware('auth')->group(function () {
     | Client Management Routes
     |--------------------------------------------------------------------------
     */
+    Route::get('/download-template', function() {
+        $file = public_path('csv/template.csv');
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="template.csv"',
+            'Content-Transfer-Encoding' => 'binary',
+        ];
+    
+        return Response::download($file, 'template.csv', $headers);
+    })->name('download-template');
+    
     Route::prefix('clients')->group(function () {
         // Routes requiring subscription check middleware
-        Route::middleware('check.subscription')->group(function () {
+        //Route::middleware('check.subscription')->group(function () {
             Route::get('/create', [ClientController::class, 'create'])->name('clients.create');
             Route::post('/', [ClientController::class, 'store'])->name('clients.store');
             Route::post('/import', [ClientController::class, 'import'])->name('clients.import');
-        });
+        //});
 
         // Routes without subscription check middleware
         Route::get('/', [ClientController::class, 'index'])->name('clients.index');
+        Route::post('/save-settings', [ClientController::class, 'saveSettings'])->name('clients.saveSettings');
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
         Route::put('/{client}', [ClientController::class, 'update'])->name('clients.update');
         Route::delete('/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
@@ -102,6 +117,16 @@ Route::middleware('auth')->group(function () {
         Route::post('/clients/add-tag', [ClientController::class, 'addTag'])->name('clients.add-tag');
         Route::delete('/clients/remove-tag/{client}/{tag}', [ClientController::class, 'removeTag'])->name('clients.remove-tag');
         Route::post('/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.updateStatus');
+
+        // Notes routes
+        Route::delete('/{client}/notes/{note}', [ClientNoteController::class, 'destroy'])->name('clients.notes.destroy');
+        Route::post('/{client}/notes', [ClientNoteController::class, 'store'])->name('clients.notes.store');
+        Route::put('/{client}/notes/{note}', [ClientNoteController::class, 'update'])->name('clients.notes.update');
+
+        // Contact persons routes
+        Route::delete('/{client}/contact-persons/{contactPerson}', [ContactPersonController::class, 'destroy'])->name('clients.contact-persons.destroy');
+        Route::post('/{client}/contact-persons', [ContactPersonController::class, 'store'])->name('clients.contact-persons.store');
+        Route::put('/{client}/contact-persons/{contactPerson}', [ContactPersonController::class, 'update'])->name('clients.contact-persons.update');
     });
 
     /*
@@ -157,9 +182,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
         Route::put('/{project}', [ProjectController::class, 'update'])->name('projects.update');
         Route::delete('/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-        Route::get('/projects/{project}/select-tasks', [ProjectController::class, 'showTaskSelectionForm'])->name('projects.selectTasks');
-        Route::post('/projects/{project}/generate-report', [ProjectController::class, 'generateReport'])->name('projects.generateReport');        
-    
+        Route::get('/{project}/select-tasks', [ProjectController::class, 'showTaskSelectionForm'])->name('projects.selectTasks');
+        Route::post('/{project}/generate-report', [ProjectController::class, 'generateReport'])->name('projects.generateReport');        
+        Route::post('/{project}/update-client', [ProjectController::class, 'updateClient'])->name('projects.updateClient');
+
         // Toggle Completion Route (changed back to PATCH)
         Route::patch('/{project}/toggleCompletion', [ProjectController::class, 'toggleCompletion'])->name('projects.toggleCompletion');
     

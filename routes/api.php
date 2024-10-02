@@ -9,6 +9,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\StripeController;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+
 
 
 /*
@@ -48,11 +50,14 @@ Route::post('/products', [ProductController::class, 'store']);
 // Route::get('/products', [ProductController::class, 'getUserProducts']);
 Route::get('/products/{userId}', [ProductController::class, 'getUserProducts']);
 
-// Route::middleware('auth:sanctum')->group(function () {
-    // Route::get('/events', [EventController::class, 'index']);
-    // Route::post('/events', [EventController::class, 'store']);
-    // Route::put('/events/{event}', [EventController::class, 'update']);
-    // Route::delete('/events/{event}', [EventController::class, 'destroy']);
-// });
+// Apply Sanctum authentication middleware to the event routes
+Route::middleware(['auth:sanctum'])->prefix('events')->group(function () {
+    Route::get('/projects', [ProjectController::class, 'getProjects'])->name('api.projects.index');
+    Route::get('/clients', [ClientController::class, 'getClients'])->name('api.clients.index');
+    Route::get('/', [EventController::class, 'index']);
+    Route::post('/', [EventController::class, 'store']);
+    Route::put('/{event}', [EventController::class, 'update']);
+    Route::delete('/{event}', [EventController::class, 'destroy']);
+});
 
 Route::post('/projects/{id}/send-to-dinero', [ProjectController::class, 'sendProjectToDinero']);
