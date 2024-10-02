@@ -12,9 +12,7 @@ class EventController extends Controller
 {
     public function index()
     {
-        \Log::info('Fetching all events for the authenticated user');
         $events = Event::where('user_id', auth()->id())->get();
-        \Log::info('Events:', $events->toArray()); // Log the actual events being fetched
         return response()->json($events);
     }
 
@@ -24,6 +22,11 @@ class EventController extends Controller
         \Log::info('Request data:', $request->all()); // Log the request data
 
         try {
+            // If the 'end' field is 'N/A', remove it from the request data
+            if ($request->input('end') === 'N/A') {
+                $request->merge(['end' => null]);
+            }
+
             // Validate request data
             $validatedData = $request->validate([
                 'title' => 'required|string|max:255',
@@ -35,6 +38,12 @@ class EventController extends Controller
                 'client_id' => 'nullable|exists:clients,id',
                 'task_id' => 'nullable|exists:tasks,id',
             ]);
+
+            // If the 'end' date is not provided, treat the event as a single-day event
+            if (empty($validatedData['end'])) {
+                // Adjust end time to the end of the same day (11:59 PM) or keep as the start time
+                $validatedData['end'] = \Carbon\Carbon::parse($validatedData['start'])->endOfDay()->format('Y-m-d\TH:i');
+            }
 
             \Log::info('Validated data:', $validatedData); // Log validated data
 
