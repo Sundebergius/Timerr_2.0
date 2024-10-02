@@ -41,10 +41,20 @@
                 
                 <!-- Custom check for subscription status -->
                 @php
-                    // Fetch subscriptions where type is 'default' or 'canceled'
+                    // Check if the user has a subscription
                     $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
-                    \Log::info('User subscription:', [$subscription]);
                     
+                    if (!$subscription) {
+                        // Treat user as "free" if no subscription exists
+                        $subscription = (object) [
+                            'type' => 'free',
+                            'limits' => $this->planService->getPlanLimits('free'),  // Define the free plan limits in PlanService
+                        ];
+                        \Log::info('User is on the free plan.');
+                    } else {
+                        \Log::info('User subscription:', [$subscription]);
+                    }
+
                     // Check if the subscription has ended based on the current date and the ends_at field
                     $subscriptionExpired = $subscription && $subscription->ends_at && $subscription->ends_at->isPast();
                 @endphp
@@ -67,46 +77,60 @@
                     </form>
                 @endif
             
-                <!-- Display subscription details if the user has a subscription -->
-                @if($subscription)
-                    <div class="bg-gray-100 p-4 rounded-lg">
-                        <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
+                <!-- Display subscription details or treat null subscription as Free plan -->
+                @if ($subscription)
+                <div class="bg-gray-100 p-4 rounded-lg">
+                    <h3 class="font-bold text-lg">{{ __('Subscription Details') }}</h3>
+                    
+                    <!-- Check if the user is on the free plan or no active subscription -->
+                    @if (!$subscription || $subscription->type === 'free')
+                        <div class="alert alert-info">
+                            {{ __('You are on the Free plan. Upgrade to unlock more features!') }}
+                        </div>
+                    @else
+                        <!-- Display details for paid subscriptions -->
                         <p>{{ __('Plan:') }} {{ ucfirst($planService->getPlanNameByPriceId($subscription->stripe_price)) }}</p>
-            
+
                         <!-- Display the appropriate subscription status -->
-                        @if($subscription->type === 'canceled' && !$subscriptionExpired)
+                        @if ($subscription->type === 'canceled' && !$subscriptionExpired)
                             <p>{{ __('Status:') }} {{ __('Canceled (Active until ') }} {{ $subscription->ends_at->format('F j, Y') }}{{ __(')') }}</p>
-                        @elseif($subscription->type === 'default' && $subscription->active())
+                        @elseif ($subscription->type === 'default' && $subscription->active())
                             <p>{{ __('Status:') }} {{ ucfirst($subscription->stripe_status) }}</p>
-                        @elseif($subscriptionExpired)
+                        @elseif ($subscriptionExpired)
                             <p>{{ __('Status: Expired') }}</p>
                         @endif
-            
+
                         <!-- Display period end dates -->
-                        @if($subscription->active() && $subscription->ends_at)
+                        @if ($subscription->active() && $subscription->ends_at)
                             <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
-                        @elseif($subscription->canceled() && $subscription->ends_at)
+                        @elseif ($subscription->canceled() && $subscription->ends_at)
                             <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @endif
-            
+
                         <!-- Display trial period if applicable -->
-                        @if($subscription->onTrial())
+                        @if ($subscription->onTrial())
                             <p>{{ __('Trial Ends At:') }} {{ $subscription->trial_ends_at->format('F j, Y') }}</p>
                         @endif
-            
+
                         <!-- Show add-ons if they exist -->
-                        {{-- @if(!empty($subscription->items))
-                        <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
-                        <ul>
-                            @foreach($subscription->items as $item)
-                                @if(isset($item['stripe_product']) && $item['stripe_product'] !== 'base_subscription_product_id' && $subscription->stripe_status === 'active') 
-                                    <!-- Ensure only active subscriptions show items -->
-                                    <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
-                                @endif
-                            @endforeach
-                        </ul>
-                        @endif --}}
-                    </div>
+                        @if (!empty($subscription->items))
+                            <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
+                            <ul>
+                                @foreach ($subscription->items as $item)
+                                    @if (isset($item['stripe_product']) && $item['stripe_product'] !== 'base_subscription_product_id' && $subscription->stripe_status === 'active')
+                                        <!-- Ensure only active subscriptions show items -->
+                                        <li>{{ __('Item: ') }} {{ ucfirst($planService->getPlanNameByProductId($item['stripe_product'])) }} - {{ __('Quantity: ') }} {{ $item['quantity'] }}</li>
+                                    @endif
+                                @endforeach
+                            </ul>
+                        @endif
+                    @endif
+                </div>
+                @else
+                <!-- If there's no subscription at all, treat it as the free plan -->
+                <div class="alert alert-info">
+                    {{ __('You are on the Free plan. Upgrade to unlock more features!') }}
+                </div>
                 @endif
             </div>            
         </div>
