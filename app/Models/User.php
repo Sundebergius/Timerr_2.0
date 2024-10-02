@@ -40,6 +40,8 @@ class User extends Authenticatable
         'pm_type',              // Payment method type
         'pm_last_four',         // Last four digits of payment method
         'email_verified_at',    // If email verification is enabled
+        'trial_used',           // If the user has used the trial
+        'trial_ends_at',        // When the trial ends
     ];    
 
     /**
