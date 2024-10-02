@@ -40,8 +40,9 @@ class GoogleController extends Controller
                 Log::info('Google account is already linked to another user.', ['google_id' => $googleUser->getId(), 'current_user_id' => $googleAccountUser->id]);
                 
                 return redirect()->route('profile.show')->withErrors([
-                    'error' => 'This Google account is already linked to another Timerr account. If you want to log in with this Google account, please log out and use the "Log in with Google" option.',
-                ]);
+                    'google' => 'This Google account is already linked to another account. If you want to log in with this Google account, please log out and use the "Log in with Google" option.'
+                ], 'google');
+                
             }
 
             // If no user is found with this Google ID, check if a user with the same email exists
