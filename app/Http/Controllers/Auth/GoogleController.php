@@ -32,42 +32,42 @@ class GoogleController extends Controller
             $googleUser = Socialite::driver('google')->user();
             Log::info('Received Google user data.', ['google_email' => $googleUser->getEmail()]);
 
-            // Check if the Google ID already exists in the system
+            // Check if a user already exists with this Google ID
             $googleAccountUser = User::where('google_id', $googleUser->getId())->first();
 
             if ($googleAccountUser) {
-                // User is already registered with Google, offer to log them in
-                Auth::login($googleAccountUser);
-                Log::info('User logged in via Google.', ['user_id' => $googleAccountUser->id]);
-
-                return redirect()->intended('/dashboard')->with('status', 'You have been logged into your existing account using Google.');
+                // Inform the user that this Google account is already associated with another Timerr account
+                Log::info('Google account is already linked to another user.', ['google_id' => $googleUser->getId(), 'current_user_id' => $googleAccountUser->id]);
+                
+                return redirect()->route('profile.show')->withErrors([
+                    'error' => 'This Google account is already linked to another Timerr account. If you want to log in with this Google account, please log out and use the "Log in with Google" option.',
+                ]);
             }
 
-            // If no Google ID exists, check if a user with the same email exists
+            // If no user is found with this Google ID, check if a user with the same email exists
             $existingUser = User::where('email', $googleUser->getEmail())->first();
 
             if ($existingUser) {
-                // User exists but Google ID is not linked, offer the option to log into this account
+                // Link Google account to the existing user
                 if (!$existingUser->google_id) {
-                    Log::info('User exists with the same email but no Google account linked.', ['user_id' => $existingUser->id]);
-
-                    // Show a prompt (e.g., flash message or redirection to a special view) to ask if they want to link Google to their account
-                    return redirect()->route('link-google-account', ['user_id' => $existingUser->id])->with([
-                        'status' => 'This Google account is already associated with an existing account. Would you like to log into that account instead?',
-                        'google_user_id' => $googleUser->getId(),
-                        'google_user_token' => $googleUser->token
+                    $existingUser->update([
+                        'google_id' => $googleUser->getId(),
+                        'google_token' => $googleUser->token,
                     ]);
+                    Log::info('Google account linked to existing user by email.', ['user_id' => $existingUser->id]);
+
+                    return redirect()->route('profile.show')->with('status', 'Google account successfully linked to your Timerr account.');
                 } else {
-                    // Google ID is already linked, this is an error case
+                    // Inform the user if the email is linked but Google ID is already set
                     Log::critical('Google account already linked to another user.', [
                         'google_id' => $googleUser->getId(),
-                        'current_user_id' => $existingUser->id
+                        'current_user_id' => $existingUser->id,
                     ]);
-                    return redirect()->route('login')->withErrors(['error' => 'This Google account is already linked to another user.']);
+                    return redirect()->route('login')->withErrors(['error' => 'This Google account is already linked to another Timerr account.']);
                 }
             }
 
-            // If no user found by email, create a new user
+            // If no user is found by email, create a new user
             $newUser = User::create([
                 'name' => $googleUser->getName(),
                 'email' => $googleUser->getEmail(),
@@ -77,7 +77,7 @@ class GoogleController extends Controller
             ]);
             Log::info('New user registered via Google.', ['user_id' => $newUser->id]);
 
-            // **Create a personal team for the new user (just like normal registration flow)**
+            // Create personal team for the new user
             $team = Team::create([
                 'user_id' => $newUser->id,
                 'name' => $newUser->name . "'s Team",
@@ -92,7 +92,7 @@ class GoogleController extends Controller
 
             Log::info('Personal team created for new user.', ['team_id' => $team->id]);
 
-            // **Create a Stripe customer without subscription**
+            // Create Stripe customer without subscription
             \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
             $stripeCustomer = \Stripe\Customer::create([
                 'email' => $newUser->email,
@@ -109,10 +109,9 @@ class GoogleController extends Controller
             return redirect()->intended('/dashboard');
 
         } catch (\Exception $e) {
-            // Log critical error and redirect
             Log::critical('Error during Google login.', [
                 'message' => $e->getMessage(),
-                'google_email' => $googleUser->getEmail() ?? 'N/A'
+                'google_email' => $googleUser->getEmail() ?? 'N/A',
             ]);
 
             return redirect()->route('login')->withErrors(['error' => 'Google login failed. Please try again or contact support.']);
