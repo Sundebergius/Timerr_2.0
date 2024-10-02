@@ -259,6 +259,9 @@
         let cachedProjects = null;
         let cachedClients = null;
         let cachedEvents = null;
+
+        // Define the default logo color
+        let logoColor = '#03577a'; // Set your default color value here
         
         document.addEventListener('DOMContentLoaded', function () {
             const calendarEl = document.getElementById('calendar');
@@ -281,6 +284,21 @@
             });
 
             calendar.render();
+
+            // Handle Event Selection based on view type (day, week, or month)
+            function handleSelect(info) {
+                // Check if the selection is for a full day or time-based event
+                const start = new Date(info.startStr);
+                const end = new Date(info.endStr || info.startStr);
+
+                if (info.allDay) {
+                    // If it’s a full-day event
+                    handleSelectFullDay(info);
+                } else {
+                    // If it's a specific time frame (hourly)
+                    handleSelectTimeFrame(info);
+                }
+            }
     
             // Search functionality
             const searchInput = document.getElementById('searchInput');
@@ -435,35 +453,75 @@
                 .catch(error => console.error(`Error fetching ${elementId}:`, error));
             }
     
-            // Handle Event Creation (user selects a time frame)
-            function handleSelect(info) {
-                // Clear the project and client dropdowns to avoid populating with old data
-                $('#project').val('');
-                $('#client').val('');
-    
-                $('#start').val(formatDateForInput(new Date(info.startStr)));
-                $('#end').val(formatDateForInput(new Date(info.endStr || info.startStr)));
+            // Handle Event Creation for Day/Week Views (specific time slots)
+            function handleSelectTimeFrame(info) {
+                console.log("Start Date Info (Time Frame):", info.startStr);
+                console.log("End Date Info (Time Frame):", info.endStr);
+
+                const start = new Date(info.startStr);
+                const end = new Date(info.endStr || info.startStr);
+
+                console.log("Parsed Start Date (Time Frame):", start);
+                console.log("Parsed End Date (Time Frame):", end);
+
+                // Populate the modal with start and end date/times
+                $('#start').val(formatDateForInput(start));
+                $('#end').val(formatDateForInput(end));
                 $('#title').val('');
                 $('#description').val('');
-                $('#color').val(logoColor); // Always use the logo color
-                $('#deleteButton').hide(); // Hide delete button on new event creation
-    
+                $('#color').val(logoColor);
+                $('#deleteButton').hide();
+
                 // Remove any eventId from the modal data when creating a new event
                 $('#eventModal').removeData('eventId');
                 $('#eventModal').removeData('projectId');
                 $('#eventModal').removeData('clientId');
-    
+
+                // Show the modal for event creation
                 $('#eventModal').modal('show');
                 $('#eventForm').off('submit').on('submit', handleCreateEvent);
             }
-    
+
+            // Handle Event Creation for Month View (full-day events)
+            function handleSelectFullDay(info) {
+                console.log("Start Date Info (Full Day):", info.startStr);
+                console.log("End Date Info (Full Day):", info.endStr);
+
+                const start = new Date(info.startStr);
+                const end = new Date(info.endStr || info.startStr);
+
+                // Set start and end times to the beginning and end of the day, respectively
+                start.setHours(0, 0, 0, 0);
+                end.setHours(0, 0, 0, 0); // End of the day
+
+                console.log("Parsed Start Date (Full Day):", start);
+                console.log("Parsed End Date (Full Day):", end);
+
+                // Populate the modal with start and end date/times
+                $('#start').val(formatDateForInput(start));
+                $('#end').val(formatDateForInput(end));
+                $('#title').val('');
+                $('#description').val('');
+                $('#color').val(logoColor);
+                $('#deleteButton').hide();
+
+                // Remove any eventId from the modal data when creating a new event
+                $('#eventModal').removeData('eventId');
+                $('#eventModal').removeData('projectId');
+                $('#eventModal').removeData('clientId');
+
+                // Show the modal for event creation
+                $('#eventModal').modal('show');
+                $('#eventForm').off('submit').on('submit', handleCreateEvent);
+            }
+
             // Utility function to format date for datetime-local input
             function formatDateForInput(date) {
                 const year = date.getFullYear();
                 const month = ('0' + (date.getMonth() + 1)).slice(-2);
                 const day = ('0' + date.getDate()).slice(-2);
-                const hours = ('0' + date.getHours()).slice(-2);
-                const minutes = ('0' + date.getMinutes()).slice(-2);
+                const hours = ('0' + date.getHours()).slice(-2); // Keep hours
+                const minutes = ('0' + date.getMinutes()).slice(-2); // Keep minutes
                 return `${year}-${month}-${day}T${hours}:${minutes}`;
             }
     
