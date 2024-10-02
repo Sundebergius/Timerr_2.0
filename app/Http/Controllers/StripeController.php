@@ -235,6 +235,16 @@ class StripeController extends Controller
                             'trial_used' => 1, // Mark trial as used
                         ]);
                         \Log::info("Trial marked as used for user: {$user->id}");
+                        
+                        // Reload the user to ensure the change persists
+                        $user->refresh();
+
+                        // Log confirmation that trial_used has been updated
+                        if ($user->trial_used == 1) {
+                            \Log::info("Trial marked as used for user: {$user->id}");
+                        } else {
+                            \Log::error("Failed to update trial_used for user: {$user->id}");
+                        }
                     }
                 }
     
