@@ -95,7 +95,7 @@
                         @endif
             
                         <!-- Show add-ons if they exist -->
-                        @if(!empty($subscription->items))
+                        {{-- @if(!empty($subscription->items))
                         <h4 class="mt-2 font-bold">{{ __('Add-Ons') }}</h4>
                         <ul>
                             @foreach($subscription->items as $item)
@@ -105,7 +105,7 @@
                                 @endif
                             @endforeach
                         </ul>
-                        @endif
+                        @endif --}}
                     </div>
                 @endif
             </div>            
