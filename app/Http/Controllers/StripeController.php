@@ -220,14 +220,14 @@ class StripeController extends Controller
                 if ($stripeSubscription->trial_end) {
                     $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
                     \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
-                    
+
                     // Store the trial end locally in the user's subscription
                     $user->subscriptions()->updateOrCreate(
                         ['stripe_id' => $stripeSubscription->id],
                         ['trial_ends_at' => $trialEnd]  // Save the trial end in local subscription
                     );
                 }
-    
+
                 // Only proceed if the subscription is active
                 if ($stripeSubscription->status === 'active') {
                     // Find an existing subscription for this user (based on stripe_price or other identifiers, not just stripe_id)
@@ -235,9 +235,9 @@ class StripeController extends Controller
                         ->where('stripe_price', $stripeSubscription->items->data[0]->price->id)
                         ->orWhere('stripe_id', $stripeSubscription->id)
                         ->first();
-    
+
                     $localSubscription = null;
-    
+
                     if ($existingSubscription) {
                         // Update the existing subscription with the new Stripe subscription details
                         $existingSubscription->update([
@@ -246,11 +246,12 @@ class StripeController extends Controller
                             'stripe_status' => $stripeSubscription->status,
                             'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                             'quantity' => $stripeSubscription->items->data[0]->quantity,
+                            'trial_ends_at' => $trialEnd, // Update trial end date
                             'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
                             'updated_at' => now(),
                         ]);
                         $localSubscription = $existingSubscription;
-    
+
                         \Log::info("Updated existing subscription for user: {$user->id}");
                     } else {
                         // Create a new subscription if no matching subscription was found
@@ -260,14 +261,15 @@ class StripeController extends Controller
                             'stripe_status' => $stripeSubscription->status,
                             'stripe_price' => $stripeSubscription->items->data[0]->price->id,
                             'quantity' => $stripeSubscription->items->data[0]->quantity,
+                            'trial_ends_at' => $trialEnd, // Set trial end date
                             'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-    
+
                         \Log::info("Created new subscription for user: {$user->id}");
                     }
-    
+
                     // Ensure the subscription exists before updating subscription items
                     if ($localSubscription) {
                         // Manually update or insert subscription items
@@ -283,7 +285,7 @@ class StripeController extends Controller
                                 ]
                             );
                         }
-    
+
                         \Log::info("Successfully updated subscription items for user: {$user->id}");
                     }
                 } else {
