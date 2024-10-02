@@ -144,6 +144,40 @@ class StripeService
         }
     }
 
+    // Handle trial logic and error handling when creating a subscription
+    public function handleSubscription(User $user, $planName, $trialDays = null)
+    {
+        try {
+            // Use PlanService to get the price ID for the selected plan
+            $priceId = $this->planService->getPriceId($planName);
+
+            if (!$priceId) {
+                Log::error("Invalid plan selected: {$planName}");
+                return false;
+            }
+
+            // Check if the user is eligible for a trial (not already used)
+            if (!$user->subscriptions()->exists() && !$user->subscriptions->first()->trial_used) {
+                $trialDays = $trialDays ?? 30; // Apply trial days if eligible
+            } else {
+                $trialDays = 0; // No trial for existing subscribers
+            }
+
+            // Create the subscription
+            $subscription = $user->newSubscription('default', $priceId)
+                ->trialDays($trialDays)
+                ->create();
+
+            // Mark the trial as used in the local database
+            $subscription->update(['trial_used' => true]);
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());
+            return false;
+        }
+    }
+
     // Cancel subscription but do not archive user in Stripe
     public function cancelSubscription(User $user, $subscriptionObject)
     {

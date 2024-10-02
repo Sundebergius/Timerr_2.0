@@ -73,15 +73,25 @@ class StripeController extends Controller
                     return redirect()->back()->withErrors(['error' => 'Invalid subscription plan.']);
                 }
 
-                // Create the subscription using Laravel Cashier
-                $user->newSubscription('default', $priceId)
-                    ->trialDays(30) // Apply 30-day trial period
-                    ->create($paymentIntent->payment_method);
+                // Check if the user has already used the trial
+                if (!$user->trial_used) {
+                    // Apply 30-day trial only if the user hasn't used it
+                    $user->newSubscription('default', $priceId)
+                        ->trialDays(30) // Apply 30-day trial period
+                        ->create($paymentIntent->payment_method);
+
+                    // Mark that the user has used their trial
+                    $user->update(['trial_used' => true]);
+                } else {
+                    // No trial for users who have already used it
+                    $user->newSubscription('default', $priceId)
+                        ->create($paymentIntent->payment_method);
+                }
 
                 // Update the user's plan in the database
                 $user->update(['plan' => $planName]);
 
-                return redirect()->route('dashboard')->with('success', 'You have successfully upgraded to the ' . ucfirst($planName) . ' plan with a free trial!');
+                return redirect()->route('dashboard')->with('success', 'You have successfully upgraded to the ' . ucfirst($planName) . ' plan!');
             }
 
             return redirect()->back()->withErrors(['error' => 'Payment could not be completed.']);
@@ -278,6 +288,13 @@ class StripeController extends Controller
         // Create a Stripe Checkout Session for the selected plan
         \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
         
+        $subscriptionData = [];
+
+        // Check if the user has already used the trial
+        if (!$user->trial_used) {
+            $subscriptionData['trial_period_days'] = 30; // Apply 30-day free trial
+        }
+
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
             'customer' => $user->stripe_id, // Pass the existing Stripe customer ID
@@ -286,6 +303,7 @@ class StripeController extends Controller
                 'quantity' => 1,
             ]],
             'mode' => 'subscription',
+            'subscription_data' => $subscriptionData, // Add the trial if applicable
             'success_url' => route('dashboard') . '?session_id={CHECKOUT_SESSION_ID}', // Redirect URL after successful payment
             'cancel_url' => route('dashboard'), // Redirect URL for canceled payment
         ]);
