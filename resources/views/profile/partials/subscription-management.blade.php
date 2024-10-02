@@ -53,10 +53,11 @@
                     <!-- Show subscribe button if no active subscription or subscription has ended -->
                     <form method="POST" action="{{ route('stripe.subscribe') }}">
                         @csrf
+                        <input type="hidden" name="plan" value="freelancer">
                         <x-primary-button>
                             {{ __('Subscribe to Freelancer Plan') }}
                         </x-primary-button>
-                    </form>
+                    </form>                    
                 @else
                     <!-- If user has an active or canceled subscription within grace period, direct to Stripe's billing portal -->
                     <form method="GET" action="{{ route('billing.portal') }}">

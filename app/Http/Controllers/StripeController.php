@@ -39,6 +39,9 @@ class StripeController extends Controller
                 'quantity' => 1,
             ]],
             'mode' => 'subscription', // Use 'payment' for one-time payments
+            'subscription_data' => [ // Add this key to hold subscription-specific data
+                'trial_period_days' => 30, // Optional: Set a trial period for the subscription
+            ],
             'success_url' => route('dashboard') . '?success=true',
             'cancel_url' => route('stripe.payment') . '?canceled=true',
             'metadata' => [
@@ -60,11 +63,25 @@ class StripeController extends Controller
             $paymentIntent = \Stripe\PaymentIntent::retrieve($paymentIntentId);
 
             if ($paymentIntent->status == 'succeeded') {
-                $priceId = 'price_1Q2RSpEEh64CES4EjOr0VQvr';
-                $user->newSubscription('default', $priceId)->create($paymentIntent->payment_method);
-                $user->update(['plan' => 'freelancer']);
+                // Fetch the plan name from the request or use a default (e.g., 'freelancer')
+                $planName = $request->input('plan', 'freelancer');
 
-                return redirect()->route('dashboard')->with('success', 'You have successfully upgraded to the Freelancer plan!');
+                // Use PlanService to get the price ID for the selected plan
+                $priceId = $this->planService->getPriceId($planName);
+
+                if (!$priceId) {
+                    return redirect()->back()->withErrors(['error' => 'Invalid subscription plan.']);
+                }
+
+                // Create the subscription using Laravel Cashier
+                $user->newSubscription('default', $priceId)
+                    ->trialDays(30) // Apply 30-day trial period
+                    ->create($paymentIntent->payment_method);
+
+                // Update the user's plan in the database
+                $user->update(['plan' => $planName]);
+
+                return redirect()->route('dashboard')->with('success', 'You have successfully upgraded to the ' . ucfirst($planName) . ' plan with a free trial!');
             }
 
             return redirect()->back()->withErrors(['error' => 'Payment could not be completed.']);
@@ -83,7 +100,7 @@ class StripeController extends Controller
 
         try {
             $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-            \Log::info('Webhook successfully verified.');
+            \Log::info('Webhook successfully verified. Event Type: ' . $event->type);
         } catch (\UnexpectedValueException $e) {
             \Log::error('Invalid payload: ' . $e->getMessage());
             return response()->json(['error' => 'Invalid payload'], 400);
@@ -92,10 +109,13 @@ class StripeController extends Controller
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        \Log::info('Event Type: ' . $event->type);
-
-        // Handle the event
-        $this->processEvent($event);
+        // Process the event
+        try {
+            $this->processEvent($event);
+        } catch (\Exception $e) {
+            \Log::error('Error processing event: ' . $e->getMessage());
+            return response()->json(['error' => 'Error processing event'], 500);
+        }
 
         return response('Webhook handled', 200);
     }
@@ -165,6 +185,12 @@ class StripeController extends Controller
                 // Set up Stripe client
                 \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
                 $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
+
+                // Log trial period if applicable
+                if ($stripeSubscription->trial_end) {
+                    $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
+                    \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
+                }
     
                 // Only proceed if the subscription is active
                 if ($stripeSubscription->status === 'active') {
@@ -239,14 +265,24 @@ class StripeController extends Controller
     {
         $user = $request->user();
 
-        // Create a Stripe Checkout Session for the Freelancer plan
+        // Set the plan name, e.g., 'freelancer' (you can pass this dynamically in the future)
+        $planName = $request->input('plan', 'freelancer'); // Default to 'freelancer'
+
+        // Use the PlanService to get the price ID
+        $priceId = $this->planService->getPriceId($planName);
+
+        if (!$priceId) {
+            return redirect()->back()->withErrors(['error' => 'Invalid subscription plan.']);
+        }
+
+        // Create a Stripe Checkout Session for the selected plan
         \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
         
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
             'customer' => $user->stripe_id, // Pass the existing Stripe customer ID
             'line_items' => [[
-                'price' => 'price_1Q2RSpEEh64CES4EjOr0VQvr', // Freelancer plan price ID
+                'price' => $priceId, // Use the price ID from PlanService
                 'quantity' => 1,
             ]],
             'mode' => 'subscription',

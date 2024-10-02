@@ -60,32 +60,7 @@ class ProfileController extends Controller
         // Save the profile changes locally
         $user->save();
 
-        // Check if plan changes are needed (free to freelancer or freelancer to free)
-        if (isset($validated['plan'])) {
-            $this->handlePlanChange($user, $validated['plan']);
-        }
-
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
-    }
-
-    /**
-     * Handle plan change (e.g., free to freelancer or freelancer to free).
-     */
-    protected function handlePlanChange($user, $newPlan)
-    {
-        // Free Plan
-        if ($newPlan === 'free') {
-            $this->stripeService->downgradeToFree($user);
-        }
-
-        // Freelancer Plan
-        if ($newPlan === 'freelancer') {
-            $priceId = 'price_1Q2RSpEEh64CES4EjOr0VQvr'; // Freelancer plan price ID
-            $this->stripeService->updateSubscription($user, $priceId);
-        }
-
-        // Update the plan in the local database
-        $user->update(['plan' => $newPlan]);
     }
 
     /**
