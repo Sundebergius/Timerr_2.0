@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Services\PlanService;
 
-
 class StripeService
 {
     protected $stripe;
@@ -16,7 +15,9 @@ class StripeService
     public function __construct(PlanService $planService)
     {
         $this->planService = $planService;
-        $this->stripe = new StripeClient(env('STRIPE_SECRET'));
+
+        // Use the config helper to retrieve the Stripe secret from the services configuration
+        $this->stripe = new StripeClient(config('services.stripe.secret'));
     }
 
     // Archive the Stripe customer (or delete based on your preference)
