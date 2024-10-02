@@ -160,12 +160,19 @@ class StripeController extends Controller
             switch ($event->type) {
                 case 'checkout.session.completed':
                     \Log::info("Processing checkout.session.completed for user: " . $user->id);
-                    $this->createSubscriptionForUser($user, $object);  // Use session object
+    
+                    // Retrieve the subscription ID from the session object
+                    if (isset($object->subscription)) {
+                        $subscriptionId = $object->subscription; // Session contains a subscription ID
+                        $this->createSubscriptionForUser($user, $subscriptionId);  // Pass subscription ID directly
+                    } else {
+                        \Log::error("No subscription ID found in checkout session for user: " . $user->id);
+                    }
                     break;
 
                 case 'customer.subscription.created':
                     \Log::info("Processing customer.subscription.created for user: " . $user->id);
-                    $this->createSubscriptionForUser($user, $object);  // Use subscription object
+                    $this->createSubscriptionForUser($user, $object->id);  // Pass subscription ID directly
                     break;
 
                 case 'customer.subscription.updated':
@@ -204,69 +211,68 @@ class StripeController extends Controller
         }
     }
 
-// Method to handle creating or updating a subscription in your local database after successful payment
-private function createSubscriptionForUser($user, $session)
-{
-    try {
-        if ($user && isset($session->subscription)) {
-            // Set up Stripe client
-            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-            $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
-
-            // Log detailed info about the subscription object
-            \Log::info("Stripe subscription retrieved: " . json_encode($stripeSubscription));
-
-            // Log trial period if applicable
-            $trialEnd = null;
-            if ($stripeSubscription->trial_end) {
-                $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
-                \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
-            }
-
-            // Always ensure 'type' is set to 'default'
-            $type = 'default';  // Assuming 'default' is the intended value for active subscriptions
-
-            // Update or create the subscription locally with 'type' field
-            $localSubscription = $user->subscriptions()->updateOrCreate(
-                ['stripe_id' => $stripeSubscription->id],
-                [
-                    'type' => $type,  // Set type field
-                    'stripe_status' => $stripeSubscription->status,
-                    'stripe_price' => $stripeSubscription->items->data[0]->price->id,
-                    'quantity' => $stripeSubscription->items->data[0]->quantity,
-                    'trial_ends_at' => $trialEnd, // Set trial end date
-                    'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
-                    'updated_at' => now(),
-                ]
-            );
-
-            \Log::info("Subscription for user {$user->id} created/updated in the database.");
-
-            // Ensure the subscription exists before updating subscription items
-            if ($localSubscription) {
-                // Manually update or insert subscription items
-                foreach ($stripeSubscription->items->data as $item) {
-                    \DB::table('subscription_items')->updateOrInsert(
-                        ['subscription_id' => $localSubscription->id, 'stripe_id' => $item->id],
-                        [
-                            'stripe_product' => $item->price->product,
-                            'stripe_price' => $item->price->id,
-                            'quantity' => $item->quantity,
-                            'created_at' => $localSubscription->created_at ?? now(),  // Set created_at if new
-                            'updated_at' => now(),
-                        ]
-                    );
+    // Method to handle creating or updating a subscription in your local database after successful payment
+    private function createSubscriptionForUser($user, $subscriptionId)
+    {
+        try {
+            if ($user && $subscriptionId) {
+                // Set up Stripe client
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+                $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionId);
+    
+                // Log detailed info about the subscription object
+                \Log::info("Stripe subscription retrieved: " . json_encode($stripeSubscription));
+    
+                // Log trial period if applicable
+                $trialEnd = null;
+                if ($stripeSubscription->trial_end) {
+                    $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
+                    \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
                 }
-
-                \Log::info("Successfully updated subscription items for user: {$user->id}");
+    
+                // Ensure 'type' is always set to 'default' for active subscriptions
+                $type = 'default';
+    
+                // Create or update the subscription in the database
+                $localSubscription = $user->subscriptions()->updateOrCreate(
+                    ['stripe_id' => $stripeSubscription->id],
+                    [
+                        'type' => $type,
+                        'stripe_status' => $stripeSubscription->status,
+                        'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                        'quantity' => $stripeSubscription->items->data[0]->quantity,
+                        'trial_ends_at' => $trialEnd,
+                        'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                        'updated_at' => now(),
+                    ]
+                );
+    
+                \Log::info("Subscription for user {$user->id} created/updated in the database.");
+    
+                // Ensure the subscription exists before updating subscription items
+                if ($localSubscription) {
+                    foreach ($stripeSubscription->items->data as $item) {
+                        \DB::table('subscription_items')->updateOrInsert(
+                            ['subscription_id' => $localSubscription->id, 'stripe_id' => $item->id],
+                            [
+                                'stripe_product' => $item->price->product,
+                                'stripe_price' => $item->price->id,
+                                'quantity' => $item->quantity,
+                                'created_at' => $localSubscription->created_at ?? now(),
+                                'updated_at' => now(),
+                            ]
+                        );
+                    }
+                    \Log::info("Successfully updated subscription items for user: {$user->id}");
+                }
+            } else {
+                \Log::error("Failed to create subscription: user or session subscription missing.");
             }
-        } else {
-            \Log::error("Failed to create subscription: user or session subscription missing.");
+        } catch (\Exception $e) {
+            \Log::error("Error in createSubscriptionForUser for user {$user->id}: " . $e->getMessage());
         }
-    } catch (\Exception $e) {
-        \Log::error("Error in createSubscriptionForUser for user {$user->id}: " . $e->getMessage());
     }
-}
+    
 
     
     public function subscribe(Request $request)
