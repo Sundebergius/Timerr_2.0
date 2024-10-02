@@ -228,6 +228,14 @@ class StripeController extends Controller
                 if ($stripeSubscription->trial_end) {
                     $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
                     \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
+                    
+                    // Update trial_used in the users table
+                    if ($user->trial_used == 0) { // Check if trial hasn't been used yet
+                        $user->update([
+                            'trial_used' => 1, // Mark trial as used
+                        ]);
+                        \Log::info("Trial marked as used for user: {$user->id}");
+                    }
                 }
     
                 // Ensure 'type' is always set to 'default' for active subscriptions
