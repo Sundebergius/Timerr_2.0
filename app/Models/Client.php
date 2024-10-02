@@ -53,13 +53,28 @@ class Client extends Model
         return $this->hasMany(Project::class);
     }
 
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
+
     public function clientNote()
     {
         return $this->hasOne(ClientNote::class);
     }
 
+    public function clientNotes()
+    {
+        return $this->hasMany(ClientNote::class);
+    }
+
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+    
+    public function contactPersons()
+    {
+        return $this->hasMany(ContactPerson::class);
     }
 }

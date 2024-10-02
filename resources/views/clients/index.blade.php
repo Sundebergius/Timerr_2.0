@@ -132,8 +132,8 @@
                         </button>
                     </div>
 
-                    <!-- Secondary Action Buttons (Right-aligned with Icons) -->
-                    <div class="flex justify-end mb-4 space-x-4">
+                    <!-- Secondary Action Buttons (Centered with Icons) -->
+                    <div class="flex justify-center mb-4 space-x-4">
                         <!-- Settings button with gear icon -->
                         <button @click="showSettingsModal = true" 
                                 class="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded flex items-center space-x-2">
@@ -163,26 +163,117 @@
                     </div>
                 </div>
 
-                <div class="flex flex-wrap justify-center">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-center">
-                        @foreach ($clients as $client)
-                        <div x-data="{ showDeleteModal: false }" class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col w-full max-w-md">
+                <div class="client-card-container {{ count($clients) === 1 || count($clients) % 3 === 1 ? 'single-card' : '' }}">
+                    @foreach ($clients as $client)
+                        <div x-data="{ showDeleteModal: false }" class="client-card bg-white shadow-md rounded-lg overflow-hidden flex flex-col w-full max-w-md">
                             <div class="px-6 py-4 flex-grow">
                                 <div class="mb-2">
                                     <h2 class="text-xl font-bold text-gray-800">{{ $client->name }}</h2>
                                 </div>
-                                <div class="mb-2 text-sm text-gray-500">
-                                    <strong>Phone:</strong> {{ $client->phone ?? 'N/A' }}
-                                </div>
+                                
+                                <!-- Conditionally display the email if the user has enabled it in their settings -->
+                                @if($settings->show_email)
                                 <div class="mb-2 text-sm text-gray-500">
                                     <strong>Email:</strong> {{ $client->email ?? 'N/A' }}
                                 </div>
+                                @endif
+                                
+                                <!-- Conditionally display the address if the user has enabled it in their settings -->
+                                @if($settings->show_address)
                                 <div class="mb-2 text-sm text-gray-500">
                                     <strong>Address:</strong> {{ $client->address ?? 'N/A' }}
                                 </div>
+                                @endif
+                                
+                                <!-- Conditionally display the phone number if the user has enabled it in their settings -->
+                                @if($settings->show_phone)
                                 <div class="mb-2 text-sm text-gray-500">
-                                    <strong>Status:</strong> {{ ucfirst($client->status) }}
+                                    <strong>Phone:</strong> {{ $client->phone ?? 'N/A' }}
                                 </div>
+                                @endif
+                                
+                                <!-- Conditionally display CVR if the user has enabled it in their settings -->
+                                @if($settings->show_cvr)
+                                <div class="mb-2 text-sm text-gray-500">
+                                    <strong>CVR:</strong> {{ $client->cvr ?? 'N/A' }}
+                                </div>
+                                @endif
+                                
+                                <!-- Conditionally display the city if the user has enabled it in their settings -->
+                                @if($settings->show_city)
+                                <div class="mb-2 text-sm text-gray-500">
+                                    <strong>City:</strong> {{ $client->city ?? 'N/A' }}
+                                </div>
+                                @endif
+                                
+                                <!-- Conditionally display the zip code if the user has enabled it in their settings -->
+                                @if($settings->show_zip_code)
+                                <div class="mb-2 text-sm text-gray-500">
+                                    <strong>Zip Code:</strong> {{ $client->zip_code ?? 'N/A' }}
+                                </div>
+                                @endif
+                                
+                                <!-- Conditionally display the country if the user has enabled it in their settings -->
+                                @if($settings->show_country)
+                                <div class="mb-2 text-sm text-gray-500">
+                                    <strong>Country:</strong> {{ $client->country ?? 'N/A' }}
+                                </div>
+                                @endif
+                                
+                                <!-- Conditionally display notes if the user has enabled it in their settings -->
+                                @if($settings->show_notes)
+                                <div class="mb-2 text-sm text-gray-500">
+                                    <strong>Notes:</strong> 
+                                    @if($client->clientNotes->isNotEmpty())
+                                        <ul>
+                                            @foreach($client->clientNotes as $note)
+                                                <li>
+                                                    <div class="note-content">
+                                                        <!-- Display only the first 100 characters initially -->
+                                                        <span class="note-preview">
+                                                            {{ Str::limit($note->content, 100) }}
+                                                        </span>
+
+                                                        <!-- Full note content hidden initially -->
+                                                        <span class="note-full" style="display: none;">
+                                                            {{ $note->content }}
+                                                        </span>
+
+                                                        <!-- Read more/less button -->
+                                                        @if(strlen($note->content) > 100)
+                                                            <a href="#" class="text-blue-500 read-more" onclick="event.preventDefault(); toggleNote(this);">Read more</a>
+                                                        @endif
+
+                                                        <!-- Show the date -->
+                                                        <div class="text-gray-400 text-xs">
+                                                            ({{ $note->updated_at->format('d M Y') }})
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @else
+                                        N/A
+                                    @endif
+                                </div>
+                                @endif
+                                
+                                <!-- Conditionally display contact persons if the user has enabled it in their settings -->
+                                @if($settings->show_contact_persons)
+                                <div class="mb-2 text-sm text-gray-500">
+                                    <strong>Contact Persons:</strong> 
+                                    @if($client->contactPersons->isNotEmpty())
+                                        <ul>
+                                            @foreach($client->contactPersons as $contactPerson)
+                                                <li>{{ $contactPerson->name }} ({{ $contactPerson->phone ?? 'Phone N/A' }})</li>
+                                            @endforeach
+                                        </ul>
+                                    @else
+                                        N/A
+                                    @endif
+                                </div>
+                                @endif
+                                
                 
                                 <!-- Client Tags -->
                                 @if ($client->tags->isNotEmpty())
@@ -280,7 +371,7 @@
 
                                 <p>
                                     You can download a 
-                                    <a href="{{ asset('csv/template.csv') }}" class="text-blue-500 hover:underline" title="Download a CSV template file to ensure correct formatting.">template here</a>.
+                                    <a href="{{ route('download-template') }}" class="text-blue-500 hover:underline" title="Download a CSV template file to ensure correct formatting.">template here</a>.
                                 </p>
 
                                 <br>
@@ -309,29 +400,60 @@
                     <div class="bg-gray-800 bg-opacity-75 absolute inset-0" @click="showSettingsModal = false"></div>
                     <div class="bg-white p-6 rounded shadow-md z-10 max-w-md mx-auto">
                         <h2 class="text-xl font-bold mb-4">Customize Client Display</h2>
-                        <form id="settings-form">
+                        <!-- Form with POST action to the new route -->
+                        <form id="settings-form" action="{{ route('clients.saveSettings') }}" method="POST">
+                            @csrf
                             <div class="mb-4">
-                                <input type="checkbox" id="show_phone" name="show_phone" checked>
-                                <label for="show_phone" class="text-gray-700">Show Phone</label>
-                            </div>
-                            <div class="mb-4">
-                                <input type="checkbox" id="show_email" name="show_email" checked>
+                                <input type="hidden" name="show_email" value="0">
+                                <input type="checkbox" id="show_email" name="show_email" value="1" 
+                                       {{ $settings->show_email ? 'checked' : '' }}>
                                 <label for="show_email" class="text-gray-700">Show Email</label>
                             </div>
                             <div class="mb-4">
-                                <input type="checkbox" id="show_address" name="show_address" checked>
+                                <input type="hidden" name="show_address" value="0">
+                                <input type="checkbox" id="show_address" name="show_address" value="1" 
+                                       {{ $settings->show_address ? 'checked' : '' }}>
                                 <label for="show_address" class="text-gray-700">Show Address</label>
                             </div>
                             <div class="mb-4">
-                                <input type="checkbox" id="show_status" name="show_status" checked>
-                                <label for="show_status" class="text-gray-700">Show Status</label>
+                                <input type="hidden" name="show_phone" value="0">
+                                <input type="checkbox" id="show_phone" name="show_phone" value="1" 
+                                       {{ $settings->show_phone ? 'checked' : '' }}>
+                                <label for="show_phone" class="text-gray-700">Show Phone</label>
                             </div>
                             <div class="mb-4">
-                                <input type="checkbox" id="show_notes" name="show_notes" checked>
+                                <input type="hidden" name="show_cvr" value="0">
+                                <input type="checkbox" id="show_cvr" name="show_cvr" value="1" {{ $settings->show_cvr ? 'checked' : '' }}>
+                                <label for="show_cvr" class="text-gray-700">Show CVR</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="hidden" name="show_city" value="0">	
+                                <input type="checkbox" id="show_city" name="show_city"value="1" {{ $settings->show_city ? 'checked' : '' }}>
+                                <label for="show_city" class="text-gray-700">Show City</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="hidden" name="show_zip_code" value="0">
+                                <input type="checkbox" id="show_zip_code" name="show_zip_code"value="1" {{ $settings->show_zip_code ? 'checked' : '' }}>
+                                <label for="show_zip_code" class="text-gray-700">Show Zip Code</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="hidden" name="show_country" value="0">
+                                <input type="checkbox" id="show_country" name="show_country"value="1" {{ $settings->show_country ? 'checked' : '' }}>
+                                <label for="show_country" class="text-gray-700">Show Country</label>
+                            </div>
+                            <div class="mb-4">
+                                <input type="hidden" name="show_notes" value="0">
+                                <input type="checkbox" id="show_notes" name="show_notes"value="1" {{ $settings->show_notes ? 'checked' : '' }}>
                                 <label for="show_notes" class="text-gray-700">Show Notes</label>
                             </div>
+                            <div class="mb-4">
+                                <input type="hidden" name="show_contact_persons" value="0">
+                                <input type="checkbox" id="show_contact_persons" name="show_contact_persons"value="1" {{ $settings->show_contact_persons ? 'checked' : '' }}>
+                                <label for="show_contact_persons" class="text-gray-700">Show Contact Persons</label>
+                            </div>
                             <div class="flex justify-end space-x-4">
-                                <button type="button" @click="showSettingsModal = false" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Apply</button>
+                                <!-- Submit button to save the settings -->
+                                <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Apply</button>
                                 <button type="button" @click="showSettingsModal = false" class="bg-gray-300 hover:bg-gray-400 text-black py-2 px-4 rounded">Cancel</button>
                             </div>
                         </form>
@@ -363,94 +485,89 @@
 </x-app-layout>
 
 <style>
-    .card {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px; /* Softer edges for a modern look */
-    padding: 20px;
-    margin-bottom: 16px;
-    background-color: white;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Stronger shadow for a more elevated look */
-    transition: box-shadow 0.3s ease, transform 0.3s ease; /* Smooth hover effect */
-}
-
-.card:hover {
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(-5px); /* Gentle lift on hover */
-}
-
-/* Card Header */
-.card-header {
-    font-size: 20px;
-    font-weight: 700; /* Bolder for stronger emphasis */
-    margin-bottom: 10px;
-    color: #1a202c; /* Darker gray for better contrast */
-}
-
-/* Card Body */
-.card-body {
-    font-size: 16px; /* Slightly larger for better readability */
-    color: #4a5568; /* Neutral gray for body text */
-    line-height: 1.6;
-}
-
-/* Tags */
-.tags-container {
-    margin-top: 12px;
-}
-
-.tags-container span {
-    margin-right: 8px;
-    margin-bottom: 8px;
-}
-
-/* Button Styling */
-button,
-.status-dropdown select {
-    font-size: 16px; /* Make buttons and dropdown more prominent */
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-}
-
-/* Dropdown Consistency */
-.status-dropdown select {
-    border: 1px solid #cbd5e0;
-    background-color: white;
-    font-size: 16px;
-    padding: 8px;
-    width: 100%; /* Ensure it fits within its container */
-    border-radius: 8px;
-    transition: border-color 0.2s ease;
-}
-
-.status-dropdown select:focus {
-    border-color: #3182ce; /* Blue highlight on focus */
-    outline: none;
-}
-
-/* General Improvements */
-.grid {
+/* Main grid container for client cards */
+.client-card-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Ensure cards fill the space evenly */
-    gap: 20px; /* Increase gap between cards for better separation */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Automatically fill columns */
+    gap: 20px; /* Space between the cards */
+    justify-content: center; /* Ensure grid items are centered horizontally */
+    width: 100%; /* Ensure the grid container takes the full width */
+    margin: 0 auto; /* Center the grid container itself */
 }
 
-.flex {
+/* Ensure last row aligns items properly when there's an extra row */
+.align-last-row {
+    justify-items: center; /* Center the cards in the last row */
+}
+
+/* Card styling */
+.client-card {
     display: flex;
+    flex-direction: column;
+    margin: 0 auto; /* Center each card within its grid column */
+    width: 100%; /* Ensure cards take full width within grid columns */
+    max-width: 300px; /* Limit the maximum width of each card to prevent overflowing */
+    justify-content: center; /* Center content within the card */
+}
+
+/* Handle single card centering */
+.single-card {
     justify-content: center;
     align-items: center;
 }
-/* Ensure dropdown and buttons are aligned */
-.status-dropdown {
-    display: inline-flex;
-    align-items: center;
+
+/* Card styling */
+.client-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%; /* Ensure the card takes full width within grid columns */
+    max-width: 450px; /* Prevent overflowing */
 }
 
-.flex.items-center {
-    display: flex;
-    align-items: center;
-    justify-content: space-between; /* Ensure equal spacing */
+/* Ensure cards behave properly when not a full row */
+.client-card-container.align-last-row {
+    justify-items: center; /* Center incomplete rows */
+}
+
+/* Target only the buttons and links inside client cards */
+.client-card-container button, 
+.client-card-container a.inline-flex {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for emphasis */
+    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
+}
+
+.client-card-container button:hover, 
+.client-card-container a.inline-flex:hover {
+    transform: translateY(-2px); /* Lift on hover */
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
+}
+
+/* Tooltip styling */
+.tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .client-card-container {
+        grid-template-columns: repeat(2, 1fr); /* Two cards per row on medium screens */
+    }
+}
+
+@media (max-width: 600px) {
+    .client-card-container {
+        grid-template-columns: 1fr; /* Stack all cards in one column on mobile */
+    }
 }
 </style>
+
 
 {{-- <script src="//unpkg.com/alpinejs" defer></script> --}}
 
@@ -632,6 +749,23 @@ button,
                 modal.classList.remove('hidden');
             } else {
                 modal.classList.add('hidden');
+            }
+        }
+
+        function toggleNote(element) {
+            var noteContent = element.previousElementSibling; // Full note
+            var notePreview = noteContent.previousElementSibling; // Preview note
+
+            if (noteContent.style.display === "none") {
+                // Show full note and change the link to "Read less"
+                noteContent.style.display = "inline";
+                notePreview.style.display = "none";
+                element.innerHTML = "Read less";
+            } else {
+                // Show only the preview and change the link to "Read more"
+                noteContent.style.display = "none";
+                notePreview.style.display = "inline";
+                element.innerHTML = "Read more";
             }
         }
 

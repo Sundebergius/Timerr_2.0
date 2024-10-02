@@ -9,6 +9,9 @@ use App\Models\Tag;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use App\Services\PlanService;
+use App\Models\ClientNote;
+use App\Models\UserSettings;
+use App\Models\ContactPerson;
 use App\Models\Webhook;
 
 use Illuminate\Support\Facades\Validator;
@@ -24,8 +27,6 @@ class ClientController extends Controller
 
     public function index(Request $request)
     {
-        // dd($request->all());
-
         $colorClasses = [
             'rose' => 'bg-rose-100 text-rose-500 hover:bg-rose-200',
             'sky' => 'bg-sky-100 text-sky-500 hover:bg-sky-200',
@@ -37,11 +38,9 @@ class ClientController extends Controller
     
         // Fetch the current user and get the subscription plan name (e.g., 'free', 'freelancer')
         $subscriptionPlan = app(\App\Services\PlanService::class)->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
-        \Log::info("User {$user->id} is on plan: {$subscriptionPlan}");
 
         // Get the client limit from PlanService based on the user's subscription plan
         $clientLimit = app(\App\Services\PlanService::class)->getPlanLimits($subscriptionPlan)['clients'] ?? 5;
-        \Log::info("Client limit: {$clientLimit}, Current client count: {$user->clients()->count()}");
 
         // Get the current client count for the user
         $clientCount = $user->clients()->count();
@@ -56,6 +55,23 @@ class ClientController extends Controller
         } else {
             // Otherwise, paginate the clients
             $clients = Client::paginate($pageSize);
+        }
+
+        // Fetch user settings or create default ones if they don't exist
+        $settings = $user->settings;
+
+        if (!$settings) {
+            $settings = $user->settings()->create([
+                'show_email' => true,   // Default values you want
+                'show_address' => true,
+                'show_phone' => true,
+                'show_cvr' => false,
+                'show_city' => false,
+                'show_zip_code' => false,
+                'show_country' => false,
+                'show_notes' => false,
+                'show_contact_persons' => false,
+            ]);
         }
 
         $sortField = $request->get('sortField', 'name');
@@ -90,7 +106,7 @@ class ClientController extends Controller
         $clients = $query->orderBy($sortField, $sortDirection)
                         ->paginate($pageSize == 'all' ? Client::count() : $pageSize);
 
-                        return view('clients.index', compact('clients', 'clientCount', 'clientLimit', 'colorClasses'));
+                        return view('clients.index', compact('clients', 'clientCount', 'clientLimit', 'colorClasses', 'settings'));
                     }
 
     public function store(Request $request)
@@ -105,6 +121,11 @@ class ClientController extends Controller
             'zip_code' => 'nullable|string|max:20',
             'country' => 'nullable|string|max:255',
             'status' => 'nullable|string|in:lead,contacted,interested,negotiation,deal_made', // Validate status
+            'client_notes.*' => 'nullable|string',
+            // Validation for contact persons
+            'contact_persons.*.name' => 'nullable|string|max:255',
+            'contact_persons.*.email' => 'nullable|email|max:255',
+            'contact_persons.*.phone' => 'nullable|string|max:20',
             // 'tags' => 'array',
             // 'tags.*' => 'string',
             // 'tag_colors' => 'array',
@@ -131,25 +152,68 @@ class ClientController extends Controller
             }
         }
 
-        // Trigger the "client created" webhook event
-        $this->triggerWebhookEvent('client_created', [
-            'client_id' => $client->id,
-            'name' => $client->name,
-            'email' => $client->email,
-        ]);
+        // Handle the creation of client notes
+        if ($request->has('client_notes')) {
+            foreach ($request->input('client_notes') as $noteContent) {
+                if (!empty($noteContent)) {
+                    ClientNote::create([
+                        'client_id' => $client->id,
+                        'content' => $noteContent,
+                    ]);
+                }
+            }
+        }
+
+        // Handle the creation of contact persons (if any)
+        if ($request->has('contact_persons')) {
+            foreach ($request->input('contact_persons') as $person) {
+                if (!empty($person['name'])) {
+                    ContactPerson::create([
+                        'client_id' => $client->id,
+                        'name' => $person['name'],
+                        'email' => $person['email'] ?? null,
+                        'phone' => $person['phone'] ?? null,
+                        'notes' => $person['notes'] ?? null,
+                    ]);
+                }
+            }
+        }
+
+        // Check if there are any webhooks for the current user and event
+        $webhooks = Webhook::where('event', 'client_created')
+            ->where('user_id', auth()->id())
+            ->get();
+
+        // Only trigger webhook if there are any
+        if ($webhooks->isNotEmpty()) {
+            $this->triggerWebhookEvent('client_created', [
+                'client_id' => $client->id,
+                'name' => $client->name,
+                'email' => $client->email,
+            ]);
+        }
     
-        return redirect()->route('clients.index');
+        return redirect()->route('clients.index')->with('success', 'Client created successfully!');
     }
 
     protected function triggerWebhookEvent($event, $payload)
     {
-        // Fetch all webhooks related to this event
-        $webhooks = Webhook::where('event', $event)->get();
+        // Fetch only the webhooks related to the specific event and user
+        $webhooks = Webhook::where('event', $event)
+                            ->where('user_id', auth()->id()) // Ensure it only fetches for the current user
+                            ->get();
 
+        // If no webhooks exist for this event, do nothing
+        if ($webhooks->isEmpty()) {
+            return;
+        }
+
+        // Send webhook notifications for each matching webhook
         foreach ($webhooks as $webhook) {
             $this->sendWebhookNotification($webhook, $payload);
         }
     }
+
 
     // protected function sendWebhookNotification(Webhook $webhook, array $payload)
     // {
@@ -173,7 +237,10 @@ class ClientController extends Controller
 
     public function update(Request $request, Client $client)
     {
-        //dd($request->all());
+        Log::info('Update function called for client: ' . $client->id);
+
+        Log::info('Request data received:', $request->all());
+    
         $validatedData = $request->validate([
             'name' => 'required|max:255',
             'status' => 'required',
@@ -182,10 +249,23 @@ class ClientController extends Controller
             'address' => 'nullable',
             'city' => 'nullable',
             'zip_code' => 'nullable',
+            'country' => 'nullable',
             'categories' => 'nullable',
-            'notes' => 'nullable',
+            'client_notes.*' => 'nullable|string',
+            'new_client_notes.*' => 'nullable|string', // Add validation for new client notes
+            'contact_persons.*.name' => 'nullable|string|max:255',
+            'contact_persons.*.email' => 'nullable|email|max:255',
+            'contact_persons.*.phone' => 'nullable|string|max:20',
+            'contact_persons.*.notes' => 'nullable|string',
+            'new_contact_persons.*.name' => 'nullable|string|max:255', // Add validation for new contact persons
+            'new_contact_persons.*.email' => 'nullable|email|max:255',
+            'new_contact_persons.*.phone' => 'nullable|string|max:20',
+            'new_contact_persons.*.notes' => 'nullable|string',
         ]);
-
+    
+        Log::info('Validation passed for client: ' . $client->id);
+    
+        // Update the client with the validated data
         $client->update($validatedData);
 
         // // Handle the tags
@@ -211,16 +291,83 @@ class ClientController extends Controller
         //     $client->tags()->detach($tagId);
         // }
 
-        // Check if a note has been provided
-        if ($request->has('client_notes') && !empty($request->client_notes)) {
-            // Create or update the note
-            $client->clientNote()->updateOrCreate(
-                ['client_id' => $client->id],
-                ['content' => $request->client_notes]
-            );
+        // Update or create existing client notes
+        if ($request->has('client_notes')) {
+            $existingNoteIds = $client->clientNotes()->pluck('id')->toArray();
+            $newNoteContents = $request->input('client_notes');
+
+            foreach ($newNoteContents as $noteId => $content) {
+                if (!empty($content)) {
+                    if (in_array($noteId, $existingNoteIds)) {
+                        // Update existing note
+                        $client->clientNotes()->where('id', $noteId)->update(['content' => $content]);
+                        unset($existingNoteIds[array_search($noteId, $existingNoteIds)]);
+                    }
+                }
+            }
+
+            // Delete notes that were removed
+            if (!empty($existingNoteIds)) {
+                ClientNote::whereIn('id', $existingNoteIds)->delete();
+            }
         }
 
-        return redirect()->route('clients.index')->with('success', 'Client updated successfully');
+        // Create new notes
+        if ($request->has('new_client_notes')) {
+            foreach ($request->input('new_client_notes') as $newNote) {
+                if (!empty($newNote)) {
+                    ClientNote::create([
+                        'client_id' => $client->id,
+                        'content' => $newNote,
+                    ]);
+                }
+            }
+        }
+
+        // Update or create existing contact persons
+        if ($request->has('contact_persons')) {
+            $existingContactIds = $client->contactPersons()->pluck('id')->toArray();
+            $newContacts = $request->input('contact_persons');
+
+            foreach ($newContacts as $contactId => $person) {
+                if (!empty($person['name'])) {
+                    if (in_array($contactId, $existingContactIds)) {
+                        // Update existing contact person
+                        $client->contactPersons()->where('id', $contactId)->update([
+                            'name' => $person['name'],
+                            'email' => $person['email'] ?? null,
+                            'phone' => $person['phone'] ?? null,
+                            'notes' => $person['notes'] ?? null,
+                        ]);
+                        unset($existingContactIds[array_search($contactId, $existingContactIds)]);
+                    }
+                }
+            }
+
+            // Delete contact persons that were removed
+            if (!empty($existingContactIds)) {
+                ContactPerson::whereIn('id', $existingContactIds)->delete();
+            }
+        }
+
+        // Create new contact persons
+        if ($request->has('new_contact_persons')) {
+            foreach ($request->input('new_contact_persons') as $newContact) {
+                if (!empty($newContact['name'])) {
+                    ContactPerson::create([
+                        'client_id' => $client->id,
+                        'name' => $newContact['name'],
+                        'email' => $newContact['email'] ?? null,
+                        'phone' => $newContact['phone'] ?? null,
+                        'notes' => $newContact['notes'] ?? null,
+                    ]);
+                }
+            }
+        }
+
+        Log::info('Update function completed successfully for client: ' . $client->id);
+
+        return redirect()->route('clients.index')->with('success', 'Client updated successfully!');
     }
 
     public function destroy(Client $client)
@@ -244,10 +391,78 @@ class ClientController extends Controller
             'deal_made' => Client::STATUS_DEAL_MADE,
         ];
 
+        // Load related client notes and contact persons
+        $client->load('clientNotes', 'contactPersons'); // Eager load relationships
+
         return view('clients.edit', compact('client', 'statuses'));
     }
 
-    public function import(Request $request)
+    public function saveSettings(Request $request)
+    {
+        \Log::info('Form submitted with data: ', $request->all());
+
+        // Validate the request
+        $validated = $request->validate([
+            'show_email' => 'boolean',
+            'show_address' => 'boolean',
+            'show_phone' => 'boolean',
+            'show_cvr' => 'boolean',
+            'show_city' => 'boolean',
+            'show_zip_code' => 'boolean',
+            'show_country' => 'boolean',
+            'show_notes' => 'boolean',
+            'show_contact_persons' => 'boolean',
+        ]);
+
+        // Update or create the user settings
+        $userSettings = auth()->user()->settings()->updateOrCreate(
+            ['user_id' => auth()->id()],
+            $validated
+        );
+
+        // Redirect back with a success message
+        return redirect()->back()->with('status', 'Settings updated successfully.');
+    }
+
+    public function getClients(Request $request)
+    {
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Fetch clients for the authenticated user
+        $clients = Client::where('user_id', auth()->id())->get();
+
+        // Return the data in JSON format
+        return response()->json($clients);
+    }
+
+    public function showSettingsModal()
+    {
+        // Get the authenticated user's settings
+        $user = auth()->user();
+        $settings = $user->settings;
+
+        // If the user doesn't have settings, create default settings
+        if (!$settings) {
+            $settings = $user->settings()->create([
+                'show_email' => true,   // Default values you want
+                'show_address' => true,
+                'show_phone' => true,
+                'show_cvr' => false,
+                'show_city' => false,
+                'show_zip_code' => false,
+                'show_country' => false,
+                'show_notes' => false,
+                'show_contact_persons' => false,
+            ]);
+        }
+
+        // Pass the settings to the view
+        return view('settings-modal', compact('settings'));
+    }
+
+    public function import(Request $request, PlanService $planService)
     {
         $request->validate([
             'file' => 'required|mimes:csv,txt|max:2048', // Limit the file size to 2MB
@@ -267,9 +482,25 @@ class ClientController extends Controller
             ]);
         }
 
+        // Fetch the user's plan and client limits
+        $user = auth()->user();
+        $planName = $planService->getPlanNameByPriceId($user->subscription('default')?->stripe_price ?? null);
+        $planLimits = $planService->getPlanLimits($planName);
+        $clientLimit = $planLimits['clients'] ?? 5; // Default to 5 for free plan
+        $currentClientCount = $user->clients()->count();
+
+        // Check if importing the new clients will exceed the limit
+        $rowsToImport = count($rows);
+        if ($currentClientCount + $rowsToImport > $clientLimit) {
+            return redirect()->back()->withErrors([
+                'file' => "You can only have {$clientLimit} clients on the {$planName} plan. You already have {$currentClientCount}, and importing {$rowsToImport} would exceed your limit.",
+            ]);
+        }
+
         DB::beginTransaction();
 
         $invalidRows = [];
+        $errorMessages = [];
         try {
             foreach ($rows as $index => $row) {
                 if (count($header) != count($row)) {
@@ -282,7 +513,6 @@ class ClientController extends Controller
                 $validator = Validator::make($row, [
                     'name' => 'required',
                     'email' => 'nullable|email',
-                    // Add more validation rules if necessary
                 ]);
 
                 if ($validator->fails()) {
@@ -291,35 +521,30 @@ class ClientController extends Controller
                     continue;
                 }
 
-            // foreach ($rows as $row) {
-            //     if (count($header) != count($row)) {
-            //         // Print out the header and row for debugging
-            //         echo "Header: ", implode(", ", $header), "\n";
-            //         echo "Row: ", implode(", ", $row), "\n";
-            //     }
-            //     $row = array_combine($header, $row);
-
+                // Create the client
                 Client::create([
-                    'user_id' => auth()->id(), // assuming the user is authenticated
+                    'user_id' => auth()->id(),
                     'name' => $row['name'],
                     'email' => $row['email'] ?? null,
                     'cvr' => $row['cvr'] ?? null,
                     'phone' => $row['phone'] ?? null,
                     'address' => $row['address'] ?? null,
-                    'country' => 'DK',
-                    'status' => 'lead',
+                    'city' => $row['city'] ?? null,
+                    'zip_code' => $row['zip_code'] ?? null,
+                    'country' => $row['country'] ?? 'DK',
+                    'status' => 'lead', // Set default status
                 ]);
-        }
+            }
 
-        if (!empty($invalidRows)) {
-            DB::rollBack();
+            if (!empty($invalidRows)) {
+                DB::rollBack();
 
-            return redirect()->back()->withErrors([
-                'file' => 'Invalid data in the following rows: ' . implode('. ', $errorMessages),
-            ]);
-        }
+                return redirect()->back()->withErrors([
+                    'file' => 'Invalid data in the following rows: ' . implode('. ', $errorMessages),
+                ]);
+            }
 
-        DB::commit();
+            DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
 
