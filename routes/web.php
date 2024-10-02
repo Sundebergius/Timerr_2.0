@@ -93,16 +93,9 @@ Route::middleware('auth')->group(function () {
     | Client Management Routes
     |--------------------------------------------------------------------------
     */
-    Route::get('/download-template', function() {
-        $file = public_path('csv/template.csv');
-        $headers = [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="template.csv"',
-            'Content-Transfer-Encoding' => 'binary',
-        ];
     
-        return Response::download($file, 'template.csv', $headers);
-    })->name('download-template');
+    // Download CSV template route
+    Route::get('/download-template', [ClientController::class, 'downloadTemplate'])->name('download-template');
     
     Route::prefix('clients')->group(function () {
         // Routes requiring subscription check middleware

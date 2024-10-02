@@ -462,6 +462,22 @@ class ClientController extends Controller
         return view('settings-modal', compact('settings'));
     }
 
+    public function downloadTemplate()
+    {
+        // Path to the CSV template
+        $file = public_path('csv/template.csv');
+        
+        // Define the headers for the response
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="template.csv"',
+            'Content-Transfer-Encoding' => 'binary',
+        ];
+
+        // Return the file as a download response
+        return response()->download($file, 'template.csv', $headers);
+    }
+
     public function import(Request $request, PlanService $planService)
     {
         $request->validate([
