@@ -77,7 +77,7 @@ class StripeController extends Controller
     {
         \Log::info('Webhook hit, starting process.');
 
-        $endpoint_secret = env('STRIPE_WEBHOOK_SECRET');
+        $endpoint_secret = config('services.stripe.webhook_secret');
         $payload = @file_get_contents('php://input');
         $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
 
