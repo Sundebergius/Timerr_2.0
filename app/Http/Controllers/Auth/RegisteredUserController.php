@@ -31,73 +31,74 @@ class RegisteredUserController extends Controller
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
-{
-    // Convert email to lowercase before validation
-    $request->merge([
-        'email' => strtolower($request->email),
-    ]);
-
-    $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-        'password' => ['required', 'confirmed', Rules\Password::defaults()],
-    ]);
-
-    DB::beginTransaction(); // Start a database transaction
-
-    try {
-        // Create the user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+    {
+        // Convert email to lowercase before validation
+        $request->merge([
+            'email' => strtolower($request->email),
         ]);
 
-        // Create personal team for the user
-        $team = Team::create([
-            'user_id' => $user->id,
-            'name' => $user->name . "'s Team",
-            'personal_team' => true,
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Assign the team to the user
-        $user->ownedTeams()->save($team);
+        DB::beginTransaction(); // Start a database transaction
 
-        // Set the current team ID for the user
-        $user->current_team_id = $team->id;
-        $user->save();
+        try {
+            // Create the user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
 
-        // Optionally, make the user a member of their own team
-        $user->teams()->attach($team, ['role' => 'owner']);
+            // Create personal team for the user
+            $team = Team::create([
+                'user_id' => $user->id,
+                'name' => $user->name . "'s Team",
+                'personal_team' => true,
+            ]);
 
-        // Create a customer in Stripe without subscription for free users
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
-        $stripeCustomer = \Stripe\Customer::create([
-            'email' => $user->email,
-            // Optionally add metadata or other fields
-        ]);
+            // Assign the team to the user
+            $user->ownedTeams()->save($team);
 
-        // Save the Stripe customer ID to the user model
-        $user->stripe_id = $stripeCustomer->id;
-        $user->save();
+            // Set the current team ID for the user
+            $user->current_team_id = $team->id;
+            $user->save();
 
-        // Commit the transaction if everything is successful
-        DB::commit();
+            // Optionally, make the user a member of their own team
+            $user->teams()->attach($team, ['role' => 'owner']);
 
-        // Fire registered event and log the user in
-        event(new Registered($user));
-        Auth::login($user);
+            // Wrap Stripe-related code in a separate try-catch block
+            try {
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));  // Use config instead of env
+                $stripeCustomer = \Stripe\Customer::create([
+                    'email' => $user->email,
+                ]);
+                $user->stripe_id = $stripeCustomer->id;
+                $user->save();
+            } catch (\Stripe\Exception\ApiErrorException $e) {
+                \Log::error('Stripe error for user ' . $user->email . ': ' . $e->getMessage());
+                throw new \Exception('There was an issue setting up your payment details.');
+            }
 
-        return redirect(RouteServiceProvider::HOME);
+            DB::commit();
 
-    } catch (Exception $e) {
-        // Rollback the transaction if something goes wrong
-        DB::rollBack();
+            // Fire registered event and log the user in
+            event(new Registered($user));
+            Auth::login($user);
 
-        // Log the error message for debugging
-        \Log::error('Registration failed: ' . $e->getMessage());
+            return redirect(RouteServiceProvider::HOME);
 
-        return redirect()->back()->withErrors('Registration failed. Please try again.');
+        } catch (Exception $e) {
+            // Rollback the transaction if something goes wrong
+            DB::rollBack();
+
+            // Log the error message for debugging
+            \Log::error('Registration failed: ' . $e->getMessage());
+
+            return redirect()->back()->withErrors('Registration failed. Please try again.');
+        }
     }
-}
 }

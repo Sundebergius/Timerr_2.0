@@ -224,7 +224,7 @@ class ProfileController extends Controller
     public function redirectToBillingPortal(Request $request)
     {
         // Initialize Stripe with your secret key
-        $stripe = new \Stripe\StripeClient(env('STRIPE_SECRET'));
+        $stripe = new \Stripe\StripeClient(config('services.stripe.secret'));
 
         // Get the current authenticated user
         $user = $request->user();

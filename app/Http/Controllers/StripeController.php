@@ -26,7 +26,7 @@ class StripeController extends Controller
         $user = Auth::user();
 
         // Set the Stripe secret key
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
 
         // Use PlanService to get the Freelancer plan price ID
         $freelancerPriceId = $this->planService->getPriceId('freelancer');
@@ -53,7 +53,7 @@ class StripeController extends Controller
     public function processPayment(Request $request)
     {
         $user = Auth::user();
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
 
         try {
             $paymentIntentId = $request->input('payment_intent');
@@ -163,7 +163,7 @@ class StripeController extends Controller
         try {
             if ($user && isset($session->subscription)) {
                 // Set up Stripe client
-                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
                 $stripeSubscription = \Stripe\Subscription::retrieve($session->subscription);
     
                 // Only proceed if the subscription is active
@@ -240,7 +240,7 @@ class StripeController extends Controller
         $user = $request->user();
 
         // Create a Stripe Checkout Session for the Freelancer plan
-        \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
         
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],

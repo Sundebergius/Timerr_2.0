@@ -73,7 +73,7 @@ class GoogleController extends Controller
                 Log::info('Personal team created for new user', ['team_id' => $team->id]);
 
                 // **Create a Stripe customer without subscription**
-                \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
                 $stripeCustomer = \Stripe\Customer::create([
                     'email' => $user->email,
                     // Optionally add metadata or other fields
