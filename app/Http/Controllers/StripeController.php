@@ -221,10 +221,17 @@ class StripeController extends Controller
                     $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
                     \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
 
-                    // Store the trial end locally in the user's subscription
+                    // Store the trial end locally in the user's subscription, ensure 'type' is provided
                     $user->subscriptions()->updateOrCreate(
                         ['stripe_id' => $stripeSubscription->id],
-                        ['trial_ends_at' => $trialEnd]  // Save the trial end in local subscription
+                        [
+                            'type' => 'default', // Add type field here to avoid the SQL error
+                            'trial_ends_at' => $trialEnd,  // Save the trial end in local subscription
+                            'stripe_status' => $stripeSubscription->status,
+                            'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                            'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                            'updated_at' => now(),
+                        ]
                     );
                 }
 
