@@ -247,6 +247,18 @@ class StripeController extends Controller
                         }
                     }
                 }
+
+                // **Retrieve payment method details and update the user with pm_type and pm_last_four**
+                if ($stripeSubscription->default_payment_method) {
+                    $paymentMethod = \Stripe\PaymentMethod::retrieve($stripeSubscription->default_payment_method);
+                    if ($paymentMethod && $paymentMethod->card) {
+                        $user->update([
+                            'pm_type' => $paymentMethod->card->brand,   // e.g., 'visa', 'mastercard'
+                            'pm_last_four' => $paymentMethod->card->last4,  // Last four digits of the card
+                        ]);
+                        \Log::info("Payment method details updated for user: {$user->id}");
+                    }
+                }
     
                 // Ensure 'type' is always set to 'default' for active subscriptions
                 $type = 'default';
