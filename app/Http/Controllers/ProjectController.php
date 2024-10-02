@@ -145,16 +145,21 @@ class ProjectController extends Controller
         // Fetch tasks related to the project
         $tasks = $project->tasks;
 
-        // Separate different task types (project-based, hourly, etc.)
+        // Separate different task types
         $projectTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProject');
         $hourlyTasks = $tasks->where('taskable_type', 'App\\Models\\TaskHourly');
-        // You can add more task types (distance, products, etc.) here if needed
+        $distanceTasks = $tasks->where('taskable_type', 'App\\Models\\TaskDistance');
+        $productTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProduct');
+        $otherTasks = $tasks->where('taskable_type', 'App\\Models\\TaskOther');
+
+        // Load related products for product-based tasks
+        $productTasks->load('taskProduct.product');
 
         // Pass tasks to the selection view
-        return view('reports.select_tasks', compact('project', 'projectTasks', 'hourlyTasks'));
+        return view('reports.select_tasks', compact('project', 'projectTasks', 'hourlyTasks', 'distanceTasks', 'productTasks', 'otherTasks'));
     }
 
-    public function generateReport(Project $project)
+    public function generateReport(Project $project, Request $request)
     {
         if ($project->status != 'completed') {
             abort(404); // Or redirect to a different page with an error message
@@ -167,37 +172,55 @@ class ProjectController extends Controller
         $tasks = $project->tasks()->whereIn('id', $selectedTasks)->get();
 
         // Separate different task types (project-based, hourly, etc.)
-        $projectTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProject');
-        $hourlyTasks = $tasks->where('taskable_type', 'App\\Models\\TaskHourly');
-        $distanceTasks = $tasks->where('taskable_type', 'App\\Models\\TaskDistance');
-        $productTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProduct');
-        $otherTasks = $tasks->where('taskable_type', 'App\\Models\\TaskOther');
+        $projectTasks = $tasks->filter(function ($task) {
+            return $task->taskable_type === 'App\\Models\\TaskProject';
+        });
+
+        $hourlyTasks = $tasks->filter(function ($task) {
+            return $task->taskable_type === 'App\\Models\\TaskHourly';
+        });
+
+        $distanceTasks = $tasks->filter(function ($task) {
+            return $task->taskable_type === 'App\\Models\\TaskDistance';
+        });
+
+        $productTasks = $tasks->filter(function ($task) {
+            return $task->taskable_type === 'App\\Models\\TaskProduct';
+        });
 
         // Load related taskable entities
         $productTasks->load('taskProduct.product');
         $projectTasks->load('taskable');
         $hourlyTasks->load('taskable.registrationHourly');
         $distanceTasks->load('taskable.registrationDistances');
-        $productTasks->load('taskable');
-        $otherTasks->load('taskable');
+
+        // Extract products from product tasks for easier processing in the report
+        $products = collect();
+        foreach ($productTasks as $task) {
+            foreach ($task->taskProduct as $taskProduct) {
+                $products->push([
+                    'product' => $taskProduct->product,
+                    'total_sold' => $taskProduct->total_sold,
+                    'total_price' => $taskProduct->product->price * $taskProduct->total_sold,
+                ]);
+            }
+        }
 
         // Calculate totals for the report
         $total = 0;
         foreach ($projectTasks as $task) {
-            $total += $task->taskable->price;
+            $total += $task->taskable->price ?? 0;
         }
         foreach ($hourlyTasks as $task) {
             $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
-            $total += $hours * $task->taskable->rate_per_hour;
+            $total += $hours * $task->taskable->rate_per_hour ?? 0;
         }
-        foreach ($productTasks as $task) {
-            foreach ($task->taskProduct as $taskProduct) {
-                $total += $taskProduct->product->price * $taskProduct->total_sold;
-            }
+        foreach ($products as $product) {
+            $total += $product['total_price'];
         }
         foreach ($distanceTasks as $task) {
             $distance = $task->taskable->registrationDistances->sum('distance');
-            $total += $distance * $task->taskable->price_per_km;
+            $total += $distance * $task->taskable->price_per_km ?? 0;
         }
 
         // Optionally include VAT or any other totals as needed
@@ -207,7 +230,10 @@ class ProjectController extends Controller
         // Prepare the data for the PDF report
         $data = [
             'project' => $project,
-            'tasks' => $tasks,
+            'projectTasks' => $projectTasks,
+            'hourlyTasks' => $hourlyTasks,
+            'distanceTasks' => $distanceTasks,
+            'products' => $products,
             'total' => $total,
             'vat' => $vat,
             'totalWithVat' => $totalWithVat,
@@ -219,7 +245,6 @@ class ProjectController extends Controller
         // Return the generated PDF for download
         return $pdf->download('project_report_' . $project->id . '.pdf');
     }
-
 
     public function invoice(Project $project)
     {
@@ -418,7 +443,6 @@ class ProjectController extends Controller
         return view('projects.index', compact('projects', 'clients', 'projectCount', 'projectLimit'));
     }
 
-
     public function show(Project $project)
     {
         $this->authorize('view', $project);
@@ -490,6 +514,19 @@ class ProjectController extends Controller
         $project->delete();
 
         return redirect()->route('projects.index');
+    }
+
+    public function getProjects(Request $request)
+    {
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Fetch projects for the authenticated user
+        $projects = Project::where('user_id', auth()->id())->get();
+
+        // Return the data in JSON format
+        return response()->json($projects);
     }
 
     public function fetchProjects()

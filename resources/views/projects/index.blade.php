@@ -432,7 +432,7 @@
                                     <!-- Check if the project is completed -->
                                     @if($project->status == 'completed')
                                         <!-- Show the Select Tasks for Report Button -->
-                                        <a href="{{ route('projects.selectTasks', $project->id) }}" class="btn btn-primary">
+                                        <a href="{{ route('projects.selectTasks', $project->id) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 ease-in-out w-full text-left">
                                             Select Tasks for Report
                                         </a>
                                     @endif

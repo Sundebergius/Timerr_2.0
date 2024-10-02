@@ -189,7 +189,7 @@
         <div class="report-total">
             <p><strong>Total for all sections:</strong></p>
             <p class="text-xl font-bold">
-                {{ number_format($projectTotal + $hourlyTotal + $productsTotal + $distanceTotal, 2) }} DKK
+                {{ number_format(($projectTotal ?? 0) + ($hourlyTotal ?? 0) + ($productsTotal ?? 0) + ($distanceTotal ?? 0), 2) }} DKK
             </p>
         </div>
     </div>
