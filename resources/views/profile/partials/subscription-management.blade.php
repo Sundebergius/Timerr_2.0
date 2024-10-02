@@ -41,20 +41,10 @@
                 
                 <!-- Custom check for subscription status -->
                 @php
-                    // Check if the user has a subscription
+                    // Fetch subscriptions where type is 'default' or 'canceled'
                     $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
+                    \Log::info('User subscription:', [$subscription]);
                     
-                    if (!$subscription) {
-                        // Treat user as "free" if no subscription exists
-                        $subscription = (object) [
-                            'type' => 'free',
-                            'limits' => $this->planService->getPlanLimits('free'),  // Define the free plan limits in PlanService
-                        ];
-                        \Log::info('User is on the free plan.');
-                    } else {
-                        \Log::info('User subscription:', [$subscription]);
-                    }
-
                     // Check if the subscription has ended based on the current date and the ends_at field
                     $subscriptionExpired = $subscription && $subscription->ends_at && $subscription->ends_at->isPast();
                 @endphp
