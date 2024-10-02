@@ -16,20 +16,39 @@
                 {{ __('You can connect your Google account to sync your calendar and enjoy automatic updates with other services.') }}
             </p>
             <div class="space-y-4">
-                @if (auth()->user()->google_id)
-                    <p class="text-sm text-gray-600">{{ __('Your Google account is connected.') }}</p>
-                    <form method="POST" action="{{ route('google.disconnect') }}">
-                        @csrf
-                        <div class="flex items-center mt-5">
-                            <x-primary-button>{{ __('Disconnect Google Account') }}</x-primary-button>
-                        </div>
-                    </form>
+
+                @if (session('link_google_prompt'))
+                    <!-- Prompt the user to link Google account -->
+                    <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+                        <strong class="font-bold">{{ __('Google Account Detected!') }}</strong>
+                        <span class="block sm:inline">{{ __('This Google account is already associated with another account. Would you like to log into that account instead or link this account to your existing account?') }}</span>
+                        <form method="POST" action="{{ route('link-google') }}">
+                            @csrf
+                            <input type="hidden" name="google_user_id" value="{{ session('google_user_id') }}">
+                            <input type="hidden" name="google_user_token" value="{{ session('google_user_token') }}">
+                            <div class="mt-4">
+                                <x-primary-button>{{ __('Link Google Account') }}</x-primary-button>
+                                <a href="{{ route('login') }}" class="underline text-sm text-gray-600 hover:text-gray-900">{{ __('Log into the Google Account') }}</a>
+                            </div>
+                        </form>
+                    </div>
                 @else
-                    <form method="GET" action="{{ route('google.redirect') }}">
-                        <div class="flex items-center mt-5">
-                            <x-primary-button>{{ __('Connect Google Account') }}</x-primary-button>
-                        </div>
-                    </form>
+                    <!-- Normal Google account connection flow -->
+                    @if (auth()->user()->google_id)
+                        <p class="text-sm text-gray-600">{{ __('Your Google account is connected.') }}</p>
+                        <form method="POST" action="{{ route('google.disconnect') }}">
+                            @csrf
+                            <div class="flex items-center mt-5">
+                                <x-primary-button>{{ __('Disconnect Google Account') }}</x-primary-button>
+                            </div>
+                        </form>
+                    @else
+                        <form method="GET" action="{{ route('google.redirect') }}">
+                            <div class="flex items-center mt-5">
+                                <x-primary-button>{{ __('Connect Google Account') }}</x-primary-button>
+                            </div>
+                        </form>
+                    @endif
                 @endif
             </div>
 
@@ -38,8 +57,6 @@
                     {{ __('Connected.') }}
                 </div>
             @endif
-
-            
         </div>
     </div>
 </section>

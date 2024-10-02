@@ -31,7 +31,6 @@ Route::get('/', function () {
 
 // Google Auth Routes
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
-Route::post('auth/google/disconnect', [GoogleController::class, 'disconnect'])->name('google.disconnect');
 Route::get('auth/google/redirect', [GoogleController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
 
@@ -49,6 +48,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->middleware(['verified'])
         ->name('dashboard');
+
+    // Google Account Management
+    Route::post('auth/google/disconnect', [GoogleController::class, 'disconnect'])->name('google.disconnect');
+    
+    // Route for linking Google account to an existing user
+    Route::post('auth/google/link', [GoogleController::class, 'linkGoogle'])->name('link-google');
 
     // Billing and Subscription Routes
     Route::get('/billing-portal', [ProfileController::class, 'redirectToBillingPortal'])->name('billing.portal');
