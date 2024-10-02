@@ -19,12 +19,12 @@
                 <x-section-border />
             @endif
 
-            @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
+            {{-- @if (Laravel\Fortify\Features::canManageTwoFactorAuthentication())
                 <div class="mt-10 sm:mt-0">
                     @livewire('profile.two-factor-authentication-form')
                 </div>
                 <x-section-border />
-            @endif
+            @endif --}}
 
             <div class="mt-10 sm:mt-0">
                 @include('profile.partials.connect-google-account')
@@ -36,11 +36,11 @@
                 @include('profile.partials.subscription-management')
             </div>
 
-            <x-section-border />
+            {{-- <x-section-border /> --}}
 
-            <div class="mt-10 sm:mt-0">
+            {{-- <div class="mt-10 sm:mt-0">
                 @livewire('profile.logout-other-browser-sessions-form')
-            </div>
+            </div> --}}
 
             <!-- Start Delete Account Section -->
             @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())

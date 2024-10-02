@@ -5,36 +5,48 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <!-- Meta Tags for SEO -->
+        <meta name="description" content="Timerr - The ultimate project management tool for freelancers and small businesses.">
+        <meta name="keywords" content="project management, freelancers, small businesses, tasks, clients, calendar">
+        <meta name="author" content="MatSoft">
 
-        <!-- Set favicon -->
+        <!-- Open Graph for Social Sharing -->
+        <meta property="og:title" content="Timerr - The Project Management Tool for Freelancers">
+        <meta property="og:description" content="Manage projects, tasks, clients, and your business with ease.">
+        <meta property="og:image" content="{{ asset('Timerr_icon.svg') }}">
+        <meta property="og:url" content="{{ url()->current() }}">
+        <meta name="twitter:card" content="summary_large_image">
+
+        <!-- Title and Favicon -->
+        <title>{{ config('app.name', 'Laravel') }}</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('Timerr_icon.svg') }}">
 
-
-        <!-- FullCalendar CSS -->
-        {{-- <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/core/main.min.css' rel='stylesheet' />
-        <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/daygrid/main.min.css' rel='stylesheet' />
-        <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/timegrid/main.min.css' rel='stylesheet' /> --}}
-
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
+        <!-- Font -->
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <style>
+            body {
+                font-family: 'Figtree', sans-serif, system-ui;
+            }
+        </style>
 
-        <!-- Include Heroicons -->
-        {{-- <script src="https://unpkg.com/heroicons@1.0.6/dist/outline.min.js"></script> --}}
+        <!-- Livewire Global Error Handling -->
+        <script>
+            document.addEventListener('livewire:load', function () {
+                window.livewire.on('error', (message) => {
+                    alert(message); // Display alert or use a better UI element
+                });
+            });
+        </script>
 
-        <!-- Include Font Awesome -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <!-- CookieBot Script -->
+        <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="a702dbe6-6020-43c6-ab79-b0aa42911391" data-blockingmode="auto" type="text/javascript" defer></script>
 
+        <!-- Font Awesome Icons -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" defer></script>
 
-        <!-- Scripts -->
+        <!-- Scripts and Styles -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-        <!-- Styles -->
         @livewireStyles
-
-        <!-- Include Blade UI Kit for Heroicons -->
-        {{-- @bladeUiIcons --}}
     </head>
     <body class="font-sans antialiased">
         <x-banner />

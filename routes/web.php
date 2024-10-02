@@ -24,6 +24,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+Route::get('/refund-policy', function () {
+    return view('refundPolicy');
+})->name('refundPolicy.show');
+
 // Home route
 Route::get('/', function () {
     return view('welcome');
