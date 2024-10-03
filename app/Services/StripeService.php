@@ -56,6 +56,8 @@ class StripeService
                     'quantity' => $stripeSubscription->items->data[0]->quantity,
                     'trial_ends_at' => $trialEnd,
                     'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                    'created_at' => now(),  // Add this
+                    'updated_at' => now()    // Add this
                 ]
             );
 
@@ -70,6 +72,8 @@ class StripeService
                         'stripe_product' => $item->price->product,
                         'stripe_price' => $item->price->id,
                         'quantity' => $item->quantity,
+                        'created_at' => now(),  // Add this
+                        'updated_at' => now()    // Add this
                     ]
                 );
             }
@@ -128,6 +132,21 @@ class StripeService
                 // Flash success message
                 $user->notify(new SubscriptionUpdated('Your subscription has been updated.'));
             }
+
+            // Now update or insert subscription items
+            foreach ($subscriptionObject->items->data as $item) {
+                \DB::table('subscription_items')->updateOrInsert(
+                    ['subscription_id' => $subscription->id, 'stripe_id' => $item->id],
+                    [
+                        'stripe_product' => $item->price->product,
+                        'stripe_price' => $item->price->id,
+                        'quantity' => $item->quantity,
+                        'updated_at' => now(), // Always update 'updated_at' when modifying
+                        // Only set 'created_at' when inserting new rows
+                        'created_at' => \DB::raw('IFNULL(created_at, NOW())'), // Preserve 'created_at' for existing rows
+                    ]
+                );
+            }
         } else {
             Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
 
@@ -147,26 +166,39 @@ class StripeService
                 $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
                 if ($subscription && !$subscription->ended()) {
-                    // Update the subscription to mark it as canceled
-                    $subscription->update([
-                        'stripe_status' => 'canceled',
-                        'ends_at' => \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end),
-                        'updated_at' => now(),
-                    ]);
+                    // Check if the subscription is set to cancel at period end
+                    $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
 
-                    Log::info("Canceled subscription for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
+                    // Update the subscription status in your database
+                    if ($isCancelAtPeriodEnd) {
+                        // Cancel at the end of the period
+                        $subscription->update([
+                            'stripe_status' => 'canceled',
+                            'ends_at' => \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end), // End at the current period end
+                            'updated_at' => now(),
+                        ]);
 
-                    // Flash success message
-                    $user->notify(new SubscriptionUpdated('Your subscription has been successfully canceled.'));
-    
+                        Log::info("Subscription for user {$user->id} will cancel at the end of the billing period (Period-End Cancellation).");
+                        $user->notify(new SubscriptionUpdated('Your subscription has been canceled and will end on ' . $subscription->ends_at->format('F j, Y') . '.'));
+
+                    } else {
+                        // Immediate cancellation
+                        $subscription->update([
+                            'stripe_status' => 'canceled',
+                            'ends_at' => now(), // Immediate cancellation
+                            'updated_at' => now(),
+                        ]);
+
+                        Log::info("Subscription for user {$user->id} has been immediately canceled.");
+                        $user->notify(new SubscriptionUpdated('Your subscription has been immediately canceled.'));
+                    }
+
                 } else {
                     Log::info("No active subscription found for user {$user->id}");
                     $user->notify(new SubscriptionUpdated('No active subscription found to cancel.'));
                 }
             } catch (\Exception $e) {
                 Log::error("Error canceling subscription for user {$user->id}: " . $e->getMessage());
-    
-                // Flash error message
                 $user->notify(new SubscriptionUpdated('There was an issue canceling your subscription. Please try again.'));
             }
         } else {
