@@ -18,6 +18,8 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create', Event::class);
+
         \Log::info('Store method called'); // Log when store method is called
         \Log::info('Request data:', $request->all()); // Log the request data
 
@@ -75,6 +77,8 @@ class EventController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorize('update', Event::find($id));
+
         Log::info('Update method called', ['id' => $id]); // Log method call and ID
 
         try {

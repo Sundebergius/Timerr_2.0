@@ -375,18 +375,22 @@ class ClientController extends Controller
 
     public function destroy(Client $client)
     {
+        $this->authorize('delete', $client);
+
         $client->delete();
         return redirect()->route('clients.index');
     }
 
     public function create()
     {
+        $this->authorize('view', $client);
+
         return view('clients.create');
     }
 
     public function edit(Client $client)
     {
-        $this->authorize('view', $client);
+        $this->authorize('update', $client);
 
         $statuses = [
             'lead' => Client::STATUS_LEAD,
