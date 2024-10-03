@@ -53,7 +53,7 @@
                                 </button>
                             </x-slot>
 
-                            {{-- <x-slot name="content">
+                            <x-slot name="content">
                                 <div class="w-60">
                                     <!-- Team Management -->
                                     <div class="block px-4 py-2 text-xs text-gray-400">
@@ -89,7 +89,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                            </x-slot> --}}
+                            </x-slot>
                         </x-dropdown>
                     </div>
                 @endif
@@ -220,7 +220,7 @@
                     </x-responsive-nav-link>
                 </form>
 
-                {{-- <!-- Team Management -->
+                <!-- Team Management -->
                 @if (Laravel\Jetstream\Jetstream::hasTeamFeatures())
                     <div class="border-t border-gray-200"></div>
 
@@ -253,7 +253,7 @@
                             <x-switchable-team :team="$team" component="responsive-nav-link" />
                         @endforeach
                     @endif
-                @endif --}}
+                @endif
             </div>
         </div>
     </div>
