@@ -233,7 +233,7 @@ class ClientController extends Controller
     public function show(Client $client)
     {
         $this->authorize('view', $client);
-        
+
         return view('clients.show', compact('client'));
     }
 
@@ -385,6 +385,8 @@ class ClientController extends Controller
 
     public function edit(Client $client)
     {
+        $this->authorize('view', $client);
+
         $statuses = [
             'lead' => Client::STATUS_LEAD,
             'contacted' => Client::STATUS_CONTACTED,
