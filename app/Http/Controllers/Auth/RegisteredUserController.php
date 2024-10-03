@@ -20,7 +20,7 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         // Pass the selected plan to the registration view, if any
         $plan = $request->query('plan', 'free'); // Default to 'free' if no plan is selected
