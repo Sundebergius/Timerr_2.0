@@ -59,6 +59,18 @@ class StripeService
                 ]
             );
 
+            // Update subscription items
+            foreach ($stripeSubscription->items->data as $item) {
+                \DB::table('subscription_items')->updateOrInsert(
+                    ['subscription_id' => $subscription->id, 'stripe_id' => $item->id],
+                    [
+                        'stripe_product' => $item->price->product,
+                        'stripe_price' => $item->price->id,
+                        'quantity' => $item->quantity,
+                    ]
+                );
+            }
+
             Log::info("Successfully updated subscription items for user: " . $user->id);
             
            // Send notification after successful subscription creation
