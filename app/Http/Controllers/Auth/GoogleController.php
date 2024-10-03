@@ -10,6 +10,8 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
+use Google_Client;
+use Google_Service_Calendar;
 
 class GoogleController extends Controller
 {
@@ -128,6 +130,46 @@ class GoogleController extends Controller
         Log::info('User linked Google account.', ['user_id' => $user->id]);
 
         return redirect()->route('profile.show')->with('status', 'Your Google account has been successfully linked.');
+    }
+
+    /**
+     * Fetch the list of Google Calendars for the authenticated user.
+     */
+    public function listGoogleCalendars()
+    {
+        $user = auth()->user();
+        $googleToken = decrypt($user->google_token);
+
+        $client = new Google_Client();
+        $client->setAccessToken($googleToken);
+
+        $service = new Google_Service_Calendar($client);
+
+        // Fetch the list of available calendars
+        $calendarList = $service->calendarList->listCalendarList();
+
+        $calendars = [];
+        foreach ($calendarList->getItems() as $calendar) {
+            $calendars[] = [
+                'id' => $calendar->getId(),
+                'summary' => $calendar->getSummary(),
+            ];
+        }
+
+        // Send the calendar list to the view so the user can select one
+        return view('google.select-calendar', ['calendars' => $calendars]);
+    }
+
+    /**
+     * Save the selected Google Calendar for the user.
+     */
+    public function saveSelectedCalendar(Request $request)
+    {
+        $user = auth()->user();
+        $user->google_calendar_id = $request->input('google_calendar_id');
+        $user->save();
+
+        return redirect()->route('dashboard')->with('status', 'Google Calendar selected successfully!');
     }
 
     /**

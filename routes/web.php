@@ -43,6 +43,9 @@ Route::get('/', function () {
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google/redirect', [GoogleController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+Route::get('/connect-google-calendar', [GoogleController::class, 'handleGoogleCallback'])->name('google.connect');
+Route::get('/google/calendars', [GoogleController::class, 'listGoogleCalendars'])->name('google.list-calendars');
+Route::post('/google/calendars/save', [GoogleController::class, 'saveSelectedCalendar'])->name('google.save-selected-calendar');
 
 // Stripe Webhook Route (public, no auth required)
 // Route::post('/stripe/webhook', [StripeController::class, 'handleWebhook']);

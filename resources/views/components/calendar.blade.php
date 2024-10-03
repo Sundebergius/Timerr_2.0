@@ -137,8 +137,8 @@
 
 <body>
     <div class="container mt-5">
-        <div class="row mb-3 align-items-center"> 
-            <!-- Search Input Area -->
+        <!-- Google Calendar Button Section -->
+        <div class="row mb-3 align-items-center">
             <div class="col-md-8 mb-3 mb-md-0">
                 <div class="input-group w-full">
                     <div class="relative w-full">
@@ -153,12 +153,23 @@
                 </div>
             </div>
 
-            <!-- Calendar Actions Area -->
             <div class="col-md-4 d-flex justify-content-md-end justify-content-center">
                 <div class="btn-group" role="group" aria-label="Calendar Actions">
                     <button id="exportButton" class="btn btn-primary mx-2 px-4" onclick="exportCalendar()">{{ __('Export Calendar') }}</button>
                     <button id="importButton" class="btn btn-primary mx-2 px-4" data-toggle="modal" data-target="#importModal">{{ __('Import Calendar') }}</button>
                     <button id="addEventButton" class="btn btn-primary mx-2 px-4" data-toggle="modal" data-target="#eventModal">{{ __('Add') }}</button>
+                    
+                    <!-- Add the Google Calendar Connect Button -->
+                    @if (is_null(auth()->user()->google_id))  
+                        <button id="googleConnectButton" class="btn btn-outline-primary mx-2 px-4" onclick="window.location.href='{{ route('google.connect') }}'">Connect Google Calendar</button>
+                    @else  
+                        <button id="googleSyncButton" class="btn btn-outline-success mx-2 px-4" onclick="syncGoogleCalendar()">Sync Google Calendar</button>
+
+                        <!-- Button to select a Google Calendar -->
+                        <button id="selectCalendarButton" class="btn btn-outline-primary mx-2 px-4" onclick="window.location.href='{{ route('google.list-calendars') }}'">
+                            Select Google Calendar
+                        </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -433,6 +444,26 @@
                 } else {
                     selectElement.innerHTML = `<option>Loading ${elementId}...</option>`; // Show loading if data is not cached
                 }
+            }
+
+            function syncGoogleCalendar() {
+                // Fetch Google Calendar events and integrate them into FullCalendar
+                var calendarEl = document.getElementById('calendar');
+
+                var calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    googleCalendarApiKey: '{{ config('services.google.google_api_key') }}', // Retrieve from config
+                    events: {
+                        googleCalendarId: '{{ auth()->user()->google_calendar_id }}', // Use the selected Google Calendar ID
+                    },
+                    headerToolbar: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                    }
+                });
+
+                calendar.render();
             }
     
             // Fetch data function
