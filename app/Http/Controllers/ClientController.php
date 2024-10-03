@@ -232,6 +232,8 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
+        $this->authorize('view', $client);
+        
         return view('clients.show', compact('client'));
     }
 
