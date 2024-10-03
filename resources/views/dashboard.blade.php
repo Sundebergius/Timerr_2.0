@@ -6,7 +6,7 @@
     </x-slot>
 
     <!-- Banner for notifications -->
-    <x-banner />
+    {{-- <x-banner /> --}}
 
     <!-- Flash messages -->
     {{-- @if (session('message'))

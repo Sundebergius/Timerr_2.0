@@ -46,8 +46,8 @@ class StripeService
                 }
             }
 
-            // Update the local subscription data
-            $subscription = $user->subscriptions()->updateOrCreate(
+            // Use Cashier's subscription method to update local subscription
+            $user->subscriptions()->updateOrCreate(
                 ['stripe_id' => $stripeSubscription->id],
                 [
                     'type' => 'default',
@@ -58,18 +58,6 @@ class StripeService
                     'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
                 ]
             );
-
-            // Update subscription items
-            foreach ($stripeSubscription->items->data as $item) {
-                \DB::table('subscription_items')->updateOrInsert(
-                    ['subscription_id' => $subscription->id, 'stripe_id' => $item->id],
-                    [
-                        'stripe_product' => $item->price->product,
-                        'stripe_price' => $item->price->id,
-                        'quantity' => $item->quantity,
-                    ]
-                );
-            }
 
             Log::info("Successfully updated subscription items for user: " . $user->id);
             
@@ -111,7 +99,7 @@ class StripeService
                 Log::info("Subscription for user {$user->id} has been immediately canceled.");
 
                 // Flash success message
-                session()->flash('message', 'Your subscription has been canceled.');
+                $user->notify(new SubscriptionUpdated('Your subscription has been canceled.'));
             } else {
                 $subscription->update([
                     'stripe_status' => $subscriptionObject->status,
@@ -123,13 +111,13 @@ class StripeService
                 Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}.");
 
                 // Flash success message
-                session()->flash('message', 'Your subscription has been updated.');
+                $user->notify(new SubscriptionUpdated('Your subscription has been updated.'));
             }
         } else {
             Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
 
             // Flash error message
-            session()->flash('error', 'There was an issue updating your subscription. Please try again.');
+            $user->notify(new SubscriptionUpdated('There was an issue updating your subscription. Please try again.'));
         }
     }
 
@@ -154,21 +142,21 @@ class StripeService
                     Log::info("Canceled subscription for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
 
                     // Flash success message
-                    session()->flash('message', 'Your subscription has been successfully canceled.');
+                    $user->notify(new SubscriptionUpdated('Your subscription has been successfully canceled.'));
     
                 } else {
                     Log::info("No active subscription found for user {$user->id}");
-                    session()->flash('error', 'No active subscription found to cancel.');
+                    $user->notify(new SubscriptionUpdated('No active subscription found to cancel.'));
                 }
             } catch (\Exception $e) {
                 Log::error("Error canceling subscription for user {$user->id}: " . $e->getMessage());
     
                 // Flash error message
-                session()->flash('error', 'There was an issue canceling your subscription. Please try again.');
+                $user->notify(new SubscriptionUpdated('There was an issue canceling your subscription. Please try again.'));
             }
         } else {
             Log::info("No Stripe customer ID found for user {$user->id}");
-            session()->flash('error', 'No Stripe customer ID found.');
+            $user->notify(new SubscriptionUpdated('No Stripe customer ID found.'));
         }
     }
 

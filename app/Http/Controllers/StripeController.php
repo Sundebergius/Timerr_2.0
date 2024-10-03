@@ -93,215 +93,215 @@ class StripeController extends Controller
         }
     }
 
-    public function handleWebhook(Request $request)
-    {
-        \Log::info('Webhook hit, starting process.');
-
-        $endpoint_secret = config('services.stripe.webhook_secret');
-        $payload = @file_get_contents('php://input');
-        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
-
-        try {
-            $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-            \Log::info('Webhook successfully verified. Event Type: ' . $event->type);
-        } catch (\UnexpectedValueException $e) {
-            \Log::error('Invalid payload: ' . $e->getMessage());
-            return response()->json(['error' => 'Invalid payload'], 400);
-        } catch (\Stripe\Exception\SignatureVerificationException $e) {
-            \Log::error('Invalid signature: ' . $e->getMessage());
-            return response()->json(['error' => 'Invalid signature'], 400);
-        }
-    
-        // Dispatch the event processing to a queue
-        ProcessStripeWebhook::dispatch($event);
-    
-        return response('Webhook handled', 200);
-    }
-
-    private function processEvent($event)
-    {
-        \Log::info("Stripe Webhook Event Received: " . $event->type);
-
-        // Identify the type of object based on the event type
-        $object = $event->data->object;
-
-        // Fetch the customer associated with the event
-        $customer_id = isset($object->customer) ? $object->customer : null;
-        if (!$customer_id) {
-            \Log::error("No customer ID found in event: " . $event->id);
-            return;
-        }
-
-        $user = User::where('stripe_id', $customer_id)->first();
-        if (!$user) {
-            \Log::error("No user found with Stripe customer ID: " . $customer_id);
-            return;
-        }
-
-        // Wrap event processing in a transaction
-        DB::beginTransaction();
-        try {
-            switch ($event->type) {
-                case 'checkout.session.completed':
-                    \Log::info("Processing checkout.session.completed for user: " . $user->id);
-    
-                    // Retrieve the subscription ID from the session object
-                    if (isset($object->subscription)) {
-                        $subscriptionId = $object->subscription; // Session contains a subscription ID
-                        $this->createSubscriptionForUser($user, $subscriptionId);  // Pass subscription ID directly
-                    } else {
-                        \Log::error("No subscription ID found in checkout session for user: " . $user->id);
-                    }
-                    break;
-
-                case 'customer.subscription.created':
-                    \Log::info("Processing customer.subscription.created for user: " . $user->id);
-                    $this->createSubscriptionForUser($user, $object->id);  // Pass subscription ID directly
-                    break;
-
-                case 'customer.subscription.updated':
-                    $subscription = $user->subscriptions()->where('stripe_id', $object->id)->first();
-                    if (!$subscription) {
-                        \Log::error("Subscription not found for user {$user->id} during update. Delaying handling.");
-                        // You can decide to retry this webhook later, or log the issue and investigate.
-                        return;
-                    }
-                    $this->stripeService->updateSubscription($user, $object);
-                    break;
-
-                case 'customer.subscription.deleted':
-                    \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
-                    $this->stripeService->cancelSubscription($user, $object);  // Use subscription object, but don't archive the user
-                    break;
-
-                case 'invoice.payment_succeeded':
-                    \Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
-                    \Log::info("Invoice status: " . $object->status);  // Log the payment status
-                    break;
-
-                case 'invoice.payment_failed':
-                    \Log::error("Processing invoice.payment_failed for user: " . $user->id);
-                    \Log::error("Failure reason: " . $object->last_payment_error->message);  // Log why the payment failed
-                    break;
-
-                default:
-                    \Log::warning("Unhandled event type: " . $event->type);
-                    break;
-            }
-            DB::commit();
-        } catch (\Exception $e) {
-            \Log::error('Error processing event: ' . $e->getMessage());
-            DB::rollBack();
-        }
-    }
-
     // Method to handle creating or updating a subscription in your local database after successful payment
-    private function createSubscriptionForUser($user, $subscriptionId)
-    {
-        try {
-            if ($user && $subscriptionId) {
-                // Set up Stripe client
-                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-                $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionId);
+    // private function createSubscriptionForUser($user, $subscriptionId)
+    // {
+    //     try {
+    //         if ($user && $subscriptionId) {
+    //             // Set up Stripe client
+    //             \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+    //             $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionId);
     
-                // Log detailed info about the subscription object
-                \Log::info("Stripe subscription retrieved: " . json_encode($stripeSubscription));
+    //             // Log detailed info about the subscription object
+    //             \Log::info("Stripe subscription retrieved: " . json_encode($stripeSubscription));
     
-                // Log trial period if applicable
-                $trialEnd = null;
-                if ($stripeSubscription->trial_end) {
-                    $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
-                    \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
+    //             // Log trial period if applicable
+    //             $trialEnd = null;
+    //             if ($stripeSubscription->trial_end) {
+    //                 $trialEnd = \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end);
+    //                 \Log::info("User {$user->id} has a trial until {$trialEnd->toDateTimeString()}");
                     
-                    // Update trial_used in the users table
-                    if ($user->trial_used == 0) { // Check if trial hasn't been used yet
-                        $user->update([
-                            'trial_used' => 1, // Mark trial as used
-                        ]);
-                        \Log::info("Trial marked as used for user: {$user->id}");
+    //                 // Update trial_used in the users table
+    //                 if ($user->trial_used == 0) { // Check if trial hasn't been used yet
+    //                     $user->update([
+    //                         'trial_used' => 1, // Mark trial as used
+    //                     ]);
+    //                     \Log::info("Trial marked as used for user: {$user->id}");
                         
-                        // Reload the user to ensure the change persists
-                        $user->refresh();
+    //                     // Reload the user to ensure the change persists
+    //                     $user->refresh();
 
-                        // Log confirmation that trial_used has been updated
-                        if ($user->trial_used == 1) {
-                            \Log::info("Trial marked as used for user: {$user->id}");
-                        } else {
-                            \Log::error("Failed to update trial_used for user: {$user->id}");
-                        }
-                    }
-                }
+    //                     // Log confirmation that trial_used has been updated
+    //                     if ($user->trial_used == 1) {
+    //                         \Log::info("Trial marked as used for user: {$user->id}");
+    //                     } else {
+    //                         \Log::error("Failed to update trial_used for user: {$user->id}");
+    //                     }
+    //                 }
+    //             }
 
-                // **Retrieve payment method details and update the user with pm_type and pm_last_four**
-                if ($stripeSubscription->default_payment_method) {
-                    $paymentMethod = \Stripe\PaymentMethod::retrieve($stripeSubscription->default_payment_method);
-                    if ($paymentMethod && $paymentMethod->card) {
-                        $user->update([
-                            'pm_type' => $paymentMethod->card->brand,   // e.g., 'visa', 'mastercard'
-                            'pm_last_four' => $paymentMethod->card->last4,  // Last four digits of the card
-                        ]);
-                        \Log::info("Payment method details updated for user: {$user->id}");
-                    }
-                }
+    //             // **Retrieve payment method details and update the user with pm_type and pm_last_four**
+    //             if ($stripeSubscription->default_payment_method) {
+    //                 $paymentMethod = \Stripe\PaymentMethod::retrieve($stripeSubscription->default_payment_method);
+    //                 if ($paymentMethod && $paymentMethod->card) {
+    //                     $user->update([
+    //                         'pm_type' => $paymentMethod->card->brand,   // e.g., 'visa', 'mastercard'
+    //                         'pm_last_four' => $paymentMethod->card->last4,  // Last four digits of the card
+    //                     ]);
+    //                     \Log::info("Payment method details updated for user: {$user->id}");
+    //                 }
+    //             }
     
-                // Ensure 'type' is always set to 'default' for active subscriptions
-                $type = 'default';
+    //             // Ensure 'type' is always set to 'default' for active subscriptions
+    //             $type = 'default';
     
-                // Create or update the subscription in the database
-                $localSubscription = $user->subscriptions()->updateOrCreate(
-                    ['stripe_id' => $stripeSubscription->id],
-                    [
-                        'type' => $type,
-                        'stripe_status' => $stripeSubscription->status,
-                        'stripe_price' => $stripeSubscription->items->data[0]->price->id,
-                        'quantity' => $stripeSubscription->items->data[0]->quantity,
-                        'trial_ends_at' => $trialEnd,
-                        'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
-                        'updated_at' => now(),
-                    ]
-                );
+    //             // Create or update the subscription in the database
+    //             $localSubscription = $user->subscriptions()->updateOrCreate(
+    //                 ['stripe_id' => $stripeSubscription->id],
+    //                 [
+    //                     'type' => $type,
+    //                     'stripe_status' => $stripeSubscription->status,
+    //                     'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+    //                     'quantity' => $stripeSubscription->items->data[0]->quantity,
+    //                     'trial_ends_at' => $trialEnd,
+    //                     'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+    //                     'updated_at' => now(),
+    //                 ]
+    //             );
     
-                \Log::info("Subscription for user {$user->id} created/updated in the database.");
+    //             \Log::info("Subscription for user {$user->id} created/updated in the database.");
     
-                // Ensure the subscription exists before updating subscription items
-                if ($localSubscription) {
-                    foreach ($stripeSubscription->items->data as $item) {
-                        \DB::table('subscription_items')->updateOrInsert(
-                            ['subscription_id' => $localSubscription->id, 'stripe_id' => $item->id],
-                            [
-                                'stripe_product' => $item->price->product,
-                                'stripe_price' => $item->price->id,
-                                'quantity' => $item->quantity,
-                                'created_at' => $localSubscription->created_at ?? now(),
-                                'updated_at' => now(),
-                            ]
-                        );
-                    }
-                    \Log::info("Successfully updated subscription items for user: {$user->id}");
-                }
-            } else {
-                \Log::error("Failed to create subscription: user or session subscription missing.");
-            }
-        } catch (\Exception $e) {
-            \Log::error("Error in createSubscriptionForUser for user {$user->id}: " . $e->getMessage());
-        }
-    }
+    //             // Ensure the subscription exists before updating subscription items
+    //             if ($localSubscription) {
+    //                 foreach ($stripeSubscription->items->data as $item) {
+    //                     \DB::table('subscription_items')->updateOrInsert(
+    //                         ['subscription_id' => $localSubscription->id, 'stripe_id' => $item->id],
+    //                         [
+    //                             'stripe_product' => $item->price->product,
+    //                             'stripe_price' => $item->price->id,
+    //                             'quantity' => $item->quantity,
+    //                             'created_at' => $localSubscription->created_at ?? now(),
+    //                             'updated_at' => now(),
+    //                         ]
+    //                     );
+    //                 }
+    //                 \Log::info("Successfully updated subscription items for user: {$user->id}");
+    //             }
+    //         } else {
+    //             \Log::error("Failed to create subscription: user or session subscription missing.");
+    //         }
+    //     } catch (\Exception $e) {
+    //         \Log::error("Error in createSubscriptionForUser for user {$user->id}: " . $e->getMessage());
+    //     }
+    // }
 
-    public function resumeSubscription(Request $request)
-    {
-        \Log::info("Attempting to resume subscription for user: " . $request->user()->id);
+    // public function resumeSubscription(Request $request)
+    // {
+    //     \Log::info("Attempting to resume subscription for user: " . $request->user()->id);
 
-        $user = $request->user();
-        $result = $this->stripeService->resumeSubscription($user);
+    //     $user = $request->user();
+    //     $result = $this->stripeService->resumeSubscription($user);
 
-        if ($result) {
-            \Log::info("Subscription resumed successfully for user: " . $user->id);
-            return redirect()->back()->with('success', 'Your subscription has been resumed.');
-        }
+    //     if ($result) {
+    //         \Log::info("Subscription resumed successfully for user: " . $user->id);
+    //         return redirect()->back()->with('success', 'Your subscription has been resumed.');
+    //     }
 
-        \Log::error("Failed to resume subscription for user: " . $user->id);
-        return redirect()->back()->withErrors(['error' => 'Unable to resume your subscription.']);
-    }
+    //     \Log::error("Failed to resume subscription for user: " . $user->id);
+    //     return redirect()->back()->withErrors(['error' => 'Unable to resume your subscription.']);
+    // }
+
+    // public function handleWebhook(Request $request)
+    // {
+    //     \Log::info('Webhook hit, starting process.');
+
+    //     $endpoint_secret = config('services.stripe.webhook_secret');
+    //     $payload = @file_get_contents('php://input');
+    //     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+
+    //     try {
+    //         $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+    //         \Log::info('Webhook successfully verified. Event Type: ' . $event->type);
+    //     } catch (\UnexpectedValueException $e) {
+    //         \Log::error('Invalid payload: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Invalid payload'], 400);
+    //     } catch (\Stripe\Exception\SignatureVerificationException $e) {
+    //         \Log::error('Invalid signature: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Invalid signature'], 400);
+    //     }
+    
+    //     // Dispatch the event processing to a queue
+    //     ProcessStripeWebhook::dispatch($event);
+    
+    //     return response('Webhook handled', 200);
+    // }
+
+    // private function processEvent($event)
+    // {
+    //     \Log::info("Stripe Webhook Event Received: " . $event->type);
+
+    //     // Identify the type of object based on the event type
+    //     $object = $event->data->object;
+
+    //     // Fetch the customer associated with the event
+    //     $customer_id = isset($object->customer) ? $object->customer : null;
+    //     if (!$customer_id) {
+    //         \Log::error("No customer ID found in event: " . $event->id);
+    //         return;
+    //     }
+
+    //     $user = User::where('stripe_id', $customer_id)->first();
+    //     if (!$user) {
+    //         \Log::error("No user found with Stripe customer ID: " . $customer_id);
+    //         return;
+    //     }
+
+    //     // Wrap event processing in a transaction
+    //     DB::beginTransaction();
+    //     try {
+    //         switch ($event->type) {
+    //             case 'checkout.session.completed':
+    //                 \Log::info("Processing checkout.session.completed for user: " . $user->id);
+    
+    //                 // Retrieve the subscription ID from the session object
+    //                 if (isset($object->subscription)) {
+    //                     $subscriptionId = $object->subscription; // Session contains a subscription ID
+    //                     $this->createSubscriptionForUser($user, $subscriptionId);  // Pass subscription ID directly
+    //                 } else {
+    //                     \Log::error("No subscription ID found in checkout session for user: " . $user->id);
+    //                 }
+    //                 break;
+
+    //             case 'customer.subscription.created':
+    //                 \Log::info("Processing customer.subscription.created for user: " . $user->id);
+    //                 $this->createSubscriptionForUser($user, $object->id);  // Pass subscription ID directly
+    //                 break;
+
+    //             case 'customer.subscription.updated':
+    //                 $subscription = $user->subscriptions()->where('stripe_id', $object->id)->first();
+    //                 if (!$subscription) {
+    //                     \Log::error("Subscription not found for user {$user->id} during update. Delaying handling.");
+    //                     // You can decide to retry this webhook later, or log the issue and investigate.
+    //                     return;
+    //                 }
+    //                 $this->stripeService->updateSubscription($user, $object);
+    //                 break;
+
+    //             case 'customer.subscription.deleted':
+    //                 \Log::info("Processing customer.subscription.deleted for user: " . $user->id);
+    //                 $this->stripeService->cancelSubscription($user, $object);  // Use subscription object, but don't archive the user
+    //                 break;
+
+    //             case 'invoice.payment_succeeded':
+    //                 \Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
+    //                 \Log::info("Invoice status: " . $object->status);  // Log the payment status
+    //                 break;
+
+    //             case 'invoice.payment_failed':
+    //                 \Log::error("Processing invoice.payment_failed for user: " . $user->id);
+    //                 \Log::error("Failure reason: " . $object->last_payment_error->message);  // Log why the payment failed
+    //                 break;
+
+    //             default:
+    //                 \Log::warning("Unhandled event type: " . $event->type);
+    //                 break;
+    //         }
+    //         DB::commit();
+    //     } catch (\Exception $e) {
+    //         \Log::error('Error processing event: ' . $e->getMessage());
+    //         DB::rollBack();
+    //     }
+    // }
 
     // public function showPaymentPage()
     // {
