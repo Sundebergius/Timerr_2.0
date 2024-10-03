@@ -47,7 +47,7 @@ class StripeService
             }
 
             // Use Cashier's subscription method to update local subscription
-            $user->subscriptions()->updateOrCreate(
+            $subscription = $user->subscriptions()->updateOrCreate(
                 ['stripe_id' => $stripeSubscription->id],
                 [
                     'type' => 'default',
@@ -58,6 +58,9 @@ class StripeService
                     'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
                 ]
             );
+
+            // Ensure the subscription is saved before creating items
+            $subscription->save(); // This line might not be necessary if updateOrCreate automatically saves
 
             // Update subscription items
             foreach ($stripeSubscription->items->data as $item) {
