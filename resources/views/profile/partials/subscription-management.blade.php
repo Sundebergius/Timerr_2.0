@@ -85,7 +85,7 @@
                         <!-- Display current billing period only if the subscription is active and not on trial -->
                         @if($subscription->active() && !$subscription->onTrial() && $subscription->ends_at)
                             <p>{{ __('Current Billing Period Ends:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
-                        @elseif($subscription->canceled() && $subscription->ends_at)
+                        @elseif($subscription->canceled() && !$subscription->onTrial() && $subscription->ends_at)
                             <p>{{ __('Ends At:') }} {{ $subscription->ends_at->format('F j, Y') }}</p>
                         @endif
             
