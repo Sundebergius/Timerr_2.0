@@ -105,51 +105,29 @@ class StripeService
         $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
         if ($subscription) {
+            // Use the Stripe-provided `current_period_end` to update the local `ends_at`
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
 
-            // Determine the type based on Stripe status
+            // Use Stripe's `status` to determine the correct type and status
             $type = match ($subscriptionObject->status) {
-                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default', // 'default' while active even with cancel_at_period_end
-                'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled',
-                default => $subscription->type,
+                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',
+                'canceled' => $currentPeriodEnd->isPast() ? 'expired' : 'canceled',
+                default => $subscription->type,  // Preserve the current type if not provided by Stripe
             };
 
-            // Check if the user has updated their payment method
-            if ($subscriptionObject->default_payment_method) {
-                $paymentMethod = \Stripe\PaymentMethod::retrieve($subscriptionObject->default_payment_method);
-                if ($paymentMethod && $paymentMethod->card) {
-                    // Update user's payment method in the database
-                    $user->update([
-                        'pm_type' => $paymentMethod->card->brand,
-                        'pm_last_four' => $paymentMethod->card->last4,
-                    ]);
-                    Log::info("Updated payment method for user: {$user->id}");
-                }
-            }
+            // Always update `ends_at` and `stripe_status` based on what Stripe provides
+            $subscription->update([
+                'stripe_status' => $subscriptionObject->status,
+                'ends_at' => $currentPeriodEnd,
+                'type' => $type,
+                'updated_at' => now(),
+            ]);
 
-            // Update the subscription based on whether it's being canceled at the period's end
-            if ($isCancelAtPeriodEnd) {
-                $subscription->update([
-                    'stripe_status' => 'canceled',
-                    'ends_at' => $currentPeriodEnd, // End at the current period end
-                    'type' => 'canceled', // Mark as 'canceled' to indicate it's in the process
-                    'updated_at' => now(),
-                ]);
+            Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}.");
 
-                Log::info("Subscription for user {$user->id} will cancel at the end of the billing period.");
-                $user->notify(new SubscriptionUpdated('Your subscription has been set to cancel at the end of the period.'));
-            } else {
-                $subscription->update([
-                    'stripe_status' => $subscriptionObject->status,
-                    'ends_at' => $currentPeriodEnd,
-                    'type' => $type,
-                    'updated_at' => now(),
-                ]);
-
-                Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}.");
-                $user->notify(new SubscriptionUpdated('Your subscription has been updated.'));
-            }
+            // Notify the user about the update
+            $user->notify(new SubscriptionUpdated('Your subscription has been updated.'));
 
             // Now update or insert subscription items
             foreach ($subscriptionObject->items->data as $item) {
@@ -164,6 +142,7 @@ class StripeService
                     ]
                 );
             }
+
         } else {
             Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
 
