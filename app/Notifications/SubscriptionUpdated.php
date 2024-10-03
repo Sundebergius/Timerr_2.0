@@ -28,7 +28,7 @@ class SubscriptionUpdated extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        return ['database'];
     }
 
     /**
@@ -57,7 +57,7 @@ class SubscriptionUpdated extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'message' => $this->message,
         ];
     }
 }
