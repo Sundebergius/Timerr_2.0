@@ -9,7 +9,7 @@
     <x-banner />
 
     <!-- Flash messages -->
-    @if (session('message'))
+    {{-- @if (session('message'))
         <x-action-message on="saved">
             {{ session('message') }}
         </x-action-message>
@@ -19,7 +19,7 @@
         <x-action-message on="error">
             {{ session('error') }}
         </x-action-message>
-    @endif
+    @endif --}}
 
     <!-- Display unread notifications from the database using Jetstream's action-message -->
     @if (auth()->user()->unreadNotifications->count())
