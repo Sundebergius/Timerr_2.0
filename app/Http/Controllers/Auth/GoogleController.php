@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Crypt;
 
 class GoogleController extends Controller
 {
@@ -50,7 +51,7 @@ class GoogleController extends Controller
                     // Link Google account to the existing user
                     $existingUser->update([
                         'google_id' => $googleUser->getId(),
-                        'google_token' => $googleUser->token,
+                        'google_token' => encrypt($googleUser->token),
                     ]);
                     Log::info('Google account linked to existing user by email.', ['user_id' => $existingUser->id]);
 
@@ -68,7 +69,7 @@ class GoogleController extends Controller
                 'name' => $googleUser->getName(),
                 'email' => $googleUser->getEmail(),
                 'google_id' => $googleUser->getId(),
-                'google_token' => $googleUser->token,
+                'google_token' => encrypt($googleUser->token),
                 'password' => null, // No password for Google login
             ]);
             Log::info('New user registered via Google.', ['user_id' => $newUser->id]);
