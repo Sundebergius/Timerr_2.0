@@ -5,22 +5,6 @@
         </h2>
     </x-slot>
 
-    <!-- Banner for notifications -->
-    {{-- <x-banner /> --}}
-
-    <!-- Flash messages -->
-    {{-- @if (session('message'))
-        <x-action-message on="saved">
-            {{ session('message') }}
-        </x-action-message>
-    @endif
-
-    @if (session('error'))
-        <x-action-message on="error">
-            {{ session('error') }}
-        </x-action-message>
-    @endif --}}
-
     <!-- Display unread notifications from the database using the banner -->
     @php
         $unreadNotifications = auth()->user()->unreadNotifications;
@@ -33,6 +17,15 @@
                 $notification->markAsRead();
             @endphp
         @endforeach
+    @endif
+
+     <!-- Upgrade Banner for Free Plan Users -->
+     @if (auth()->user()->current_plan === 'free')
+        <div class="bg-yellow-100 p-4 rounded-lg text-center shadow-md mb-6">
+            <h3 class="text-xl font-semibold text-yellow-800">Upgrade to Freelancer Plan</h3>
+            <p class="text-yellow-600 mt-2">Unlock advanced features like automation and manage up to 25 clients with the Freelancer plan for just 99 kr./mo.</p>
+            <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-yellow-500 text-white py-2 px-6 rounded-lg shadow hover:bg-yellow-600">Upgrade Now</a>
+        </div>
     @endif
 
     <!-- Added padding at the top -->
