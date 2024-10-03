@@ -85,7 +85,7 @@ class StripeService
             Log::info("Successfully updated subscription items for user: " . $user->id);
 
             // Send notification after successful subscription creation
-            $user->notify(new SubscriptionUpdated('Subscription successfully created!'));
+            // $user->notify(new SubscriptionUpdated('Subscription successfully created!'));
 
         } catch (\Exception $e) {
             Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());

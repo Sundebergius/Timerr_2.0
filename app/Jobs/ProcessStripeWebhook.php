@@ -65,6 +65,7 @@ class ProcessStripeWebhook implements ShouldQueue
                     Log::info("Processing checkout.session.completed for user: " . $user->id);
                     if (isset($object->subscription)) {
                         $this->stripeService->createSubscriptionForUser($user, $object->subscription);
+                        $user->notify(new SubscriptionUpdated('Subscription successfully created!'));
                     } else {
                         Log::error("No subscription ID found in checkout session for user: " . $user->id);
                     }

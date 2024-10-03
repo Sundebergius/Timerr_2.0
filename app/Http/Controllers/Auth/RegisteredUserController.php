@@ -58,7 +58,7 @@ class RegisteredUserController extends Controller
             // Create personal team for the user
             $team = Team::create([
                 'user_id' => $user->id,
-                'name' => $user->name . "'s Team",
+                'name' => $user->name . "'s Personal Workspace",
                 'personal_team' => true,
             ]);
 

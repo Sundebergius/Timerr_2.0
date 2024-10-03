@@ -22,10 +22,16 @@
     @endif --}}
 
     <!-- Display unread notifications from the database using the banner -->
-    @if (auth()->user()->unreadNotifications->count())
-        @foreach (auth()->user()->unreadNotifications as $notification)
-            {{-- Display each notification in the banner --}}
+    @php
+        $unreadNotifications = auth()->user()->unreadNotifications;
+    @endphp
+
+    @if ($unreadNotifications->count())
+        @foreach ($unreadNotifications as $notification)
             <x-banner message="{{ $notification->data['message'] }}" />
+            @php
+                $notification->markAsRead();
+            @endphp
         @endforeach
     @endif
 
