@@ -104,11 +104,11 @@ Route::middleware('auth')->group(function () {
     
     Route::prefix('clients')->group(function () {
         // Routes requiring subscription check middleware
-        //Route::middleware('check.subscription')->group(function () {
+        Route::middleware('check.subscription')->group(function () {
             Route::get('/create', [ClientController::class, 'create'])->name('clients.create');
             Route::post('/', [ClientController::class, 'store'])->name('clients.store');
             Route::post('/import', [ClientController::class, 'import'])->name('clients.import');
-        //});
+        });
 
         // Routes without subscription check middleware
         Route::get('/', [ClientController::class, 'index'])->name('clients.index');
