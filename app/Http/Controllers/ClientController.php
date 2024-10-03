@@ -13,6 +13,7 @@ use App\Models\ClientNote;
 use App\Models\UserSettings;
 use App\Models\ContactPerson;
 use App\Models\Webhook;
+use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Support\Facades\Validator;
 
