@@ -6,6 +6,7 @@ use Stripe\StripeClient;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Services\PlanService;
+use App\Notifications\SubscriptionUpdated;
 
 class StripeService
 {
