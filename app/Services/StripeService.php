@@ -56,31 +56,35 @@ class StripeService
                     'quantity' => $stripeSubscription->items->data[0]->quantity,
                     'trial_ends_at' => $trialEnd,
                     'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
-                    'created_at' => now(),  // Add this
-                    'updated_at' => now()    // Add this
+                    'created_at' => now(),
+                    'updated_at' => now()
                 ]
             );
 
-            // Ensure the subscription is saved before creating items
-            $subscription->save(); // This line might not be necessary if updateOrCreate automatically saves
+            // No need to manually save, updateOrCreate does this
 
             // Update subscription items
-            foreach ($stripeSubscription->items->data as $item) {
-                \DB::table('subscription_items')->updateOrInsert(
-                    ['subscription_id' => $subscription->id, 'stripe_id' => $item->id],
-                    [
-                        'stripe_product' => $item->price->product,
-                        'stripe_price' => $item->price->id,
-                        'quantity' => $item->quantity,
-                        'created_at' => now(),  // Add this
-                        'updated_at' => now()    // Add this
-                    ]
-                );
+            if (!empty($stripeSubscription->items->data)) {
+                foreach ($stripeSubscription->items->data as $item) {
+                    \DB::table('subscription_items')->updateOrInsert(
+                        ['subscription_id' => $subscription->id, 'stripe_id' => $item->id],
+                        [
+                            'stripe_product' => $item->price->product,
+                            'stripe_price' => $item->price->id,
+                            'quantity' => $item->quantity,
+                            'created_at' => now(),
+                            'updated_at' => now()
+                        ]
+                    );
+                    Log::info("Updated subscription item for user: " . $user->id);
+                }
+            } else {
+                Log::warning("No subscription items found for user {$user->id}");
             }
 
             Log::info("Successfully updated subscription items for user: " . $user->id);
-            
-           // Send notification after successful subscription creation
+
+            // Send notification after successful subscription creation
             $user->notify(new SubscriptionUpdated('Subscription successfully created!'));
 
         } catch (\Exception $e) {
@@ -101,35 +105,35 @@ class StripeService
             $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
             $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
 
+            // Determine the type based on Stripe status
             $type = match ($subscriptionObject->status) {
-                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',
+                'active' => $isCancelAtPeriodEnd ? 'default' : 'default', // 'default' while active even with cancel_at_period_end
                 'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled',
                 default => $subscription->type,
             };
 
+            // Only mark as 'canceled' if the subscription has been fully canceled (immediate cancel)
             if ($subscriptionObject->status === 'canceled' && !$isCancelAtPeriodEnd) {
                 $subscription->update([
-                    'stripe_status' => $subscriptionObject->status,
-                    'ends_at' => now(),
+                    'stripe_status' => 'canceled',
+                    'ends_at' => now(), // Immediate cancellation
                     'type' => 'canceled',
                     'updated_at' => now(),
                 ]);
 
                 Log::info("Subscription for user {$user->id} has been immediately canceled.");
-
-                // Flash success message
                 $user->notify(new SubscriptionUpdated('Your subscription has been canceled.'));
+
             } else {
+                // Update the subscription as active but with cancel_at_period_end if applicable
                 $subscription->update([
                     'stripe_status' => $subscriptionObject->status,
                     'ends_at' => $currentPeriodEnd,
-                    'type' => $type,
+                    'type' => $type, // Keep as 'default' while active
                     'updated_at' => now(),
                 ]);
 
                 Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}.");
-
-                // Flash success message
                 $user->notify(new SubscriptionUpdated('Your subscription has been updated.'));
             }
 
@@ -141,8 +145,7 @@ class StripeService
                         'stripe_product' => $item->price->product,
                         'stripe_price' => $item->price->id,
                         'quantity' => $item->quantity,
-                        'updated_at' => now(), // Always update 'updated_at' when modifying
-                        // Only set 'created_at' when inserting new rows
+                        'updated_at' => now(), // Always update 'updated_at'
                         'created_at' => \DB::raw('IFNULL(created_at, NOW())'), // Preserve 'created_at' for existing rows
                     ]
                 );
