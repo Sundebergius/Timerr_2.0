@@ -30,7 +30,13 @@ Route::get('/refund-policy', function () {
 
 // Home route
 Route::get('/', function () {
-    return view('welcome');
+    if (auth()->check()) {
+        // If user is authenticated, redirect to the dashboard
+        return redirect()->route('dashboard');
+    } else {
+        // If not authenticated, redirect to the login page
+        return redirect()->route('login');
+    }
 });
 
 // Google Auth Routes
