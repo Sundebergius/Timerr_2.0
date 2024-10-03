@@ -10,6 +10,7 @@
         "blade-ui-kit/blade-heroicons": "^2.3",
         "blade-ui-kit/blade-icons": "^1.6",
         "codeat3/blade-carbon-icons": "^2.27",
+        "google/apiclient": "^2.17",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/cashier": "^15.4",
         "laravel/fortify": "^1.24",

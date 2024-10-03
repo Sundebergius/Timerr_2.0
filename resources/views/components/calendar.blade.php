@@ -110,6 +110,10 @@
                 margin-bottom: 20px;
             }
 
+            .btn-group {
+                flex-direction: column; /* Stack buttons vertically on very small screens */
+            }
+
             .fc-button {
                 width: 100%; /* Full-width buttons on mobile */
                 margin: 5px 0;
@@ -154,24 +158,22 @@
             </div>
 
             <div class="col-md-4 d-flex justify-content-md-end justify-content-center">
-                <div class="btn-group" role="group" aria-label="Calendar Actions">
-                    <button id="exportButton" class="btn btn-primary mx-2 px-4" onclick="exportCalendar()">{{ __('Export Calendar') }}</button>
-                    <button id="importButton" class="btn btn-primary mx-2 px-4" data-toggle="modal" data-target="#importModal">{{ __('Import Calendar') }}</button>
-                    <button id="addEventButton" class="btn btn-primary mx-2 px-4" data-toggle="modal" data-target="#eventModal">{{ __('Add') }}</button>
-                    
+                <div class="btn-group flex-wrap" role="group" aria-label="Calendar Actions">
+                    <button id="exportButton" class="btn btn-primary btn-sm mx-1 mb-2" onclick="exportCalendar()">{{ __('Export Calendar') }}</button>
+                    <button id="importButton" class="btn btn-primary btn-sm mx-1 mb-2" data-toggle="modal" data-target="#importModal">{{ __('Import Calendar') }}</button>
+                    <button id="addEventButton" class="btn btn-primary btn-sm mx-1 mb-2" data-toggle="modal" data-target="#eventModal">{{ __('Add') }}</button>
+            
                     <!-- Add the Google Calendar Connect Button -->
                     @if (is_null(auth()->user()->google_id))  
-                        <button id="googleConnectButton" class="btn btn-outline-primary mx-2 px-4" onclick="window.location.href='{{ route('google.connect') }}'">Connect Google Calendar</button>
+                        <button id="googleConnectButton" class="btn btn-outline-primary btn-sm mx-1 mb-2" onclick="window.location.href='{{ route('google.connect') }}'">Connect Google Calendar</button>
                     @else  
-                        <button id="googleSyncButton" class="btn btn-outline-success mx-2 px-4" onclick="syncGoogleCalendar()">Sync Google Calendar</button>
-
+                        <button id="googleSyncButton" class="btn btn-outline-success btn-sm mx-1 mb-2" onclick="syncGoogleCalendar()">Sync Google Calendar</button>
+            
                         <!-- Button to select a Google Calendar -->
-                        <button id="selectCalendarButton" class="btn btn-outline-primary mx-2 px-4" onclick="window.location.href='{{ route('google.list-calendars') }}'">
-                            Select Google Calendar
-                        </button>
+                        <button id="selectCalendarButton" class="btn btn-outline-primary btn-sm mx-1 mb-2" onclick="window.location.href='{{ route('google.list-calendars') }}'">Select Google Calendar</button>
                     @endif
                 </div>
-            </div>
+            </div>            
         </div>
 
         <!-- Calendar -->

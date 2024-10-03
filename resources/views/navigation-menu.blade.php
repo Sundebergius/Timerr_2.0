@@ -53,7 +53,7 @@
                                 </button>
                             </x-slot>
 
-                            <x-slot name="content">
+                            {{-- <x-slot name="content">
                                 <div class="w-60">
                                     <!-- Team Management -->
                                     <div class="block px-4 py-2 text-xs text-gray-400">
@@ -89,7 +89,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                            </x-slot>
+                            </x-slot> --}}
                         </x-dropdown>
                     </div>
                 @endif
@@ -175,12 +175,12 @@
             <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
                 {{ __('Products') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+            {{-- <x-responsive-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
                 {{ __('Invoices') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('integrations.webhooks.index')" :active="request()->routeIs('integrations.webhooks.*')">
                 {{ __('Webhooks') }}
-            </x-responsive-nav-link>
+            </x-responsive-nav-link> --}}
         </div>
 
         <!-- Responsive Settings Options -->
@@ -204,11 +204,11 @@
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
-                @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
+                {{-- @if (Laravel\Jetstream\Jetstream::hasApiFeatures())
                     <x-responsive-nav-link href="{{ route('api-tokens.index') }}" :active="request()->routeIs('api-tokens.index')">
                         {{ __('API Tokens') }}
                     </x-responsive-nav-link>
-                @endif
+                @endif --}}
 
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}" x-data>
@@ -220,7 +220,7 @@
                     </x-responsive-nav-link>
                 </form>
 
-                <!-- Team Management -->
+                {{-- <!-- Team Management -->
                 @if (Laravel\Jetstream\Jetstream::hasTeamFeatures())
                     <div class="border-t border-gray-200"></div>
 
@@ -253,7 +253,7 @@
                             <x-switchable-team :team="$team" component="responsive-nav-link" />
                         @endforeach
                     @endif
-                @endif
+                @endif --}}
             </div>
         </div>
     </div>

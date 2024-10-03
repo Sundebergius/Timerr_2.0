@@ -123,8 +123,8 @@ class GoogleController extends Controller
 
         // Link Google account to the current authenticated user
         $user->update([
-            'google_id' => $request->google_user_id,
-            'google_token' => $request->google_user_token,
+            'google_id' => $request->google_id,
+            'google_token' => $request->google_token,
         ]);
 
         Log::info('User linked Google account.', ['user_id' => $user->id]);
