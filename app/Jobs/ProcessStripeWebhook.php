@@ -83,6 +83,11 @@ class ProcessStripeWebhook implements ShouldQueue
                     $this->stripeService->cancelSubscription($user, $object);
                     break;
 
+                case 'customer.subscription.trial_will_end':
+                    Log::info("Trial ending soon for user: " . $user->id);
+                    $this->stripeService->handleTrialEndingSoon($user);
+                    break;
+
                 case 'invoice.payment_succeeded':
                     Log::info("Processing invoice.payment_succeeded for user: " . $user->id);
                     break;

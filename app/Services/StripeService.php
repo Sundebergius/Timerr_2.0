@@ -107,29 +107,40 @@ class StripeService
 
             // Determine the type based on Stripe status
             $type = match ($subscriptionObject->status) {
-                'active' => $isCancelAtPeriodEnd ? 'default' : 'default', // 'default' while active even with cancel_at_period_end
+                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default', // 'default' while active even with cancel_at_period_end
                 'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled',
                 default => $subscription->type,
             };
 
-            // Only mark as 'canceled' if the subscription has been fully canceled (immediate cancel)
-            if ($subscriptionObject->status === 'canceled' && !$isCancelAtPeriodEnd) {
+            // Check if the user has updated their payment method
+            if ($subscriptionObject->default_payment_method) {
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($subscriptionObject->default_payment_method);
+                if ($paymentMethod && $paymentMethod->card) {
+                    // Update user's payment method in the database
+                    $user->update([
+                        'pm_type' => $paymentMethod->card->brand,
+                        'pm_last_four' => $paymentMethod->card->last4,
+                    ]);
+                    Log::info("Updated payment method for user: {$user->id}");
+                }
+            }
+
+            // Update the subscription based on whether it's being canceled at the period's end
+            if ($isCancelAtPeriodEnd) {
                 $subscription->update([
                     'stripe_status' => 'canceled',
-                    'ends_at' => now(), // Immediate cancellation
-                    'type' => 'canceled',
+                    'ends_at' => $currentPeriodEnd, // End at the current period end
+                    'type' => 'canceled', // Mark as 'canceled' to indicate it's in the process
                     'updated_at' => now(),
                 ]);
 
-                Log::info("Subscription for user {$user->id} has been immediately canceled.");
-                $user->notify(new SubscriptionUpdated('Your subscription has been canceled.'));
-
+                Log::info("Subscription for user {$user->id} will cancel at the end of the billing period.");
+                $user->notify(new SubscriptionUpdated('Your subscription has been set to cancel at the end of the period.'));
             } else {
-                // Update the subscription as active but with cancel_at_period_end if applicable
                 $subscription->update([
                     'stripe_status' => $subscriptionObject->status,
                     'ends_at' => $currentPeriodEnd,
-                    'type' => $type, // Keep as 'default' while active
+                    'type' => $type,
                     'updated_at' => now(),
                 ]);
 
@@ -158,7 +169,7 @@ class StripeService
         }
     }
 
-    // Cancel subscription but do not archive user in Stripe
+    // Handle full subscription cancelation (end of grace period or immediate cancel)
     public function cancelSubscription(User $user, $subscriptionObject)
     {
         \Log::info("Attempting to cancel subscription for user: {$user->id}");
@@ -169,33 +180,16 @@ class StripeService
                 $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
                 if ($subscription && !$subscription->ended()) {
-                    // Check if the subscription is set to cancel at period end
-                    $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
+                    // Immediate or final cancellation (grace period ended)
+                    $subscription->update([
+                        'stripe_status' => 'canceled',
+                        'ends_at' => now(), // Final cancellation, end now
+                        'type' => 'expired', // Mark as 'expired'
+                        'updated_at' => now(),
+                    ]);
 
-                    // Update the subscription status in your database
-                    if ($isCancelAtPeriodEnd) {
-                        // Cancel at the end of the period
-                        $subscription->update([
-                            'stripe_status' => 'canceled',
-                            'ends_at' => \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end), // End at the current period end
-                            'updated_at' => now(),
-                        ]);
-
-                        Log::info("Subscription for user {$user->id} will cancel at the end of the billing period (Period-End Cancellation).");
-                        $user->notify(new SubscriptionUpdated('Your subscription has been canceled and will end on ' . $subscription->ends_at->format('F j, Y') . '.'));
-
-                    } else {
-                        // Immediate cancellation
-                        $subscription->update([
-                            'stripe_status' => 'canceled',
-                            'ends_at' => now(), // Immediate cancellation
-                            'updated_at' => now(),
-                        ]);
-
-                        Log::info("Subscription for user {$user->id} has been immediately canceled.");
-                        $user->notify(new SubscriptionUpdated('Your subscription has been immediately canceled.'));
-                    }
-
+                    Log::info("Subscription for user {$user->id} has been fully canceled.");
+                    $user->notify(new SubscriptionUpdated('Your subscription has been fully canceled and ended.'));
                 } else {
                     Log::info("No active subscription found for user {$user->id}");
                     $user->notify(new SubscriptionUpdated('No active subscription found to cancel.'));
@@ -208,6 +202,15 @@ class StripeService
             Log::info("No Stripe customer ID found for user {$user->id}");
             $user->notify(new SubscriptionUpdated('No Stripe customer ID found.'));
         }
+    }
+
+    public function handleTrialEndingSoon(User $user)
+    {
+        // Notify the user about their trial ending
+        $user->notify(new SubscriptionUpdated('Your trial will end soon.'));
+        
+        // You can log or do additional actions here if needed
+        Log::info("Notified user {$user->id} that their trial is ending soon.");
     }
 
     // Archive the Stripe customer (or delete based on your preference)
