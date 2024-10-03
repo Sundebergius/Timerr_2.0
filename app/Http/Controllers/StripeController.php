@@ -40,13 +40,15 @@ class StripeController extends Controller
     /**
      * Handles the subscription process based on the selected plan.
      */
-    public function subscribe(Request $request, $plan)
+    public function subscribe(Request $request)
     {
         $user = Auth::user();
 
-        if ($plan === 'free') {
-            // Skip Stripe checkout for the free plan
-            return redirect()->route('dashboard')->with('success', 'You have been successfully registered under the Free plan.');
+        // Get the plan from the request input, but fail if none is provided
+        $plan = $request->input('plan');
+
+        if (!$plan || !in_array($plan, ['freelancer', 'freelancer_pro'])) {
+            return redirect()->route('dashboard')->withErrors('No valid subscription plan selected.');
         }
 
         // Use PlanService to get the price ID for the selected plan
@@ -62,7 +64,7 @@ class StripeController extends Controller
         // Prepare subscription data
         $subscriptionData = [];
 
-        // Apply trial period if user hasn't used it before
+        // Apply trial period if the user hasn't used it before
         if (!$user->trial_used) {
             $subscriptionData['trial_period_days'] = 30; // Apply 30-day free trial
         }
