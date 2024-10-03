@@ -106,7 +106,7 @@
                         </div>
                     </form>
 
-                    <!-- Header Section for Clients -->
+                   <!-- Header Section for Clients -->
                     <div class="text-center mb-8">
                         <h1 class="text-4xl font-bold text-blue-500 mb-4">Clients</h1>
 
@@ -130,6 +130,15 @@
                             @if ($clientCount >= $clientLimit) disabled @endif>
                             Create Client
                         </button>
+
+                        <!-- CTA for Upgrade when Client Limit is Reached -->
+                        @if ($clientCount >= $clientLimit)
+                            <div class="mt-6 bg-yellow-100 p-4 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-yellow-800">Need to manage more clients?</h3>
+                                <p class="text-yellow-600">Upgrade to the Freelancer plan to manage up to 25 clients and unlock more advanced features.</p>
+                                <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-yellow-500 text-white py-2 px-6 rounded-lg shadow hover:bg-yellow-600">Upgrade Now</a>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Secondary Action Buttons (Centered with Icons) -->

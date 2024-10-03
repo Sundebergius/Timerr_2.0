@@ -28,7 +28,7 @@
             </template>
         </div>
 
-        <!-- Header Section -->
+        <!-- Header Section for Projects -->
         <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-500 mb-4">Projects</h1>
 
@@ -51,7 +51,17 @@
                 @if ($projectCount >= $projectLimit) disabled @endif>
                 Create Project
             </a>
+
+            <!-- CTA for Upgrade when Project Limit is Reached -->
+            @if ($projectCount >= $projectLimit)
+                <div class="mt-6 bg-yellow-100 p-4 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold text-yellow-800">Need to manage more projects?</h3>
+                    <p class="text-yellow-600">Upgrade to the Freelancer plan to manage up to 10 projects and access more features.</p>
+                    <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-yellow-500 text-white py-2 px-6 rounded-lg shadow hover:bg-yellow-600">Upgrade Now</a>
+                </div>
+            @endif
         </div>
+
 
         <div class="container mx-auto px-4">
             {{-- <h1 class="text-4xl font-bold mb-8 text-center text-gray-800">Project Dashboard</h1> --}}

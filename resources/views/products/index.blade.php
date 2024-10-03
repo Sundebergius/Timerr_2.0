@@ -37,8 +37,17 @@
                             @if ($productCount >= $productLimit) disabled @endif>
                             <i class="fas fa-plus mr-2"></i> Create New Product
                         </button>
-                    </div>
 
+                        <!-- CTA for Upgrade when Product Limit is Reached -->
+                        @if ($productCount >= $productLimit)
+                            <div class="mt-6 bg-yellow-100 p-4 rounded-lg shadow-md">
+                                <h3 class="text-lg font-semibold text-yellow-800">Need more products?</h3>
+                                <p class="text-yellow-600">Upgrade to the Freelancer plan to create up to 15 products and unlock advanced features.</p>
+                                <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-yellow-500 text-white py-2 px-6 rounded-lg shadow hover:bg-yellow-600">Upgrade Now</a>
+                            </div>
+                        @endif
+                    </div>
+                    
                     <!-- Product Modal -->
                     <product-modal v-if="showModal" :user-id="userId" :team-id="teamId" @close="showModal = false"
                         @product-created="handleProductCreated"></product-modal>
