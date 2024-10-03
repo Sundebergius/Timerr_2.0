@@ -15,8 +15,8 @@ class PlanService
             ]
         ],
         'freelancer' => [
-            'product' => 'prod_QuFyGzwZRxDsqV',
-            'price' => 'price_1Q2RSpEEh64CES4EjOr0VQvr',
+            'product' => 'prod_Qu6hjkoWOhNiZK',
+            'price' => 'price_1Q2IToEEh64CES4Eg5xIuPOH',
             'limits' => [
                 'clients' => 25,
                 'projects' => 10,
