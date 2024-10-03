@@ -24,12 +24,12 @@
                     <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
                         {{ __('Products') }}
                     </x-nav-link>
-                    {{-- <x-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
+                    <x-nav-link :href="route('invoices.index')" :active="request()->routeIs('invoices.*')">
                         {{ __('Invoices') }}
                     </x-nav-link>
                     <x-nav-link :href="route('integrations.webhooks.index')" :active="request()->routeIs('integrations.webhooks.*')">
                         {{ __('Webhooks') }}
-                    </x-nav-link> --}}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -88,9 +88,9 @@
             <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                 {{ __('Clients') }}
             </x-responsive-nav-link>
-            {{-- <x-responsive-nav-link :href="route('integrations.webhooks.index')" :active="request()->routeIs('integrations.webhooks.*')">
+            <x-responsive-nav-link :href="route('integrations.webhooks.index')" :active="request()->routeIs('integrations.webhooks.*')">
                 {{ __('Webhooks') }}
-            </x-responsive-nav-link> --}}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->
