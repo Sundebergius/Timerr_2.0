@@ -62,9 +62,10 @@ Route::middleware('auth')->group(function () {
     // Billing and Subscription Routes
     Route::get('/billing-portal', [ProfileController::class, 'redirectToBillingPortal'])->name('billing.portal');
     Route::post('/subscribe', [StripeController::class, 'subscribe'])->name('stripe.subscribe');
-    Route::get('/stripe/payment', [StripeController::class, 'showPaymentPage'])->name('stripe.payment');
-    Route::post('/stripe/process', [StripeController::class, 'processPayment'])->name('stripe.process');
+    // Route::get('/stripe/payment', [StripeController::class, 'showPaymentPage'])->name('stripe.payment');
+    // Route::post('/stripe/process', [StripeController::class, 'processPayment'])->name('stripe.process');
     Route::post('/subscription/resume', [StripeController::class, 'resumeSubscription'])->name('subscription.resume');
+    Route::get('/stripe/checkout', [StripeController::class, 'redirectToStripeCheckout'])->name('stripe.checkout');
 
     /*
     |--------------------------------------------------------------------------

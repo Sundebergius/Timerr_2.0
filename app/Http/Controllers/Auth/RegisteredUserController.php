@@ -22,7 +22,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        // Pass the selected plan to the registration view, if any
+        $plan = $request->query('plan', 'free'); // Default to 'free' if no plan is selected
+        return view('auth.register', ['plan' => $plan]);    
     }
 
     /**
@@ -89,7 +91,8 @@ class RegisteredUserController extends Controller
             event(new Registered($user));
             Auth::login($user);
 
-            return redirect(RouteServiceProvider::HOME);
+            // After successful registration, handle the redirection based on the plan
+            return $this->redirectToDashboard($request, $user);
 
         } catch (Exception $e) {
             // Rollback the transaction if something goes wrong
@@ -100,5 +103,25 @@ class RegisteredUserController extends Controller
 
             return redirect()->back()->withErrors('Registration failed. Please try again.');
         }
+    }
+
+    /**
+     * Redirect the user after registration based on the selected plan.
+     */
+    public function redirectToDashboard(Request $request, User $user): RedirectResponse
+    {
+        // Get the selected plan from the query parameters (passed during registration)
+        $plan = $request->query('plan', 'free'); // Default to 'free' if no plan is provided
+
+        if ($plan === 'freelancer') {
+            // Redirect to the Stripe checkout page for the Freelancer plan
+            return redirect()->route('stripe.checkout', ['plan' => 'freelancer']);
+        } elseif ($plan === 'pro') {
+            // Redirect to the Stripe checkout page for the Pro plan
+            return redirect()->route('stripe.checkout', ['plan' => 'freelancer_pro']);
+        }
+
+        // For the free plan, redirect the user to the dashboard
+        return redirect()->route('dashboard');
     }
 }

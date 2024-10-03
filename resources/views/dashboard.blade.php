@@ -5,6 +5,21 @@
         </h2>
     </x-slot>
 
+    <!-- Banner for notifications -->
+    <x-banner />
+
+    @if (session('message'))
+        <x-action-message on="saved">
+            {{ session('message') }}
+        </x-action-message>
+    @endif
+
+    @if (session('error'))
+        <x-action-message on="error">
+            {{ session('error') }}
+        </x-action-message>
+    @endif
+
     <!-- Added padding at the top -->
     <div class="pt-8"> <!-- Add padding at the top -->
         <!-- Centered Welcome Section with smaller buttons -->

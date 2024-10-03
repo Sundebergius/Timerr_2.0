@@ -20,6 +20,161 @@ class StripeService
         $this->stripe = new StripeClient(config('services.stripe.secret'));
     }
 
+    public function createSubscriptionForUser(User $user, $subscriptionId)
+    {
+        try {
+            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+            $stripeSubscription = \Stripe\Subscription::retrieve($subscriptionId);
+
+            // Log subscription details
+            Log::info("Stripe subscription retrieved: " . json_encode($stripeSubscription));
+
+            // Check for trial period and payment method
+            $trialEnd = $stripeSubscription->trial_end
+                ? \Carbon\Carbon::createFromTimestamp($stripeSubscription->trial_end)
+                : null;
+
+            if ($stripeSubscription->default_payment_method) {
+                $paymentMethod = \Stripe\PaymentMethod::retrieve($stripeSubscription->default_payment_method);
+                if ($paymentMethod && $paymentMethod->card) {
+                    $user->update([
+                        'pm_type' => $paymentMethod->card->brand,
+                        'pm_last_four' => $paymentMethod->card->last4,
+                    ]);
+                    Log::info("Updated payment method for user: " . $user->id);
+                }
+            }
+
+            // Update the local subscription data
+            $subscription = $user->subscriptions()->updateOrCreate(
+                ['stripe_id' => $stripeSubscription->id],
+                [
+                    'type' => 'default',
+                    'stripe_status' => $stripeSubscription->status,
+                    'stripe_price' => $stripeSubscription->items->data[0]->price->id,
+                    'quantity' => $stripeSubscription->items->data[0]->quantity,
+                    'trial_ends_at' => $trialEnd,
+                    'ends_at' => \Carbon\Carbon::createFromTimestamp($stripeSubscription->current_period_end),
+                ]
+            );
+
+            // Update subscription items
+            foreach ($stripeSubscription->items->data as $item) {
+                \DB::table('subscription_items')->updateOrInsert(
+                    ['subscription_id' => $subscription->id, 'stripe_id' => $item->id],
+                    [
+                        'stripe_product' => $item->price->product,
+                        'stripe_price' => $item->price->id,
+                        'quantity' => $item->quantity,
+                    ]
+                );
+            }
+
+            Log::info("Successfully updated subscription items for user: " . $user->id);
+            
+            // Flash success message for both banner and action-message
+            session()->flash('flash.banner', 'Subscription successfully created!');
+            session()->flash('flash.bannerStyle', 'success');
+            session()->flash('message', 'Subscription successfully created!');
+
+        } catch (\Exception $e) {
+            Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());
+
+            // Flash error message for both banner and action-message
+            session()->flash('flash.banner', 'There was an issue creating your subscription. Please try again.');
+            session()->flash('flash.bannerStyle', 'danger');
+            session()->flash('error', 'There was an issue creating your subscription. Please try again.');
+        }
+    }
+
+    // Handle subscription updates from Stripe webhooks
+    public function updateSubscription($user, $subscriptionObject)
+    {
+        // Find the subscription in your local database
+        $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
+
+        if ($subscription) {
+            $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
+            $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
+
+            $type = match ($subscriptionObject->status) {
+                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',
+                'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled',
+                default => $subscription->type,
+            };
+
+            if ($subscriptionObject->status === 'canceled' && !$isCancelAtPeriodEnd) {
+                $subscription->update([
+                    'stripe_status' => $subscriptionObject->status,
+                    'ends_at' => now(),
+                    'type' => 'canceled',
+                    'updated_at' => now(),
+                ]);
+
+                Log::info("Subscription for user {$user->id} has been immediately canceled.");
+
+                // Flash success message
+                session()->flash('message', 'Your subscription has been canceled.');
+            } else {
+                $subscription->update([
+                    'stripe_status' => $subscriptionObject->status,
+                    'ends_at' => $currentPeriodEnd,
+                    'type' => $type,
+                    'updated_at' => now(),
+                ]);
+
+                Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}.");
+
+                // Flash success message
+                session()->flash('message', 'Your subscription has been updated.');
+            }
+        } else {
+            Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
+
+            // Flash error message
+            session()->flash('error', 'There was an issue updating your subscription. Please try again.');
+        }
+    }
+
+    // Cancel subscription but do not archive user in Stripe
+    public function cancelSubscription(User $user, $subscriptionObject)
+    {
+        \Log::info("Attempting to cancel subscription for user: {$user->id}");
+
+        if ($user->stripe_id) {
+            try {
+                // Find the subscription in your local database
+                $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
+
+                if ($subscription && !$subscription->ended()) {
+                    // Update the subscription to mark it as canceled
+                    $subscription->update([
+                        'stripe_status' => 'canceled',
+                        'ends_at' => \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end),
+                        'updated_at' => now(),
+                    ]);
+
+                    Log::info("Canceled subscription for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
+
+                    // Flash success message
+                    session()->flash('message', 'Your subscription has been successfully canceled.');
+    
+                } else {
+                    Log::info("No active subscription found for user {$user->id}");
+                    session()->flash('error', 'No active subscription found to cancel.');
+                }
+            } catch (\Exception $e) {
+                Log::error("Error canceling subscription for user {$user->id}: " . $e->getMessage());
+    
+                // Flash error message
+                session()->flash('error', 'There was an issue canceling your subscription. Please try again.');
+            }
+        } else {
+            Log::info("No Stripe customer ID found for user {$user->id}");
+            session()->flash('error', 'No Stripe customer ID found.');
+        }
+    }
+
     // Archive the Stripe customer (or delete based on your preference)
     public function archiveUser(User $user)
     {
@@ -34,7 +189,7 @@ class StripeService
                 \Log::error("Error archiving Stripe customer for user {$user->id}: " . $e->getMessage());
             }
         }
-    }
+    }  
 
     // Permanently delete a Stripe customer
     public function deleteUser(User $user)
@@ -46,50 +201,6 @@ class StripeService
             } catch (\Exception $e) {
                 \Log::error("Error deleting Stripe customer for user {$user->id}: " . $e->getMessage());
             }
-        }
-    }
-
-    // Handle subscription updates from Stripe webhooks
-    public function updateSubscription($user, $subscriptionObject)
-    {
-        // Find the subscription in your local database
-        $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
-
-        if ($subscription) {
-            // Get the current billing period end
-            $currentPeriodEnd = \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end);
-            $isCancelAtPeriodEnd = $subscriptionObject->cancel_at_period_end;
-
-            // Determine the new type and the logic for `ends_at`
-            $type = match ($subscriptionObject->status) {
-                'active' => $isCancelAtPeriodEnd ? 'canceled' : 'default',
-                'canceled' => $subscription->ends_at && $subscription->ends_at->isPast() ? 'expired' : 'canceled',
-                default => $subscription->type,
-            };
-
-            // Handle immediate cancellation logic
-            if ($subscriptionObject->status === 'canceled' && !$isCancelAtPeriodEnd) {
-                // Immediate cancellation: Set `ends_at` to now, since the user loses access immediately
-                $subscription->update([
-                    'stripe_status' => $subscriptionObject->status,
-                    'ends_at' => now(), // Ends now since it is immediate cancellation
-                    'type' => 'canceled',
-                    'updated_at' => now(),
-                ]);
-                \Log::info("Subscription for user {$user->id} has been immediately canceled.");
-            } else {
-                // Otherwise, update `ends_at` based on the current period end and handle other cases
-                $subscription->update([
-                    'stripe_status' => $subscriptionObject->status,
-                    'ends_at' => $currentPeriodEnd, // This handles standard cancellation at period end or resumption scenarios
-                    'type' => $type,
-                    'updated_at' => now(),
-                ]);
-            }
-
-            \Log::info("Updated subscription for user {$user->id} with status {$subscriptionObject->status}, type {$type}, and ends_at {$currentPeriodEnd}.");
-        } else {
-            \Log::error("No subscription found for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
         }
     }
 
@@ -175,36 +286,6 @@ class StripeService
         } catch (\Exception $e) {
             Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());
             return false;
-        }
-    }
-
-    // Cancel subscription but do not archive user in Stripe
-    public function cancelSubscription(User $user, $subscriptionObject)
-    {
-        \Log::info("Attempting to cancel subscription for user: {$user->id}");
-
-        if ($user->stripe_id) {
-            try {
-                // Find the subscription in your local database
-                $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
-
-                if ($subscription && !$subscription->ended()) {
-                    // Update the subscription to mark it as canceled
-                    $subscription->update([
-                        'stripe_status' => 'canceled',
-                        'ends_at' => \Carbon\Carbon::createFromTimestamp($subscriptionObject->current_period_end),
-                        'updated_at' => now(),
-                    ]);
-
-                    \Log::info("Canceled subscription for user {$user->id} with Stripe subscription ID: {$subscriptionObject->id}");
-                } else {
-                    \Log::info("No active subscription found for user {$user->id}");
-                }
-            } catch (\Exception $e) {
-                \Log::error("Error canceling subscription for user {$user->id}: " . $e->getMessage());
-            }
-        } else {
-            \Log::info("No Stripe customer ID found for user {$user->id}");
         }
     }
 
