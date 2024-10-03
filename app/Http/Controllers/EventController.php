@@ -7,12 +7,16 @@ use Carbon\Carbon;
 use Sabre\VObject\Reader as VObjectReader;
 use App\Models\Event;
 use Illuminate\Support\Facades\Log;
+use Google_Client;
+use Google_Service_Calendar;
+use Google_Service_Calendar_Event;
 
 class EventController extends Controller
 {
     public function index()
     {
         $events = Event::where('user_id', auth()->id())->get();
+
         return response()->json($events);
     }
 
@@ -59,11 +63,16 @@ class EventController extends Controller
 
             \Log::info('Event data to be saved:', $eventData); // Log data before saving
 
-            // Create event
+        // Create the event in Timerr
             $event = Event::create($eventData);
 
             \Log::info('Event created successfully:', $event->toArray()); // Log success
             return response()->json($event);
+
+            // Now push the event to Google Calendar if the user has a Google Calendar linked
+        $this->pushEventToGoogleCalendar($event);
+
+        return response()->json($event);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             \Log::error('Validation failed:', ['errors' => $e->errors()]); // Log validation errors
@@ -114,6 +123,9 @@ class EventController extends Controller
 
             // Update the event with validated data
             $event->update($validatedData);
+
+            // Update Google Calendar event if exists
+            $this->updateGoogleCalendarEvent($event);
 
             Log::info('Event updated successfully', ['event' => $event->toArray()]);
 
@@ -295,5 +307,90 @@ public function search(Request $request)
 
         // Return events as JSON
         return response()->json($events);
+    }
+
+    protected function pushEventToGoogleCalendar(Event $event)
+    {
+        $user = auth()->user();
+
+        if (is_null($user->google_calendar_id)) {
+            \Log::info('User does not have a Google Calendar linked.', ['user_id' => $user->id]);
+            return;
+        }
+
+        try {
+            $googleToken = decrypt($user->google_token);
+
+            $client = new Google_Client();
+            $client->setAccessToken($googleToken);
+
+            $service = new Google_Service_Calendar($client);
+
+            // Prepare the event data for Google Calendar
+            $googleEvent = new Google_Service_Calendar_Event([
+                'summary' => $event->title,
+                'description' => $event->description,
+                'start' => [
+                    'dateTime' => Carbon::parse($event->start)->toIso8601String(),
+                    'timeZone' => 'Europe/Copenhagen', // Replace with your preferred timezone
+                ],
+                'end' => [
+                    'dateTime' => Carbon::parse($event->end)->toIso8601String(),
+                    'timeZone' => 'Europe/Copenhagen',
+                ],
+            ]);
+
+            $calendarId = $user->google_calendar_id;
+            $createdGoogleEvent = $service->events->insert($calendarId, $googleEvent);
+
+            // Optionally, save the Google event ID for future syncs or updates
+            $event->google_event_id = $createdGoogleEvent->getId();
+            $event->save();
+
+            \Log::info('Event pushed to Google Calendar successfully.', ['google_event_id' => $createdGoogleEvent->getId()]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error pushing event to Google Calendar.', ['exception' => $e->getMessage()]);
+        }
+    }
+
+    protected function updateGoogleCalendarEvent(Event $event)
+    {
+        $user = auth()->user();
+
+        if (is_null($user->google_calendar_id) || is_null($event->google_event_id)) {
+            \Log::info('No Google Calendar event to update for this event.');
+            return;
+        }
+
+        try {
+            $googleToken = decrypt($user->google_token);
+
+            $client = new Google_Client();
+            $client->setAccessToken($googleToken);
+
+            $service = new Google_Service_Calendar($client);
+
+            $googleEvent = $service->events->get($user->google_calendar_id, $event->google_event_id);
+
+            // Update the event fields
+            $googleEvent->setSummary($event->title);
+            $googleEvent->setDescription($event->description);
+            $googleEvent->setStart(new \Google_Service_Calendar_EventDateTime([
+                'dateTime' => Carbon::parse($event->start)->toIso8601String(),
+                'timeZone' => 'Europe/Copenhagen',
+            ]));
+            $googleEvent->setEnd(new \Google_Service_Calendar_EventDateTime([
+                'dateTime' => Carbon::parse($event->end)->toIso8601String(),
+                'timeZone' => 'Europe/Copenhagen',
+            ]));
+
+            $updatedGoogleEvent = $service->events->update($user->google_calendar_id, $event->google_event_id, $googleEvent);
+
+            Log::info('Google Calendar event updated successfully.', ['google_event_id' => $updatedGoogleEvent->getId()]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating Google Calendar event.', ['exception' => $e->getMessage()]);
+        }
     }
 }
