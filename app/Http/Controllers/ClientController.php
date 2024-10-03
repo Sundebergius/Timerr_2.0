@@ -383,7 +383,7 @@ class ClientController extends Controller
 
     public function create()
     {
-        $this->authorize('view', $client);
+        $this->authorize('create', Client::class);
 
         return view('clients.create');
     }

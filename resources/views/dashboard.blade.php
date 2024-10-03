@@ -19,12 +19,14 @@
         @endforeach
     @endif
 
-     <!-- Upgrade Banner for Free Plan Users -->
+    <!-- Upgrade Banner for Free Plan Users -->
     @if (is_null(auth()->user()->current_plan) || auth()->user()->current_plan === 'free')
-        <div class="bg-yellow-100 p-4 rounded-lg text-center shadow-md mb-6">
-            <h3 class="text-xl font-semibold text-yellow-800">Upgrade to Freelancer Plan</h3>
-            <p class="text-yellow-600 mt-2">Unlock advanced features like automation and manage up to 25 clients with the Freelancer plan for just 99 kr./mo.</p>
-            <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-yellow-500 text-white py-2 px-6 rounded-lg shadow hover:bg-yellow-600">Upgrade Now</a>
+        <div class="max-w-4xl mx-auto bg-[#e1eff5] p-6 rounded-lg text-center shadow-md mb-6">
+            <h3 class="text-xl font-semibold text-[#08577a]">Upgrade to Freelancer Plan</h3>
+            <p class="text-gray-700 mt-2">Unlock advanced features like automation and manage up to 25 clients with the Freelancer plan for just 99 kr./mo.</p>
+            <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-[#08577a] text-white py-3 px-6 rounded-lg shadow hover:bg-[#064f6e] transition duration-300">
+                Upgrade Now
+            </a>
         </div>
     @endif
 
