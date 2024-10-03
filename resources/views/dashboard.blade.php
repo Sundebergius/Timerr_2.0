@@ -21,12 +21,11 @@
         </x-action-message>
     @endif --}}
 
-    <!-- Display unread notifications from the database using Jetstream's action-message -->
+    <!-- Display unread notifications from the database using the banner -->
     @if (auth()->user()->unreadNotifications->count())
         @foreach (auth()->user()->unreadNotifications as $notification)
-            <x-action-message on="saved">
-                {{ $notification->data['message'] }}
-            </x-action-message>
+            {{-- Display each notification in the banner --}}
+            <x-banner message="{{ $notification->data['message'] }}" />
         @endforeach
     @endif
 
