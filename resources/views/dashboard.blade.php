@@ -20,7 +20,7 @@
     @endif
 
      <!-- Upgrade Banner for Free Plan Users -->
-     @if (auth()->user()->current_plan === 'free')
+    @if (is_null(auth()->user()->current_plan) || auth()->user()->current_plan === 'free')
         <div class="bg-yellow-100 p-4 rounded-lg text-center shadow-md mb-6">
             <h3 class="text-xl font-semibold text-yellow-800">Upgrade to Freelancer Plan</h3>
             <p class="text-yellow-600 mt-2">Unlock advanced features like automation and manage up to 25 clients with the Freelancer plan for just 99 kr./mo.</p>
