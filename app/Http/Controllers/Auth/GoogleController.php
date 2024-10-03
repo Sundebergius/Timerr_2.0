@@ -110,11 +110,11 @@ class GoogleController extends Controller
         } catch (\Exception $e) {
             Log::critical('Error during Google login.', [
                 'message' => $e->getMessage(),
-                'google_email' => $googleUser->getEmail() ?? 'N/A',
+                'google_email' => isset($googleUser) ? $googleUser->getEmail() : 'N/A', // Check if $googleUser exists
             ]);
-
+        
             return redirect()->route('login')->withErrors(['error' => 'Google login failed. Please try again or contact support.']);
-        }
+        }        
     }
 
     public function linkGoogle(Request $request)
