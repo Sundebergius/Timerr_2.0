@@ -93,6 +93,31 @@ class StripeController extends Controller
         }
     }
 
+    public function handleWebhook(Request $request)
+    {
+        \Log::info('Webhook hit, starting process.');
+
+        $endpoint_secret = config('services.stripe.webhook_secret');
+        $payload = @file_get_contents('php://input');
+        $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
+
+        try {
+            $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
+            \Log::info('Webhook successfully verified. Event Type: ' . $event->type);
+        } catch (\UnexpectedValueException $e) {
+            \Log::error('Invalid payload: ' . $e->getMessage());
+            return response()->json(['error' => 'Invalid payload'], 400);
+        } catch (\Stripe\Exception\SignatureVerificationException $e) {
+            \Log::error('Invalid signature: ' . $e->getMessage());
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
+    
+        // Dispatch the event processing to a queue
+        ProcessStripeWebhook::dispatch($event);
+    
+        return response('Webhook handled', 200);
+    }
+
     // Method to handle creating or updating a subscription in your local database after successful payment
     // private function createSubscriptionForUser($user, $subscriptionId)
     // {
@@ -199,31 +224,6 @@ class StripeController extends Controller
 
     //     \Log::error("Failed to resume subscription for user: " . $user->id);
     //     return redirect()->back()->withErrors(['error' => 'Unable to resume your subscription.']);
-    // }
-
-    // public function handleWebhook(Request $request)
-    // {
-    //     \Log::info('Webhook hit, starting process.');
-
-    //     $endpoint_secret = config('services.stripe.webhook_secret');
-    //     $payload = @file_get_contents('php://input');
-    //     $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'];
-
-    //     try {
-    //         $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $endpoint_secret);
-    //         \Log::info('Webhook successfully verified. Event Type: ' . $event->type);
-    //     } catch (\UnexpectedValueException $e) {
-    //         \Log::error('Invalid payload: ' . $e->getMessage());
-    //         return response()->json(['error' => 'Invalid payload'], 400);
-    //     } catch (\Stripe\Exception\SignatureVerificationException $e) {
-    //         \Log::error('Invalid signature: ' . $e->getMessage());
-    //         return response()->json(['error' => 'Invalid signature'], 400);
-    //     }
-    
-    //     // Dispatch the event processing to a queue
-    //     ProcessStripeWebhook::dispatch($event);
-    
-    //     return response('Webhook handled', 200);
     // }
 
     // private function processEvent($event)
