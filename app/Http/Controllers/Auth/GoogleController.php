@@ -36,39 +36,34 @@ class GoogleController extends Controller
             $googleAccountUser = User::where('google_id', $googleUser->getId())->first();
 
             if ($googleAccountUser) {
-                // Inform the user that this Google account is already associated with another Timerr account
-                Log::info('Google account is already linked to another user.', ['google_id' => $googleUser->getId(), 'current_user_id' => $googleAccountUser->id]);
-                
-                return redirect()->route('profile.show')->withErrors([
-                    'google' => 'This Google account is already linked to another account. If you want to log in with this Google account, please log out and use the "Log in with Google" option.'
-                ], 'google');
-                
+                // If the user exists with this Google ID, log them in
+                Log::info('Google account linked to user, logging in.', ['google_id' => $googleUser->getId(), 'user_id' => $googleAccountUser->id]);
+                Auth::login($googleAccountUser);
+                return redirect()->intended('/dashboard');
             }
 
-            // If no user is found with this Google ID, check if a user with the same email exists
+            // Check if a user with the same email exists but without the Google ID linked
             $existingUser = User::where('email', $googleUser->getEmail())->first();
 
             if ($existingUser) {
-                // Link Google account to the existing user
                 if (!$existingUser->google_id) {
+                    // Link Google account to the existing user
                     $existingUser->update([
                         'google_id' => $googleUser->getId(),
                         'google_token' => $googleUser->token,
                     ]);
                     Log::info('Google account linked to existing user by email.', ['user_id' => $existingUser->id]);
 
-                    return redirect()->route('profile.show')->with('status', 'Google account successfully linked to your Timerr account.');
+                    Auth::login($existingUser);
+                    return redirect()->intended('/dashboard');
                 } else {
-                    // Inform the user if the email is linked but Google ID is already set
-                    Log::critical('Google account already linked to another user.', [
-                        'google_id' => $googleUser->getId(),
-                        'current_user_id' => $existingUser->id,
-                    ]);
+                    // If the email matches but the Google ID is already linked, handle gracefully
+                    Log::warning('Google account already linked to another user.', ['google_id' => $googleUser->getId(), 'user_id' => $existingUser->id]);
                     return redirect()->route('login')->withErrors(['error' => 'This Google account is already linked to another Timerr account.']);
                 }
             }
 
-            // If no user is found by email, create a new user
+            // If no user is found by Google ID or email, create a new user
             $newUser = User::create([
                 'name' => $googleUser->getName(),
                 'email' => $googleUser->getEmail(),
