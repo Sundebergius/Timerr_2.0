@@ -98,6 +98,9 @@ class StripeService
     // Handle subscription updates from Stripe webhooks
     public function updateSubscription($user, $subscriptionObject)
     {
+        // Set Stripe API key
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
         // Find the subscription in your local database
         $subscription = $user->subscriptions()->where('stripe_id', $subscriptionObject->id)->first();
 
@@ -172,6 +175,9 @@ class StripeService
     // Handle full subscription cancelation (end of grace period or immediate cancel)
     public function cancelSubscription(User $user, $subscriptionObject)
     {
+        // Set Stripe API key
+        \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+
         \Log::info("Attempting to cancel subscription for user: {$user->id}");
 
         if ($user->stripe_id) {
