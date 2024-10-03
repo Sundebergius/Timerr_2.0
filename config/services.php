@@ -41,6 +41,7 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
         'scopes' => [
             'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events',
         ],
         'google_api_key' => env('GOOGLE_API_KEY'),
     ],

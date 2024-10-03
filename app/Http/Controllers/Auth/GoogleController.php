@@ -180,6 +180,8 @@ class GoogleController extends Controller
         $user = auth()->user();
         $user->google_id = null;
         $user->google_token = null;
+        $user->google_refresh_token = null;
+        $user->google_calendar_id = null;
         $user->save();
 
         Log::info('Google account disconnected for user.', ['user_id' => $user->id]);
