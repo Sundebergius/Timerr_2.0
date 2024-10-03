@@ -72,18 +72,14 @@ class StripeService
 
             Log::info("Successfully updated subscription items for user: " . $user->id);
             
-            // Flash success message for both banner and action-message
-            session()->flash('flash.banner', 'Subscription successfully created!');
-            session()->flash('flash.bannerStyle', 'success');
-            session()->flash('message', 'Subscription successfully created!');
+           // Send notification after successful subscription creation
+            $user->notify(new SubscriptionUpdated('Subscription successfully created!'));
 
         } catch (\Exception $e) {
             Log::error("Error creating subscription for user {$user->id}: " . $e->getMessage());
 
-            // Flash error message for both banner and action-message
-            session()->flash('flash.banner', 'There was an issue creating your subscription. Please try again.');
-            session()->flash('flash.bannerStyle', 'danger');
-            session()->flash('error', 'There was an issue creating your subscription. Please try again.');
+            // Notify the user of failure
+            $user->notify(new SubscriptionUpdated('There was an issue creating your subscription. Please try again.'));
         }
     }
 

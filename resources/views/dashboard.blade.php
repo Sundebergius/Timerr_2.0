@@ -8,6 +8,7 @@
     <!-- Banner for notifications -->
     <x-banner />
 
+    <!-- Flash messages -->
     @if (session('message'))
         <x-action-message on="saved">
             {{ session('message') }}
@@ -18,6 +19,15 @@
         <x-action-message on="error">
             {{ session('error') }}
         </x-action-message>
+    @endif
+
+    <!-- Display unread notifications from the database using Jetstream's action-message -->
+    @if (auth()->user()->unreadNotifications->count())
+        @foreach (auth()->user()->unreadNotifications as $notification)
+            <x-action-message on="saved">
+                {{ $notification->data['message'] }}
+            </x-action-message>
+        @endforeach
     @endif
 
     <!-- Added padding at the top -->
