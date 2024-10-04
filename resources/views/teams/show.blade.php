@@ -8,6 +8,14 @@
     <div>
         <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
 
+            <!-- Informational Section -->
+            <div class="mb-6 p-4 bg-blue-100 rounded-lg">
+                <h3 class="text-lg font-medium text-blue-800">{{ __('Your Personal Workspace') }}</h3>
+                <p class="mt-2 text-sm text-blue-700">
+                    {{ __('This is your personal workspace, designed for managing projects and clients individually. Team functionality is currently in development, which will allow you to collaborate with others and manage larger teams. Stay tuned for updates!') }}
+                </p>
+            </div>
+
             <!-- Update Team Name Section -->
             @livewire('teams.update-team-name-form', ['team' => $team])
 
