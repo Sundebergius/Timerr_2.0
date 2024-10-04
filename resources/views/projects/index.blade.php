@@ -68,7 +68,7 @@
         
             <div class="flex flex-wrap justify-center gap-8">
                 @foreach ($projects as $project)
-                <div class="bg-white rounded-lg shadow-lg p-6 w-96 max-w-xs flex flex-col">
+                <div class="bg-white rounded-lg shadow-lg p-6 w-96 max-w-xs flex flex-col relative" x-data="{ openProjectDetails: true }">
                     <h2 class="text-3xl font-extrabold text-gray-900 text-center mb-4 tracking-wide border-b-4 border-blue-500"> {{ $project->title }} </h2>
         
                     <!-- Status Badge -->
@@ -81,119 +81,311 @@
                             {{ ucfirst($project->status) }}
                         </span>
                     </p>
+
+                     <!-- Expand/Collapse Button -->
+                    <button @click="openProjectDetails = !openProjectDetails" class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition-all duration-300 w-full mb-4">
+                        <span x-show="!openProjectDetails">View Details</span>
+                        <span x-show="openProjectDetails">Hide Details</span>
+                    </button>
+
+                    <!-- Expandable Section (Project Details) -->
+                    <div x-show="openProjectDetails" x-collapse class="transition-all duration-300">
         
                     <!-- Task Summary -->
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Summary</h3>
-
+                    
                         <!-- Grouped Tasks by Type -->
                         <div class="space-y-8">
-                            
+                    
                             <!-- Project-Based Tasks -->
                             @if($project->tasks->where('task_type', 'project_based')->isNotEmpty())
                             <div>
                                 <h4 class="text-md font-semibold text-blue-500 mb-2">Project-Based Tasks</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @foreach ($project->tasks->where('task_type', 'project_based') as $index => $task)
-                                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-200">
-                                        <div class="flex-shrink-0 mr-4">
-                                            <i class="fas fa-project-diagram text-blue-500 text-2xl"></i>
-                                        </div>
-                                        <div class="flex-grow">
-                                            <h4 class="text-md font-bold text-gray-800">{{ $task->title }}</h4>
-                                            <p class="text-sm text-gray-600">Project-Based</p>
-                                        </div>
-                                        <span class="text-xs text-gray-500 ml-auto">{{ $loop->iteration }}</span>
+                                @foreach ($project->tasks->where('task_type', 'project_based') as $index => $task)
+                                <div class="mt-6 p-4 bg-blue-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                    <i class="fas fa-project-diagram text-blue-500 text-2xl mb-2"></i>
+                                    <div class="flex-grow text-center">
+                                        <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
+                                        <p class="text-sm text-gray-600">Project-Based</p>
+                                        <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
                                     </div>
-                                    @endforeach
+                                    <!-- Expandable Details -->
+                                    <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
+                                        <div class="p-2 bg-blue-100 rounded-lg">
+                                            <!-- Conditionally display Start Date if it exists -->
+                                            @if (!empty($task->taskable->start_date))
+                                                <p class="text-sm text-gray-700"><strong>Start Date:</strong> {{ \Carbon\Carbon::parse($task->taskable->start_date)->format('d-m-Y') }}</p>
+                                            @else
+                                                <p class="text-sm text-gray-700"><strong>Start Date:</strong> No start date provided</p>
+                                            @endif
+
+                                            <!-- Conditionally display End Date if it exists -->
+                                            @if (!empty($task->taskable->end_date))
+                                                <p class="text-sm text-gray-700"><strong>End Date:</strong> {{ \Carbon\Carbon::parse($task->taskable->end_date)->format('d-m-Y') }}</p>
+                                            @else
+                                                <p class="text-sm text-gray-700"><strong>End Date:</strong> No end date provided</p>
+                                            @endif
+                                            <p class="text-sm text-gray-700"><strong>Location:</strong> {{ $task->taskable->project_location ?? 'No location provided' }}</p>
+                                            <p class="text-sm text-gray-700"><strong>Price:</strong> {{ number_format($task->taskable->price ?? 0, 2) }} DKK</p>
+                                        </div>
+                                    </div>
                                 </div>
+                                @endforeach
                             </div>
                             @endif
-                            
+                    
                             <!-- Hourly Tasks -->
                             @if($project->tasks->where('task_type', 'hourly')->isNotEmpty())
                             <div>
                                 <h4 class="text-md font-semibold text-green-500 mb-2">Hourly Tasks</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @foreach ($project->tasks->where('task_type', 'hourly') as $index => $task)
-                                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-200">
-                                        <div class="flex-shrink-0 mr-4">
-                                            <i class="fas fa-clock text-green-500 text-2xl"></i>
-                                        </div>
-                                        <div class="flex-grow">
-                                            <h4 class="text-md font-bold text-gray-800">{{ $task->title }}</h4>
+                                @foreach ($project->tasks->where('task_type', 'hourly') as $index => $task)
+                                    @php
+                                        // Initialize variables
+                                        $totalMinutesWorked = 0;
+                                        $hourlyEarnings = 0;
+                                        if ($task->taskable) {
+                                            $earningsPerMinute = $task->taskable->rate_per_hour ? $task->taskable->rate_per_hour / 60 : 0;
+                                            
+                                            // Loop through registrations to calculate total minutes worked and earnings
+                                            foreach ($task->taskable->registrationHourly as $registration) {
+                                                $totalMinutesWorked += $registration->minutes_worked ?? 0;
+                                                $hourlyEarnings += ($registration->minutes_worked ?? 0) * $earningsPerMinute;
+                                            }
+                                        }
+
+                                        // Convert total minutes to days, hours, and minutes
+                                        $totalDays = floor($totalMinutesWorked / (60 * 24));
+                                        $totalHours = floor(($totalMinutesWorked / 60) % 24);
+                                        $totalMinutes = $totalMinutesWorked % 60;
+                                        $timeWorked = sprintf('%dd %dh %dm', $totalDays, $totalHours, $totalMinutes);
+                                    @endphp
+                                    <div class="mt-6 p-4 bg-green-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                        <i class="fas fa-clock text-green-500 text-2xl mb-2"></i>
+                                        <div class="flex-grow text-center">
+                                            <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
                                             <p class="text-sm text-gray-600">Hourly</p>
+                                            <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
                                         </div>
-                                        <span class="text-xs text-gray-500 ml-auto">{{ $loop->iteration }}</span>
+                                        
+                                        <!-- Expandable Details -->
+                                        <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
+                                            <div class="p-2 bg-green-100 rounded-lg">
+                                                <p class="text-sm text-gray-700"><strong>Total Time Worked:</strong> {{ $timeWorked }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Rate Per Hour:</strong> {{ number_format($task->taskable->rate_per_hour ?? 0, 2) }} DKK</p>
+                                                <p class="text-sm text-gray-700"><strong>Hourly Earnings:</strong> {{ number_format(ceil($hourlyEarnings), 2) }} DKK</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    @endforeach
-                                </div>
+                                @endforeach
                             </div>
                             @endif
-
+                    
                             <!-- Product-Based Tasks -->
                             @if($project->tasks->where('task_type', 'product')->isNotEmpty())
                             <div>
-                                <h4 class="text-md font-semibold text-yellow-500 mb-2">Product-Based Tasks</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @foreach ($project->tasks->where('task_type', 'product') as $index => $task)
-                                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-200">
-                                        <div class="flex-shrink-0 mr-4">
-                                            <i class="fas fa-box-open text-yellow-500 text-2xl"></i>
-                                        </div>
-                                        <div class="flex-grow">
-                                            <h4 class="text-md font-bold text-gray-800">{{ $task->title }}</h4>
-                                            <p class="text-sm text-gray-600">Product</p>
-                                        </div>
-                                        <span class="text-xs text-gray-500 ml-auto">{{ $loop->iteration }}</span>
+                                <h4 class="text-xl font-bold text-yellow-600 mb-4">Product-Based Tasks</h4>
+                                @foreach ($project->tasks->where('task_type', 'product') as $index => $task)
+                                <div class="mt-6 p-6 bg-yellow-50 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                    <i class="fas fa-box-open text-yellow-500 text-3xl mb-3"></i>
+                                    <div class="flex-grow text-center">
+                                        <h4 class="text-2xl font-extrabold text-gray-800">{{ $task->title }}</h4>
+                                        <p class="text-sm text-gray-600">Product-Based Task</p>
+                                        <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
                                     </div>
-                                    @endforeach
+
+                                    <!-- Expandable Details -->
+                                    <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full transition-all duration-300 ease-in-out" x-cloak>
+                                        @php
+                                        // Fetch the task products or services and calculate totals
+                                        $taskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
+                                        $taskTotal = 0; // Total earnings for this task
+                                        @endphp
+
+                                        @foreach ($taskProducts as $taskProduct)
+                                            @if($taskProduct->product)
+                                            @php
+                                            $productPrice = $taskProduct->product->price ?? 0;
+                                            $quantitySold = $taskProduct->quantity ?? 0;
+                                            $productTotal = $productPrice * $quantitySold; // Total for this individual product/service
+
+                                            // Check if it's a service and handle attributes
+                                            $isService = $taskProduct->product->type === 'service';
+                                            $serviceAttributes = json_decode($taskProduct->attributes, true) ?? [];
+                                            @endphp
+
+                                            <!-- Display for products -->
+                                            @if(!$isService)
+                                            <div class="p-4 bg-yellow-100 rounded-lg mb-3 border border-yellow-300">
+                                                <h5 class="text-lg font-semibold text-gray-800 mb-2">Product Details</h5>
+                                                <p class="text-sm text-gray-700"><strong>Product Name:</strong> {{ $taskProduct->product->title }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Price per unit:</strong> {{ number_format($productPrice, 2) }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Quantity Sold:</strong> {{ $quantitySold }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Total for this product:</strong> {{ number_format($productTotal, 2) }}</p>
+                                            </div>
+                                            @else
+                                            <!-- Display for services -->
+                                            <div class="p-4 bg-yellow-100 rounded-lg mb-3 border border-yellow-300">
+                                                <h5 class="text-lg font-semibold text-gray-800 mb-2">Service Details</h5>
+                                                <p class="text-sm text-gray-700"><strong>Service Name:</strong> {{ $taskProduct->product->title }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Standard Price:</strong> {{ number_format($productPrice, 2) }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Quantity Sold:</strong> {{ $quantitySold }}</p>
+
+                                                <!-- Display attributes -->
+                                                <div class="mt-3">
+                                                    <h6 class="text-sm font-semibold text-gray-700">Service Attributes:</h6>
+                                                    <ul class="list-disc list-inside text-sm">
+                                                        @foreach ($serviceAttributes as $attribute)
+                                                            @php
+                                                                $attributeTotal = ($attribute['price'] ?? 0) * ($attribute['quantity'] ?? 0);
+                                                                $productTotal += $attributeTotal; // Add attribute price to the total
+                                                            @endphp
+                                                            <li>
+                                                                <strong>Attribute:</strong> {{ $attribute['attribute'] ?? 'N/A' }} - 
+                                                                <strong>Price:</strong> {{ number_format($attribute['price'] ?? 0, 2) }}
+                                                                <ul class="ml-6"> <!-- Add indentation with margin -->
+                                                                    <li><strong>Quantity:</strong> {{ $attribute['quantity'] ?? 'N/A' }}</li>
+                                                                    <li><strong>Total for this attribute:</strong> {{ number_format($attributeTotal, 2) }}</li>
+                                                                </ul>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
+
+                                                <p class="text-sm text-gray-700 mt-2"><strong>Total for this service:</strong> {{ number_format($productTotal, 2) }}</p>
+                                            </div>
+                                            @endif
+
+                                            @php
+                                            // Add this product/service total to the task total
+                                            $taskTotal += $productTotal;
+                                            @endphp
+                                            @endif
+                                        @endforeach
+
+                                        <!-- Show total earnings for the task -->
+                                        <div class="p-3 bg-yellow-200 rounded-lg border border-yellow-400">
+                                            <h5 class="text-md font-bold text-gray-800">Total Earnings for this task:</h5>
+                                            <p class="text-lg text-gray-800">{{ number_format($taskTotal, 2) }} DKK</p>
+                                        </div>
+                                    </div>
                                 </div>
+                                @endforeach
                             </div>
                             @endif
-
+                    
                             <!-- Distance-Based Tasks -->
                             @if($project->tasks->where('task_type', 'distance')->isNotEmpty())
                             <div>
                                 <h4 class="text-md font-semibold text-purple-500 mb-2">Distance-Based Tasks</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @foreach ($project->tasks->where('task_type', 'distance') as $index => $task)
-                                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-200">
-                                        <div class="flex-shrink-0 mr-4">
-                                            <i class="fas fa-road text-purple-500 text-2xl"></i>
+                                @foreach ($project->tasks->where('task_type', 'distance') as $index => $task)
+                                    @php
+                                        // Initialize variables
+                                        $totalDistanceCovered = 0;
+                                        $totalTravelCost = 0;
+
+                                        if ($task->taskable) {
+                                            // Loop through the registrationDistances relationship
+                                            foreach ($task->taskable->registrationDistances as $registration) {
+                                                $totalDistanceCovered += $registration->distance ?? 0;
+                                            }
+                                            // Calculate the travel cost based on distance covered
+                                            $totalTravelCost = $task->taskable->price_per_km * $totalDistanceCovered;
+                                        }
+                                    @endphp
+                                    <div class="mt-6 p-4 bg-purple-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                        <i class="fas fa-road text-purple-500 text-2xl mb-2"></i>
+                                        <div class="flex-grow text-center">
+                                            <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
+                                            <p class="text-sm text-gray-600">Distance-Based</p>
+                                            <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
                                         </div>
-                                        <div class="flex-grow">
-                                            <h4 class="text-md font-bold text-gray-800">{{ $task->title }}</h4>
-                                            <p class="text-sm text-gray-600">Distance</p>
+                                        
+                                        <!-- Expandable Details -->
+                                        <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
+                                            <div class="p-2 bg-purple-100 rounded-lg">
+                                                <p class="text-sm text-gray-700"><strong>Total Distance Covered:</strong> {{ number_format($totalDistanceCovered, 2) }} km</p>
+                                                <p class="text-sm text-gray-700"><strong>Price per km:</strong> {{ number_format($task->taskable->price_per_km ?? 0, 2) }} DKK</p>
+                                                <p class="text-sm text-gray-700"><strong>Total Travel Cost:</strong> {{ number_format($totalTravelCost, 2) }} DKK</p>
+                                            </div>
                                         </div>
-                                        <span class="text-xs text-gray-500 ml-auto">{{ $loop->iteration }}</span>
                                     </div>
+                                @endforeach
+                            </div>
+                            @endif
+                    
+                            @if($project->tasks->where('task_type', 'other')->isNotEmpty())
+                                <div>
+                                    <h4 class="text-md font-semibold text-gray-500 mb-2">Other Tasks</h4>
+                                    @foreach ($project->tasks->where('task_type', 'other') as $index => $task)
+                                        <div class="mt-6 p-4 bg-gray-100 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                            <i class="fas fa-tasks text-gray-500 text-2xl mb-2"></i>
+                                            <div class="flex-grow text-center">
+                                                <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
+                                                <p class="text-sm text-gray-600">Other Task</p>
+                                                <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
+                                            </div>
+
+                                            <!-- Expandable Details -->
+                                            <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
+                                                <!-- Description Section -->
+                                                @if($task->taskable && $task->taskable->description)
+                                                    <div class="space-y-2">
+                                                        <p class="text-gray-600 font-semibold"><strong>Description:</strong></p>
+                                                        <p class="text-gray-800">{{ \Illuminate\Support\Str::limit($task->taskable->description, 100, '...') }}</p>
+                                                        @if(strlen($task->taskable->description) > 100)
+                                                            <a href="#" class="text-blue-500 hover:text-blue-700" onclick="document.getElementById('fullDescription{{ $task->id }}').classList.toggle('hidden'); this.innerText = this.innerText === 'Read More' ? 'Read Less' : 'Read More'; return false;">
+                                                                Read More
+                                                            </a>
+                                                            <div id="fullDescription{{ $task->id }}" class="hidden mt-2">
+                                                                <p class="text-gray-800">{{ $task->taskable->description }}</p>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <p class="text-gray-600"><strong>No description available</strong></p>
+                                                @endif
+
+                                                <!-- Custom Fields Section -->
+                                                @if($task->customFields->count() > 0)
+                                                    <div class="space-y-2">
+                                                        <p class="text-gray-600 font-bold"><strong>Custom Fields:</strong></p>
+                                                        <ul class="list-disc pl-6 space-y-1 text-gray-800">
+                                                            @foreach($task->customFields as $field)
+                                                                <li><span class="font-semibold">{{ $field->label ?? 'Field' }}:</span> {{ $field->field }}</li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                @endif
+
+                                                <!-- Checklist Sections -->
+                                                @if($task->checklistSections->count() > 0)
+                                                    <div class="space-y-4">
+                                                        <p class="text-gray-600 font-bold"><strong>Checklist Sections:</strong></p>
+                                                        @foreach($task->checklistSections as $section)
+                                                            <div class="pl-4 bg-gray-100 rounded-lg p-4 shadow-inner">
+                                                                <h4 class="font-bold text-lg text-gray-800">{{ $section->title }}</h4>
+                                                                @if($section->checklistItems->count() > 0)
+                                                                    <ul class="list-disc pl-6 mt-2 space-y-1 text-gray-700">
+                                                                        @foreach($section->checklistItems as $item)
+                                                                            <li>{{ $item->item }}</li>
+                                                                        @endforeach
+                                                                    </ul>
+                                                                @else
+                                                                    <p class="text-gray-700">No checklist items available.</p>
+                                                                @endif
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </div>
                                     @endforeach
                                 </div>
-                            </div>
                             @endif
 
-                            <!-- Other Tasks -->
-                            @if($project->tasks->where('task_type', 'other')->isNotEmpty())
-                            <div>
-                                <h4 class="text-md font-semibold text-gray-500 mb-2">Other Tasks</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @foreach ($project->tasks->where('task_type', 'other') as $index => $task)
-                                    <div class="flex items-center p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-200">
-                                        <div class="flex-shrink-0 mr-4">
-                                            <i class="fas fa-tasks text-gray-500 text-2xl"></i>
-                                        </div>
-                                        <div class="flex-grow">
-                                            <h4 class="text-md font-bold text-gray-800">{{ $task->title }}</h4>
-                                            <p class="text-sm text-gray-600">Other</p>
-                                        </div>
-                                        <span class="text-xs text-gray-500 ml-auto">{{ $loop->iteration }}</span>
-                                    </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                            @endif
-                        </div>
+                    
+                        </div>                    
 
                         <!-- Client Information -->
                         @if($project->client)
@@ -204,7 +396,7 @@
                         @endif
                     </div>
 
-                    <!-- Quick Stats -->
+                   <!-- Quick Stats -->
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-700 mb-4">Quick Stats</h3>
 
@@ -212,19 +404,18 @@
                             $totalEarnings = 0; // Initialize total earnings at the start
                         @endphp
 
-                        <!-- Stats Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Stats Flex (Stacked Layout) -->
+                        <div class="space-y-4"> <!-- Use space-y-4 to add vertical spacing between sections -->
 
                             <!-- Project Earnings -->
                             @if ($project->tasks->where('taskable_type', 'App\Models\TaskProject')->isNotEmpty())
                             @php
-                            $projectEarnings = $project->tasks
-                                ->where('taskable_type', 'App\Models\TaskProject')
-                                ->sum(function ($task) {
-                                    // Check for null values
-                                    return $task->taskable ? $task->taskable->price ?? 0 : 0;
-                                });
-                            $totalEarnings += $projectEarnings;
+                                $projectEarnings = $project->tasks
+                                    ->where('taskable_type', 'App\Models\TaskProject')
+                                    ->sum(function ($task) {
+                                        return $task->taskable ? $task->taskable->price ?? 0 : 0;
+                                    });
+                                $totalEarnings += $projectEarnings;
                             @endphp
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-md">
                                 <i class="fas fa-coins text-yellow-500 text-xl mr-4"></i>
@@ -235,39 +426,42 @@
                             </div>
                             @endif
 
-                            <!-- Hourly Earnings -->
+                            <!-- Hourly Earnings and Time Worked (Grouped) -->
                             @if ($project->tasks->where('taskable_type', 'App\Models\TaskHourly')->isNotEmpty())
                             @php
-                            $totalMinutesWorked = 0;
-                            $hourlyEarnings = 0;
-                            foreach ($project->tasks->where('taskable_type', 'App\Models\TaskHourly') as $task) {
-                                if ($task->taskable) {
-                                    $earningsPerMinute = $task->taskable->rate_per_hour ? $task->taskable->rate_per_hour / 60 : 0;
-                                    foreach ($task->taskable->registrationHourly as $registration) {
-                                        $totalMinutesWorked += $registration->minutes_worked ?? 0;
-                                        $hourlyEarnings += ($registration->minutes_worked ?? 0) * $earningsPerMinute;
+                                $totalMinutesWorked = 0;
+                                $hourlyEarnings = 0;
+                                foreach ($project->tasks->where('taskable_type', 'App\Models\TaskHourly') as $task) {
+                                    if ($task->taskable) {
+                                        $earningsPerMinute = $task->taskable->rate_per_hour ? $task->taskable->rate_per_hour / 60 : 0;
+                                        foreach ($task->taskable->registrationHourly as $registration) {
+                                            $totalMinutesWorked += $registration->minutes_worked ?? 0;
+                                            $hourlyEarnings += ($registration->minutes_worked ?? 0) * $earningsPerMinute;
+                                        }
                                     }
                                 }
-                            }
-                            $hourlyEarnings = ceil($hourlyEarnings);
-                            $totalDays = floor($totalMinutesWorked / (60 * 24));
-                            $totalHours = floor(($totalMinutesWorked / 60) % 24);
-                            $totalMinutes = $totalMinutesWorked % 60;
-                            $timeWorked = sprintf('%dd %dh %dm', $totalDays, $totalHours, $totalMinutes);
-                            $totalEarnings += $hourlyEarnings;
+                                $hourlyEarnings = ceil($hourlyEarnings);
+                                $totalDays = floor($totalMinutesWorked / (60 * 24));
+                                $totalHours = floor(($totalMinutesWorked / 60) % 24);
+                                $totalMinutes = $totalMinutesWorked % 60;
+                                $timeWorked = sprintf('%dd %dh %dm', $totalDays, $totalHours, $totalMinutes);
+                                $totalEarnings += $hourlyEarnings;
                             @endphp
-                            <div class="flex items-center p-4 bg-white rounded-lg shadow-md">
-                                <i class="fas fa-clock text-green-500 text-xl mr-4"></i>
-                                <div class="flex-grow">
-                                    <p class="text-sm text-gray-600">Time Worked</p>
-                                    <h4 class="text-lg font-bold text-gray-800">{{ $timeWorked }}</h4>
+                            <!-- Group Hourly Earnings and Time Worked -->
+                            <div class="p-4 bg-white rounded-lg shadow-md">
+                                <div class="flex items-center">
+                                    <i class="fas fa-clock text-green-500 text-xl mr-4"></i>
+                                    <div class="flex-grow">
+                                        <p class="text-sm text-gray-600">Time Worked</p>
+                                        <h4 class="text-lg font-bold text-gray-800">{{ $timeWorked }}</h4>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="flex items-center p-4 bg-white rounded-lg shadow-md">
-                                <i class="fas fa-money-bill-wave text-green-500 text-xl mr-4"></i>
-                                <div class="flex-grow">
-                                    <p class="text-sm text-gray-600">Hourly Earnings</p>
-                                    <h4 class="text-lg font-bold text-gray-800">{{ number_format($hourlyEarnings, 2) }} DKK</h4>
+                                <div class="mt-3 flex items-center">
+                                    <i class="fas fa-money-bill-wave text-green-500 text-xl mr-4"></i>
+                                    <div class="flex-grow">
+                                        <p class="text-sm text-gray-600">Hourly Earnings</p>
+                                        <h4 class="text-lg font-bold text-gray-800">{{ number_format($hourlyEarnings, 2) }} DKK</h4>
+                                    </div>
                                 </div>
                             </div>
                             @endif
@@ -275,16 +469,24 @@
                             <!-- Product Earnings -->
                             @if ($project->tasks->where('taskable_type', 'App\Models\TaskProduct')->isNotEmpty())
                             @php
-                            $productEarnings = 0;
-                            foreach ($project->tasks->where('taskable_type', 'App\Models\TaskProduct') as $task) {
-                                $taskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
-                                foreach ($taskProducts as $taskProduct) {
-                                    if ($taskProduct->product) {
-                                        $productEarnings += ($taskProduct->product->price ?? 0) * ($taskProduct->quantity ?? 0);
+                                $productEarnings = 0;
+                                foreach ($project->tasks->where('taskable_type', 'App\Models\TaskProduct') as $task) {
+                                    $taskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
+                                    foreach ($taskProducts as $taskProduct) {
+                                        if ($taskProduct->product) {
+                                            if ($taskProduct->product->type === 'service') {
+                                                $serviceAttributes = json_decode($taskProduct->attributes, true) ?? [];
+                                                $productEarnings += ($taskProduct->product->price ?? 0) * ($taskProduct->quantity ?? 0);
+                                                foreach ($serviceAttributes as $attribute) {
+                                                    $productEarnings += ($attribute['price'] ?? 0) * ($attribute['quantity'] ?? 0);
+                                                }
+                                            } else {
+                                                $productEarnings += ($taskProduct->product->price ?? 0) * ($taskProduct->quantity ?? 0);
+                                            }
+                                        }
                                     }
                                 }
-                            }
-                            $totalEarnings += $productEarnings;
+                                $totalEarnings += $productEarnings;
                             @endphp
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-md">
                                 <i class="fas fa-box-open text-yellow-500 text-xl mr-4"></i>
@@ -298,14 +500,14 @@
                             <!-- Travel Costs -->
                             @if ($project->tasks->where('taskable_type', 'App\Models\TaskDistance')->isNotEmpty())
                             @php
-                            $travelCosts = $project->tasks
-                                ->where('taskable_type', 'App\Models\TaskDistance')
-                                ->sum(function ($task) {
-                                    return $task->taskable 
-                                        ? $task->taskable->price_per_km * $task->taskable->registrationDistances->sum('distance') 
-                                        : 0;
-                                });
-                            $totalEarnings += $travelCosts;
+                                $travelCosts = $project->tasks
+                                    ->where('taskable_type', 'App\Models\TaskDistance')
+                                    ->sum(function ($task) {
+                                        return $task->taskable 
+                                            ? $task->taskable->price_per_km * $task->taskable->registrationDistances->sum('distance') 
+                                            : 0;
+                                    });
+                                $totalEarnings += $travelCosts;
                             @endphp
                             <div class="flex items-center p-4 bg-white rounded-lg shadow-md">
                                 <i class="fas fa-road text-purple-500 text-xl mr-4"></i>
@@ -315,17 +517,20 @@
                                 </div>
                             </div>
                             @endif
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- Total Earnings -->
-                            <div class="flex items-center p-4 bg-blue-50 rounded-lg shadow-md">
-                                <i class="fas fa-piggy-bank text-blue-500 text-xl mr-4"></i>
-                                <div class="flex-grow">
+                            <!-- Total Earnings - Full Width Section -->
+                            <div class="mt-6 p-4 pb-8 bg-blue-50 rounded-lg shadow-md flex items-center justify-center mb-4"> <!-- Added mb-4 here -->
+                                <i class="fas fa-piggy-bank text-blue-500 text-2xl mr-4"></i>
+                                <div class="flex-grow text-center">
                                     <p class="text-sm text-blue-700">Total Earnings</p>
                                     <h4 class="text-xl font-extrabold text-blue-700">{{ number_format($totalEarnings, 2) }} DKK</h4>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+                        
+                    
 
                     <div class="mt-auto flex items-center space-x-4">
                         <!-- Plus icon (create task) -->
