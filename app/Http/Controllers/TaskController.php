@@ -297,6 +297,7 @@ class TaskController extends Controller
             'products.*.product_id' => 'required|integer|exists:products,id',
             'products.*.quantity' => 'required|integer|min:0',
             'products.*.type' => 'required|string|in:product,service',
+            'products.*.total_price' => 'required|numeric|min:0', // Validate total_price
             'products.*.attributes' => 'array',
             'products.*.attributes.*.attribute' => 'required_if:products.*.type,service|string|max:255',
             'products.*.attributes.*.quantity' => 'required_if:products.*.type,service|integer|min:0',
@@ -337,6 +338,7 @@ class TaskController extends Controller
                         'type' => $productData['type'],
                         'quantity' => $productData['quantity'],
                         'attributes' => $attributes, // JSON data for services, null for physical products
+                        'total_price' => $productData['total_price'], // Save the total price for both products and services
                     ]);
 
                     // If the product is a physical product, increment the quantity sold
@@ -350,10 +352,6 @@ class TaskController extends Controller
             }
         });
     }
-
-
-
-
 
     public function show(Project $project, Task $task)
     {
