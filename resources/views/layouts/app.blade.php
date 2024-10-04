@@ -30,7 +30,7 @@
         </style>
 
         <!-- Alpine.js for handling interactive UI components -->
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+        {{-- <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script> --}}
 
         <!-- Livewire Global Error Handling -->
         <script>
@@ -42,7 +42,7 @@
         </script>
 
         <!-- CookieBot Script -->
-        <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="a702dbe6-6020-43c6-ab79-b0aa42911391" data-blockingmode="auto" type="text/javascript" defer></script>
+        {{-- <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="a702dbe6-6020-43c6-ab79-b0aa42911391" data-blockingmode="auto" type="text/javascript" defer></script> --}}
 
         <!-- Font Awesome Icons -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js" defer></script>
