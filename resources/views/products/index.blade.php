@@ -72,7 +72,7 @@
                                                 <!-- Conditional display for product vs service -->
                                                 @if($product->type == 'product')
                                                     <dd class="mt-2 text-sm text-gray-500">
-                                                        Price: ${{ $product->price }}
+                                                        Price: {{ $product->price }}
                                                     </dd>
                                                     <dd class="mt-2 text-sm text-gray-500">
                                                         Quantity in Stock: {{ $product->quantity_in_stock }}
