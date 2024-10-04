@@ -19,6 +19,7 @@ class TaskProduct extends Model
         'type',  // Add this
         'quantity',  // Add this
         'attributes',  // Add this if you plan to mass-assign JSON data
+        'total_price',  // Add this
     ];
 
     public function task()
