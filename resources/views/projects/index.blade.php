@@ -89,8 +89,9 @@
                     </button>
 
                     <!-- Expandable Section (Project Details) -->
-                    <div x-show="openProjectDetails" x-collapse class="transition-all duration-300">
-        
+                    <div x-show="openProjectDetails" class="transition-all duration-300">
+
+
                     <!-- Task Summary -->
                     <div class="mb-6">
                         <h3 class="text-lg font-semibold text-gray-700 mb-4">Task Summary</h3>
@@ -100,39 +101,44 @@
                     
                             <!-- Project-Based Tasks -->
                             @if($project->tasks->where('task_type', 'project_based')->isNotEmpty())
-                            <div>
-                                <h4 class="text-md font-semibold text-blue-500 mb-2">Project-Based Tasks</h4>
-                                @foreach ($project->tasks->where('task_type', 'project_based') as $index => $task)
-                                <div class="mt-6 p-4 bg-blue-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
-                                    <i class="fas fa-project-diagram text-blue-500 text-2xl mb-2"></i>
-                                    <div class="flex-grow text-center">
-                                        <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
-                                        <p class="text-sm text-gray-600">Project-Based</p>
-                                        <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
-                                    </div>
-                                    <!-- Expandable Details -->
-                                    <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
-                                        <div class="p-2 bg-blue-100 rounded-lg">
-                                            <!-- Conditionally display Start Date if it exists -->
-                                            @if (!empty($task->taskable->start_date))
-                                                <p class="text-sm text-gray-700"><strong>Start Date:</strong> {{ \Carbon\Carbon::parse($task->taskable->start_date)->format('d-m-Y') }}</p>
-                                            @else
-                                                <p class="text-sm text-gray-700"><strong>Start Date:</strong> No start date provided</p>
-                                            @endif
+                                <div>
+                                    <h4 class="text-md font-semibold text-blue-500 mb-2">Project-Based Tasks</h4>
+                                    @foreach ($project->tasks->where('task_type', 'project_based') as $index => $task)
+                                    <div class="mt-6 p-4 bg-blue-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" x-data="{ openTaskDetails: false }">
+                                        <i class="fas fa-project-diagram text-blue-500 text-2xl mb-2"></i>
+                                        <div class="flex-grow text-center">
+                                            <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
+                                            <p class="text-sm text-gray-600">Project-Based</p>
+                                            <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
+                                        </div>
+                                        <!-- Expand/Collapse Button -->
+                                        <button @click="openTaskDetails = !openTaskDetails" class="mt-2 text-blue-500 hover:underline">
+                                            <span x-show="!openTaskDetails">View Details</span>
+                                            <span x-show="openTaskDetails">Hide Details</span>
+                                        </button>
+                                        <!-- Expandable Details -->
+                                        <div x-show="openTaskDetails" x-cloak class="mt-4 w-full transition-all duration-300 ease-in-out">
+                                            <div class="p-2 bg-blue-100 rounded-lg">
+                                                <!-- Conditionally display Start Date if it exists -->
+                                                @if (!empty($task->taskable->start_date))
+                                                    <p class="text-sm text-gray-700"><strong>Start Date:</strong> {{ \Carbon\Carbon::parse($task->taskable->start_date)->format('d-m-Y') }}</p>
+                                                @else
+                                                    <p class="text-sm text-gray-700"><strong>Start Date:</strong> No start date provided</p>
+                                                @endif
 
-                                            <!-- Conditionally display End Date if it exists -->
-                                            @if (!empty($task->taskable->end_date))
-                                                <p class="text-sm text-gray-700"><strong>End Date:</strong> {{ \Carbon\Carbon::parse($task->taskable->end_date)->format('d-m-Y') }}</p>
-                                            @else
-                                                <p class="text-sm text-gray-700"><strong>End Date:</strong> No end date provided</p>
-                                            @endif
-                                            <p class="text-sm text-gray-700"><strong>Location:</strong> {{ $task->taskable->project_location ?? 'No location provided' }}</p>
-                                            <p class="text-sm text-gray-700"><strong>Price:</strong> {{ number_format($task->taskable->price ?? 0, 2) }} DKK</p>
+                                                <!-- Conditionally display End Date if it exists -->
+                                                @if (!empty($task->taskable->end_date))
+                                                    <p class="text-sm text-gray-700"><strong>End Date:</strong> {{ \Carbon\Carbon::parse($task->taskable->end_date)->format('d-m-Y') }}</p>
+                                                @else
+                                                    <p class="text-sm text-gray-700"><strong>End Date:</strong> No end date provided</p>
+                                                @endif
+                                                <p class="text-sm text-gray-700"><strong>Location:</strong> {{ $task->taskable->project_location ?? 'No location provided' }}</p>
+                                                <p class="text-sm text-gray-700"><strong>Price:</strong> {{ number_format($task->taskable->price ?? 0, 2) }} DKK</p>
+                                            </div>
                                         </div>
                                     </div>
+                                    @endforeach
                                 </div>
-                                @endforeach
-                            </div>
                             @endif
                     
                             <!-- Hourly Tasks -->
@@ -160,16 +166,22 @@
                                         $totalMinutes = $totalMinutesWorked % 60;
                                         $timeWorked = sprintf('%dd %dh %dm', $totalDays, $totalHours, $totalMinutes);
                                     @endphp
-                                    <div class="mt-6 p-4 bg-green-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                    <div class="mt-6 p-4 bg-green-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" x-data="{ openTaskDetails: false }">
                                         <i class="fas fa-clock text-green-500 text-2xl mb-2"></i>
                                         <div class="flex-grow text-center">
                                             <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
                                             <p class="text-sm text-gray-600">Hourly</p>
                                             <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
                                         </div>
-                                        
+
+                                        <!-- Toggle Button for Expandable Details -->
+                                        <button @click="openTaskDetails = !openTaskDetails" class="mt-2 text-green-500 hover:underline">
+                                            <span x-show="!openTaskDetails">View Details</span>
+                                            <span x-show="openTaskDetails">Hide Details</span>
+                                        </button>
+
                                         <!-- Expandable Details -->
-                                        <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
+                                        <div x-show="openTaskDetails" x-cloak class="mt-4 w-full transition-all duration-300 ease-in-out">
                                             <div class="p-2 bg-green-100 rounded-lg">
                                                 <p class="text-sm text-gray-700"><strong>Total Time Worked:</strong> {{ $timeWorked }}</p>
                                                 <p class="text-sm text-gray-700"><strong>Rate Per Hour:</strong> {{ number_format($task->taskable->rate_per_hour ?? 0, 2) }} DKK</p>
@@ -186,7 +198,7 @@
                             <div>
                                 <h4 class="text-xl font-bold text-yellow-600 mb-4">Product-Based Tasks</h4>
                                 @foreach ($project->tasks->where('task_type', 'product') as $index => $task)
-                                <div class="mt-6 p-6 bg-yellow-50 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
+                                <div class="mt-6 p-6 bg-yellow-50 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-200 ease-in-out flex flex-col items-center justify-center cursor-pointer" x-data="{ openTaskDetails: false }">
                                     <i class="fas fa-box-open text-yellow-500 text-3xl mb-3"></i>
                                     <div class="flex-grow text-center">
                                         <h4 class="text-2xl font-extrabold text-gray-800">{{ $task->title }}</h4>
@@ -194,8 +206,14 @@
                                         <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
                                     </div>
 
+                                    <!-- Toggle Button for Expandable Details -->
+                                    <button @click="openTaskDetails = !openTaskDetails" class="mt-2 text-yellow-500 hover:underline">
+                                        <span x-show="!openTaskDetails">View Details</span>
+                                        <span x-show="openTaskDetails">Hide Details</span>
+                                    </button>
+
                                     <!-- Expandable Details -->
-                                    <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full transition-all duration-300 ease-in-out" x-cloak>
+                                    <div x-show="openTaskDetails" class="mt-4 w-full transition-all duration-300 ease-in-out" x-cloak>
                                         @php
                                         // Fetch the task products or services and calculate totals
                                         $taskProducts = \App\Models\TaskProduct::where('task_id', $task->id)->with('product')->get();
@@ -279,112 +297,115 @@
                             <div>
                                 <h4 class="text-md font-semibold text-purple-500 mb-2">Distance-Based Tasks</h4>
                                 @foreach ($project->tasks->where('task_type', 'distance') as $index => $task)
-                                    @php
-                                        // Initialize variables
-                                        $totalDistanceCovered = 0;
-                                        $totalTravelCost = 0;
+                                <div class="mt-6 p-4 bg-purple-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" x-data="{ openTaskDetails: false }">
+                                    <i class="fas fa-road text-purple-500 text-2xl mb-2"></i>
+                                    <div class="flex-grow text-center">
+                                        <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
+                                        <p class="text-sm text-gray-600">Distance-Based</p>
+                                        <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
+                                    </div>
 
-                                        if ($task->taskable) {
-                                            // Loop through the registrationDistances relationship
-                                            foreach ($task->taskable->registrationDistances as $registration) {
-                                                $totalDistanceCovered += $registration->distance ?? 0;
-                                            }
-                                            // Calculate the travel cost based on distance covered
-                                            $totalTravelCost = $task->taskable->price_per_km * $totalDistanceCovered;
-                                        }
-                                    @endphp
-                                    <div class="mt-6 p-4 bg-purple-50 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
-                                        <i class="fas fa-road text-purple-500 text-2xl mb-2"></i>
-                                        <div class="flex-grow text-center">
-                                            <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
-                                            <p class="text-sm text-gray-600">Distance-Based</p>
-                                            <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
-                                        </div>
-                                        
-                                        <!-- Expandable Details -->
-                                        <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
-                                            <div class="p-2 bg-purple-100 rounded-lg">
-                                                <p class="text-sm text-gray-700"><strong>Total Distance Covered:</strong> {{ number_format($totalDistanceCovered, 2) }} km</p>
-                                                <p class="text-sm text-gray-700"><strong>Price per km:</strong> {{ number_format($task->taskable->price_per_km ?? 0, 2) }} DKK</p>
-                                                <p class="text-sm text-gray-700"><strong>Total Travel Cost:</strong> {{ number_format($totalTravelCost, 2) }} DKK</p>
-                                            </div>
+                                    <!-- Toggle Button for Expandable Details -->
+                                    <button @click="openTaskDetails = !openTaskDetails" class="mt-2 text-purple-500 hover:underline">
+                                        <span x-show="!openTaskDetails">View Details</span>
+                                        <span x-show="openTaskDetails">Hide Details</span>
+                                    </button>
+
+                                    <!-- Expandable Details -->
+                                    <div x-show="openTaskDetails" class="mt-4 w-full" x-cloak>
+                                        @php
+                                            $totalDistanceKm = $task->taskable->registrationDistances->sum('distance');
+                                            $totalDistanceMiles = $totalDistanceKm * 0.621371; 
+                                            $pricePerKm = $task->taskable->price_per_km ?? 0;
+                                            $totalTravelCost = $totalDistanceKm * $pricePerKm;
+                                        @endphp
+                                        <div class="p-2 bg-purple-100 rounded-lg">
+                                            <p class="text-sm text-gray-700"><strong>Total Distance Driven:</strong> {{ number_format($totalDistanceKm, 2) }} km ({{ number_format($totalDistanceMiles, 2) }} miles)</p>
+                                            <p class="text-sm text-gray-700"><strong>Price per km:</strong> {{ number_format($pricePerKm, 2) }} DKK</p>
+                                            <p class="text-sm text-gray-700"><strong>Total Travel Cost:</strong> {{ number_format($totalTravelCost, 2) }} DKK</p>
                                         </div>
                                     </div>
+                                </div>
                                 @endforeach
                             </div>
                             @endif
                     
+                            <!-- Other Tasks -->
                             @if($project->tasks->where('task_type', 'other')->isNotEmpty())
-                                <div>
-                                    <h4 class="text-md font-semibold text-gray-500 mb-2">Other Tasks</h4>
-                                    @foreach ($project->tasks->where('task_type', 'other') as $index => $task)
-                                        <div class="mt-6 p-4 bg-gray-100 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" @click="openTaskDetails = openTaskDetails === {{ $task->id }} ? null : {{ $task->id }}">
-                                            <i class="fas fa-tasks text-gray-500 text-2xl mb-2"></i>
-                                            <div class="flex-grow text-center">
-                                                <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
-                                                <p class="text-sm text-gray-600">Other Task</p>
-                                                <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
+                            <div>
+                                <h4 class="text-md font-semibold text-gray-500 mb-2">Other Tasks</h4>
+                                @foreach ($project->tasks->where('task_type', 'other') as $index => $task)
+                                <div class="mt-6 p-4 bg-gray-100 rounded-lg shadow-md flex flex-col items-center justify-center cursor-pointer" x-data="{ openTaskDetails: false }">
+                                    <i class="fas fa-tasks text-gray-500 text-2xl mb-2"></i>
+                                    <div class="flex-grow text-center">
+                                        <h4 class="text-lg font-bold text-gray-800">{{ $task->title }}</h4>
+                                        <p class="text-sm text-gray-600">Other Task</p>
+                                        <span class="text-xs text-gray-500">{{ $loop->iteration }}</span>
+                                    </div>
+
+                                    <!-- Toggle Button for Expandable Details -->
+                                    <button @click="openTaskDetails = !openTaskDetails" class="mt-2 text-gray-500 hover:underline">
+                                        <span x-show="!openTaskDetails">View Details</span>
+                                        <span x-show="openTaskDetails">Hide Details</span>
+                                    </button>
+
+                                    <!-- Expandable Details -->
+                                    <div x-show="openTaskDetails" class="mt-4 w-full" x-cloak>
+                                        <!-- Description Section -->
+                                        @if($task->taskable && $task->taskable->description)
+                                        <div class="space-y-2">
+                                            <p class="text-gray-600 font-semibold"><strong>Description:</strong></p>
+                                            <p class="text-gray-800">{{ \Illuminate\Support\Str::limit($task->taskable->description, 100, '...') }}</p>
+                                            @if(strlen($task->taskable->description) > 100)
+                                            <a href="#" class="text-blue-500 hover:text-blue-700" onclick="document.getElementById('fullDescription{{ $task->id }}').classList.toggle('hidden'); this.innerText = this.innerText === 'Read More' ? 'Read Less' : 'Read More'; return false;">
+                                                Read More
+                                            </a>
+                                            <div id="fullDescription{{ $task->id }}" class="hidden mt-2">
+                                                <p class="text-gray-800">{{ $task->taskable->description }}</p>
                                             </div>
-
-                                            <!-- Expandable Details -->
-                                            <div x-show="openTaskDetails === {{ $task->id }}" class="mt-4 w-full" x-cloak>
-                                                <!-- Description Section -->
-                                                @if($task->taskable && $task->taskable->description)
-                                                    <div class="space-y-2">
-                                                        <p class="text-gray-600 font-semibold"><strong>Description:</strong></p>
-                                                        <p class="text-gray-800">{{ \Illuminate\Support\Str::limit($task->taskable->description, 100, '...') }}</p>
-                                                        @if(strlen($task->taskable->description) > 100)
-                                                            <a href="#" class="text-blue-500 hover:text-blue-700" onclick="document.getElementById('fullDescription{{ $task->id }}').classList.toggle('hidden'); this.innerText = this.innerText === 'Read More' ? 'Read Less' : 'Read More'; return false;">
-                                                                Read More
-                                                            </a>
-                                                            <div id="fullDescription{{ $task->id }}" class="hidden mt-2">
-                                                                <p class="text-gray-800">{{ $task->taskable->description }}</p>
-                                                            </div>
-                                                        @endif
-                                                    </div>
-                                                @else
-                                                    <p class="text-gray-600"><strong>No description available</strong></p>
-                                                @endif
-
-                                                <!-- Custom Fields Section -->
-                                                @if($task->customFields->count() > 0)
-                                                    <div class="space-y-2">
-                                                        <p class="text-gray-600 font-bold"><strong>Custom Fields:</strong></p>
-                                                        <ul class="list-disc pl-6 space-y-1 text-gray-800">
-                                                            @foreach($task->customFields as $field)
-                                                                <li><span class="font-semibold">{{ $field->label ?? 'Field' }}:</span> {{ $field->field }}</li>
-                                                            @endforeach
-                                                        </ul>
-                                                    </div>
-                                                @endif
-
-                                                <!-- Checklist Sections -->
-                                                @if($task->checklistSections->count() > 0)
-                                                    <div class="space-y-4">
-                                                        <p class="text-gray-600 font-bold"><strong>Checklist Sections:</strong></p>
-                                                        @foreach($task->checklistSections as $section)
-                                                            <div class="pl-4 bg-gray-100 rounded-lg p-4 shadow-inner">
-                                                                <h4 class="font-bold text-lg text-gray-800">{{ $section->title }}</h4>
-                                                                @if($section->checklistItems->count() > 0)
-                                                                    <ul class="list-disc pl-6 mt-2 space-y-1 text-gray-700">
-                                                                        @foreach($section->checklistItems as $item)
-                                                                            <li>{{ $item->item }}</li>
-                                                                        @endforeach
-                                                                    </ul>
-                                                                @else
-                                                                    <p class="text-gray-700">No checklist items available.</p>
-                                                                @endif
-                                                            </div>
-                                                        @endforeach
-                                                    </div>
-                                                @endif
-                                            </div>
+                                            @endif
                                         </div>
-                                    @endforeach
-                                </div>
-                            @endif
+                                        @else
+                                        <p class="text-gray-600"><strong>No description available</strong></p>
+                                        @endif
 
-                    
+                                        <!-- Custom Fields Section -->
+                                        @if($task->customFields->count() > 0)
+                                        <div class="space-y-2">
+                                            <p class="text-gray-600 font-bold"><strong>Custom Fields:</strong></p>
+                                            <ul class="list-disc pl-6 space-y-1 text-gray-800">
+                                                @foreach($task->customFields as $field)
+                                                <li><span class="font-semibold">{{ $field->label ?? 'Field' }}:</span> {{ $field->field }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                        @endif
+
+                                        <!-- Checklist Sections -->
+                                        @if($task->checklistSections->count() > 0)
+                                        <div class="space-y-4">
+                                            <p class="text-gray-600 font-bold"><strong>Checklist Sections:</strong></p>
+                                            @foreach($task->checklistSections as $section)
+                                            <div class="pl-4 bg-gray-100 rounded-lg p-4 shadow-inner">
+                                                <h4 class="font-bold text-lg text-gray-800">{{ $section->title }}</h4>
+                                                @if($section->checklistItems->count() > 0)
+                                                <ul class="list-disc pl-6 mt-2 space-y-1 text-gray-700">
+                                                    @foreach($section->checklistItems as $item)
+                                                    <li>{{ $item->item }}</li>
+                                                    @endforeach
+                                                </ul>
+                                                @else
+                                                <p class="text-gray-700">No checklist items available.</p>
+                                                @endif
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif        
                         </div>                    
 
                         <!-- Client Information -->
@@ -519,7 +540,7 @@
                             @endif
                         </div>
                     </div>
-                </div>
+                </div> 
 
                             <!-- Total Earnings - Full Width Section -->
                             <div class="mt-6 p-4 pb-8 bg-blue-50 rounded-lg shadow-md flex items-center justify-center mb-4"> <!-- Added mb-4 here -->
