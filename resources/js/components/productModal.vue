@@ -73,8 +73,14 @@
         </div>
 
         <!-- Success and Error Messages -->
-        <div v-if="successMessage" class="alert alert-success mt-4">{{ successMessage }}</div>
-        <div v-if="errorMessage" class="alert alert-danger mt-4">{{ errorMessage }}</div>
+        <div v-if="successMessage" class="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded text-center">
+          <p class="font-semibold">{{ successMessage }}</p>
+        </div>
+
+        <div v-if="errorMessage" class="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded text-center">
+          <p class="font-semibold">{{ errorMessage }}</p>
+        </div>
+
       </form>
     </div>
   </div>
@@ -204,6 +210,7 @@ export default {
             this.resetForm();
             this.successMessage = 'Product created successfully!';
             this.errorMessage = '';  // Clear any previous error messages
+            window.location.reload();
           } else {
             console.error('Product not defined in server response');
             this.errorMessage = 'An error occurred while creating the product.';
