@@ -163,7 +163,7 @@
                     <button id="importButton" class="btn btn-primary btn-sm mx-1 mb-2" data-toggle="modal" data-target="#importModal">{{ __('Import Calendar') }}</button>
                     <button id="addEventButton" class="btn btn-primary btn-sm mx-1 mb-2" data-toggle="modal" data-target="#eventModal">{{ __('Add') }}</button>
             
-                    <!-- Add the Google Calendar Connect Button -->
+                    {{-- <!-- Add the Google Calendar Connect Button -->
                     @if (is_null(auth()->user()->google_id))  
                         <button id="googleConnectButton" class="btn btn-outline-primary btn-sm mx-1 mb-2" onclick="window.location.href='{{ route('google.connect') }}'">Connect Google Calendar</button>
                     @else  
@@ -171,7 +171,7 @@
             
                         <!-- Button to select a Google Calendar -->
                         <button id="selectCalendarButton" class="btn btn-outline-primary btn-sm mx-1 mb-2" onclick="window.location.href='{{ route('google.list-calendars') }}'">Select Google Calendar</button>
-                    @endif
+                    @endif --}}
                 </div>
             </div>            
         </div>
