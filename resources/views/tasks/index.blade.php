@@ -70,38 +70,73 @@
                 </div>
 
                 @elseif($task->task_type == 'product')
-                <div class="bg-gray-50 p-4 rounded-lg shadow-md">
-                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Product/Service Details</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        @foreach($task->taskProduct as $taskProduct)
-                            @php
-                                $product = $taskProduct->product;
-                                $price = $product->price;
-                                $quantity = $taskProduct->quantity;
-                                $totalPrice = $price * $quantity;
-                                $attributes = $taskProduct->attributes ? (is_string($taskProduct->attributes) ? json_decode($taskProduct->attributes, true) : $taskProduct->attributes) : [];
-                            @endphp
-                            <div class="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200">
-                                <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ $product->title }}</h3>
-                                <p class="text-gray-600"><strong>Type:</strong> {{ ucfirst($product->type) }}</p>
-                                <p class="text-gray-700"><strong>Quantity:</strong> {{ $quantity }}</p>
-                                @if($product->type == 'product')
-                                    <p class="text-gray-700"><strong>Price per Unit:</strong> {{ number_format($price, 2) }} {{ $product->currency ?? 'DKK' }}</p>
-                                    <p class="text-gray-700"><strong>Total Price:</strong> {{ number_format($totalPrice, 2) }} {{ $product->currency ?? 'DKK' }}</p>
-                                @elseif($product->type == 'service' && count($attributes))
-                                    <div class="mt-2">
-                                        <p class="text-gray-700"><strong>Attributes:</strong></p>
-                                        <ul class="list-disc pl-5 space-y-1">
-                                            @foreach($attributes as $attribute)
-                                                <li>{{ $attribute['attribute'] ?? 'N/A' }}: {{ $attribute['quantity'] ?? 'N/A' }} (Price: {{ $attribute['price'] ?? 'N/A' }} {{ $product->currency ?? 'DKK' }})</li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
+                    <div class="bg-gray-50 p-4 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Product/Service Details</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            @foreach($task->taskProduct as $taskProduct)
+                                @php
+                                    $product = $taskProduct->product;
+                                    $price = $product->price; // Base price of the product or service
+                                    $quantity = $taskProduct->quantity;
+                                    $attributes = $taskProduct->attributes ? (is_string($taskProduct->attributes) ? json_decode($taskProduct->attributes, true) : $taskProduct->attributes) : [];
+                                    $totalPrice = $taskProduct->total_price ?? ($price * $quantity); // Use stored total_price if available, else calculate it
+                                @endphp
+                                <div class="p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200">
+                                    <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ $product->title }}</h3>
+                                    <p class="text-gray-600"><strong>Type:</strong> {{ ucfirst($product->type) }}</p>
+                                    <p class="text-gray-700"><strong>Quantity:</strong> {{ $quantity }}</p>
+
+                                    @if($product->type == 'product')
+                                        <!-- For Physical Products -->
+                                        <p class="text-gray-700"><strong>Price per Unit:</strong> {{ number_format($price, 2) }} {{ $product->currency ?? 'DKK' }}</p>
+                                        <p class="text-gray-700"><strong>Total Price:</strong> {{ number_format($totalPrice, 2) }} {{ $product->currency ?? 'DKK' }}</p>
+                                    @elseif($product->type == 'service')
+                                        <!-- For Services -->
+                                        <p class="text-gray-700"><strong>Base Price for Service:</strong> {{ number_format($price, 2) }} {{ $product->currency ?? 'DKK' }}</p>
+
+                                        @if(is_array($attributes) && count($attributes) > 0)
+                                            <div class="mt-4">
+                                                <h4 class="text-lg font-bold text-gray-900">Service Attributes</h4>
+                                                <div class="overflow-x-auto">
+                                                    <table class="min-w-full bg-white border border-gray-300 rounded-lg">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="px-4 py-2 border-b-2 border-gray-200 text-left text-sm font-semibold text-gray-600">Attribute</th>
+                                                                <th class="px-4 py-2 border-b-2 border-gray-200 text-right text-sm font-semibold text-gray-600">Quantity</th>
+                                                                <th class="px-4 py-2 border-b-2 border-gray-200 text-right text-sm font-semibold text-gray-600">Price (DKK)</th>
+                                                                <th class="px-4 py-2 border-b-2 border-gray-200 text-right text-sm font-semibold text-gray-600">Total</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach($attributes as $attribute)
+                                                                @php
+                                                                    $totalAttributePrice = $attribute['quantity'] * $attribute['price'];
+                                                                @endphp
+                                                                <tr class="hover:bg-gray-100">
+                                                                    <td class="px-4 py-2 border-b border-gray-200 text-sm text-gray-700">{{ $attribute['attribute'] ?? 'N/A' }}</td>
+                                                                    <td class="px-4 py-2 border-b border-gray-200 text-right text-sm text-gray-700">{{ $attribute['quantity'] ?? 'N/A' }}</td>
+                                                                    <td class="px-4 py-2 border-b border-gray-200 text-right text-sm text-gray-700">{{ number_format($attribute['price'] ?? 0, 2) }}</td>
+                                                                    <td class="px-4 py-2 border-b border-gray-200 text-right text-sm text-gray-700">{{ number_format($totalAttributePrice, 2) }}</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+
+                                                <div class="mt-4 flex justify-between items-center">
+                                                    <p class="text-lg font-semibold text-gray-800">Total Price for Service:</p>
+                                                    <p class="text-lg font-semibold text-gray-900">{{ number_format($totalPrice, 2) }} {{ $product->currency ?? 'DKK' }}</p>
+                                                </div>
+                                            </div>
+                                        @else
+                                            <p class="text-gray-700"><strong>No attributes available</strong></p>
+                                        @endif
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
-                </div>
+
 
                 @elseif($task->task_type == 'distance')
                 <div class="bg-gray-50 p-4 rounded-lg shadow-md">
