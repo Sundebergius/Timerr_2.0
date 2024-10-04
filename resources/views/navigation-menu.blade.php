@@ -14,9 +14,9 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                    <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+                    {{-- <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
-                    </x-nav-link>
+                    </x-nav-link> --}}
                     <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                         {{ __('Clients') }}
                     </x-nav-link>
@@ -67,16 +67,16 @@
                                         </x-dropdown-link>
                                     @endif
 
-                                    <!-- Restrict "Create New Team" based on the plan -->
+                                    {{-- <!-- Restrict "Create New Team" based on the plan -->
                                     @if (Auth::check() && $planService->getPlanLimits(Auth::user()->subscriptionPlan())['teams'] > 1)
                                         @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
                                             <x-dropdown-link href="{{ route('teams.create') }}">
                                                 {{ __('Create New Team') }}
                                             </x-dropdown-link>
                                         @endcan
-                                    @endif
+                                    @endif --}}
 
-                                    <!-- Team Switcher -->
+                                    {{-- <!-- Team Switcher -->
                                     @if (Auth::check() && Auth::user()->allTeams()->count() > 1)
                                         <div class="border-t border-gray-200"></div>
 
@@ -87,7 +87,7 @@
                                         @foreach (Auth::user()->allTeams() as $team)
                                             <x-switchable-team :team="$team" />
                                         @endforeach
-                                    @endif
+                                    @endif --}}
                                 </div>
                             </x-slot>
                         </x-dropdown>
@@ -163,9 +163,9 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
+            {{-- <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
-            </x-responsive-nav-link>
+            </x-responsive-nav-link> --}}
             <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                 {{ __('Clients') }}
             </x-responsive-nav-link>
@@ -235,14 +235,14 @@
                         </x-responsive-nav-link>
                     @endif
 
-                    @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
+                    {{-- @can('create', Laravel\Jetstream\Jetstream::newTeamModel())
                         <x-responsive-nav-link href="{{ route('teams.create') }}" :active="request()->routeIs('teams.create')">
                             {{ __('Create New Team') }}
                         </x-responsive-nav-link>
-                    @endcan
+                    @endcan --}}
 
                     <!-- Team Switcher -->
-                    @if (Auth::check() && Auth::user()->allTeams()->count() > 1)
+                    {{-- @if (Auth::check() && Auth::user()->allTeams()->count() > 1)
                         <div class="border-t border-gray-200"></div>
 
                         <div class="block px-4 py-2 text-xs text-gray-400">
@@ -252,7 +252,7 @@
                         @foreach (Auth::user()->allTeams() as $team)
                             <x-switchable-team :team="$team" component="responsive-nav-link" />
                         @endforeach
-                    @endif
+                    @endif --}}
                 @endif
             </div>
         </div>
