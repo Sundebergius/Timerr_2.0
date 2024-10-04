@@ -125,38 +125,41 @@
         </button>
     </div>
 
-    <!-- Display added products -->
     <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
-        <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
+      <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
 
-        <!-- Editable quantity for physical products -->
-        <div v-if="product.type === 'product'" class="text-gray-700 mb-1">
-            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-            <input type="number" v-model="product.quantity"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                min="1" />
-        </div>
+      <!-- Editable quantity for physical products -->
+      <div v-if="product.type === 'product'" class="text-gray-700 mb-1">
+          <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
+          <input type="number" v-model="product.quantity"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              min="1" />
+          <p class="text-gray-700"><strong>Price per unit:</strong> {{ product.price }} kr</p>
+          <p class="text-gray-700"><strong>Total Price:</strong> {{ calculateTotalPrice(product) }} kr</p>
+      </div>
 
-        <!-- Editable attributes and prices for services -->
-        <div v-if="product.type === 'service'">
-            <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
-            <ul>
-                <li v-for="(attr, attrIndex) in product.selectedAttributes" :key="attrIndex">
-                    <label :for="'attribute-' + index + '-' + attrIndex">{{ attr.attribute }}</label> - 
-                    <input type="number" v-model="attr.quantity"
-                        class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                        min="1" /> ({{ attr.price }} kr each)
-                </li>
-            </ul>
-            <p class="text-gray-700 mb-1"><span class="font-bold">Total Price:</span> {{ product.totalPrice }} kr</p>
-        </div>
-
-        <!-- Remove button -->
-        <button type="button" @click="removeProduct(index)"
-            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-            Remove
-        </button>
+      <!-- Editable attributes and prices for services -->
+    <div v-if="product.type === 'service'">
+        <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
+        <ul class="list-disc pl-5">
+            <li v-for="(attr, attrIndex) in product.selectedAttributes" :key="attrIndex" class="mb-1">
+                <label :for="'attribute-' + index + '-' + attrIndex">{{ attr.attribute }}</label> - 
+                <input type="number" v-model="attr.quantity"
+                    class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    min="1" /> ({{ attr.price }} kr each)
+            </li>
+        </ul>
+        <p class="text-gray-700 mb-1"><span class="font-bold">Standard Price:</span> {{ product.price }} kr</p>
+        <!-- Display the calculated total price for the service -->
+        <p class="text-gray-700 mb-1"><span class="font-bold">Total Price:</span> {{ product.totalPrice }} kr</p>
     </div>
+
+      <!-- Remove button -->
+      <button type="button" @click="removeProduct(index)"
+          class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
+          Remove
+      </button>
+  </div>
 </div>
 
 
@@ -365,7 +368,6 @@ export default {
     // },
   },
   mounted() {
-    console.log('User ID in TaskCreator:', this.userId);;
     // Fetch the products
     if (this.project) {
     try {
@@ -385,7 +387,6 @@ export default {
 
   let hiddenInput = document.getElementById('hiddenInput');
   if (hiddenInput) {
-    console.log('hiddenInput exists. Value:', hiddenInput.value);
   } else {
     console.log('hiddenInput does not exist');
   }
@@ -440,9 +441,7 @@ export default {
       if (this.localProject && this.localProject.user_id) {
         axios.get(`/api/products/${this.localProject.user_id}`)
           .then(response => {
-            console.log('Full response:', response);
             this.products = response.data.products;
-            console.log('Products fetched successfully:', this.products);
           })
           .catch(error => {
             console.error('Error fetching products:', error);
@@ -467,67 +466,65 @@ export default {
     }
   },
   addProduct(index) {
-    console.log('addProduct method called');
-    console.log('this.taskProducts[index].selectedProduct:', this.taskProducts[index].selectedProduct);
-    console.log('this.products:', this.products);
-
     const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
-    console.log('selectedProduct:', selectedProduct);
-
+    
     if (selectedProduct) {
-      let basePrice = parseFloat(selectedProduct.price);
-      let totalPrice = basePrice;
+        let basePrice = parseFloat(selectedProduct.price || 0); // Default to 0 if no price is set
+        let totalPrice = 0; // Initialize total price as 0
 
-      const selectedAttributes = Object.keys(this.taskProducts[index].selectedAttributes)
-        .filter(attrKey => this.taskProducts[index].selectedAttributes[attrKey] > 0)
-        .map(attrKey => {
-          const quantity = this.taskProducts[index].selectedAttributesQuantities[attrKey] || 0;
-          const attribute = selectedProduct.attributes?.find(attr => attr.key === attrKey);
-          const price = attribute ? parseFloat(attribute.value) : 0;
-          
-          // Calculate price for each attribute
-          totalPrice += price * quantity;
+        const selectedAttributes = Object.keys(this.taskProducts[index].selectedAttributes)
+            .filter(attrKey => this.taskProducts[index].selectedAttributes[attrKey] > 0)
+            .map(attrKey => {
+                const quantity = this.taskProducts[index].selectedAttributesQuantities[attrKey] || 0;
+                const attribute = selectedProduct.attributes?.find(attr => attr.key === attrKey);
+                const price = attribute ? parseFloat(attribute.value) : 0;
+                
+                // Calculate price for each attribute: (standard price + attribute price) * quantity
+                let attributeTotal = (basePrice + price) * quantity;
 
-          return {
-            attribute: attrKey,
-            quantity: quantity,
-            price: price
-          };
-        });
+                // Round the result to 2 decimal places to avoid floating-point precision issues
+                totalPrice += Math.round(attributeTotal * 100) / 100;
 
-      // If it's a service, calculate based on selected attributes
-      if (this.taskProducts[index].type === 'service') {
-        this.addedProducts.push({
-          ...selectedProduct,
-          selectedAttributes: selectedAttributes, // Attach the selected attributes
-          totalPrice: totalPrice.toFixed(2) // Compute total price for all attributes
-        });
-      }
-      
-      // Handle physical products separately
-      else if (this.taskProducts[index].type === 'product') {
-        this.addedProducts.push({
-          ...selectedProduct,
-          totalPrice: totalPrice.toFixed(2), // No attributes, just the base price
-          quantity: this.taskProducts[index].quantity || 1
-        });
-      }
+                return {
+                    attribute: attrKey,
+                    quantity: quantity,
+                    price: price
+                };
+            });
 
-      console.log('Added Products: ', this.addedProducts);
+        // If it's a service, process the total differently
+        if (this.taskProducts[index].type === 'service') {
+            this.addedProducts.push({
+                ...selectedProduct,
+                selectedAttributes: selectedAttributes, // Attach selected attributes
+                totalPrice: totalPrice.toFixed(2), // Final total price, rounded
+                quantity: this.taskProducts[index].quantity || 1
+            });
+        } 
+        // For physical products
+        else if (this.taskProducts[index].type === 'product') {
+            totalPrice = basePrice * (this.taskProducts[index].quantity || 1); // Product price * quantity
+            this.addedProducts.push({
+                ...selectedProduct,
+                totalPrice: totalPrice.toFixed(2), // Final total for product, rounded
+                quantity: this.taskProducts[index].quantity || 1
+            });
+        }
 
-      // Clear out the input after adding
-      this.taskProducts[index] = {
-        selectedProduct: null,
-        quantity: 1,
-        type: 'product', // Reset type to default product
-        attributes: [],
-        selectedAttributes: {},
-        selectedAttributesQuantities: {}
-      };
+        // Clear input after adding the product
+        this.taskProducts[index] = {
+            selectedProduct: null,
+            quantity: 1,
+            type: 'product',
+            attributes: [],
+            selectedAttributes: {},
+            selectedAttributesQuantities: {}
+        };
     }
 
-    console.log('Product: ', this.taskProducts);
-  },
+    console.log('Added Products: ', this.addedProducts);
+},
+
     handleProductCreated(product) {
       console.log(product);
       // Emit an event to notify the parent component about the creation of the product
@@ -619,17 +616,31 @@ export default {
       console.log('Task Products Length:', this.taskProducts.length);
     },
     calculateTotalPrice(product) {
-      let totalPrice = parseFloat(product.price);
+    let totalPrice = 0;
 
-      // Add attribute prices if present
-      if (product.selectedAttributes) {
-        product.selectedAttributes.forEach(attr => {
-          totalPrice += attr.price * attr.quantity;
-        });
-      }
+    // For physical products, calculate price * quantity
+    if (product.type === 'product') {
+        totalPrice += product.price * product.quantity;
+    }
 
-      return totalPrice.toFixed(2);
-    },
+    // For services, calculate the standard price and attributes' price
+    if (product.type === 'service') {
+        // Add the standard price if it exists
+        if (product.price > 0) {
+            totalPrice += parseFloat(product.price);
+        }
+
+        // Loop through selected attributes and calculate their prices based on quantity
+        if (product.selectedAttributes) {
+            product.selectedAttributes.forEach(attr => {
+                totalPrice += parseFloat((product.price + attr.price) * attr.quantity);
+            });
+        }
+    }
+
+    return Math.round(totalPrice.toFixed(2));
+},
+
     handleFormSubmission() {
       console.log('handleFormSubmission called');
 
@@ -696,32 +707,37 @@ export default {
           };
           break;
           case 'product':
-          data = {
-            ...data,
-            products: this.addedProducts.map(product => {
-              let productData = {
-                product_id: product.id,
-                quantity: product.type === 'product' 
-                          ? product.quantity // For physical products, take the provided quantity directly
-                          : product.selectedAttributes.reduce((total, attr) => total + attr.quantity, 0), // Sum of quantities for service attributes
-                type: product.type, // 'physical' or 'service'
-              };
+            data = {
+              ...data,
+              task_type: 'product',
+              products: this.addedProducts.map(product => {
+                // Create a base structure for the product data
+                let productData = {
+                  product_id: product.id,
+                  quantity: product.type === 'product' 
+                            ? product.quantity  // For physical products, take the provided quantity
+                            : product.selectedAttributes.reduce((total, attr) => total + attr.quantity, 0),  // Sum of quantities for service attributes
+                  type: product.type,  // 'product' or 'service'
+                  total_price: product.totalPrice,  // Include the totalPrice in the payload
+                };
 
-              // Only add attributes for services
-              if (product.type === 'service') {
-                productData.attributes = product.selectedAttributes.map(attr => ({
-                  attribute: attr.attribute,
-                  quantity: attr.quantity,
-                  price: attr.price,
-                  totalPrice: attr.quantity * attr.price
-                }));
-              }
+                // Only add attributes for services
+                if (product.type === 'service') {
+                  productData.attributes = product.selectedAttributes.map(attr => ({
+                    attribute: attr.attribute,  // Name or key of the attribute
+                    quantity: attr.quantity,    // Quantity for this attribute
+                    price: attr.price,          // Price per unit for this attribute
+                  }));
+                  
+                  // Optionally, include the base price for the service if relevant
+                  productData.basePrice = product.price; 
+                }
 
-              return productData;
-            }),
-            task_type: 'product',
-          };
-          break;
+                return productData;
+              })
+            };
+            break;
+
         case 'distance':
           data = {
             ...data,
