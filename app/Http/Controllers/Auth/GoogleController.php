@@ -108,6 +108,8 @@ class GoogleController extends Controller
             return redirect()->intended('/dashboard');
 
         } catch (\Exception $e) {
+            $googleEmail = isset($googleUser) ? $googleUser->getEmail() : 'N/A'; // Safely check if $googleUser is set
+
             Log::critical('Error during Google login.', [
                 'message' => $e->getMessage(),
                 'google_email' => isset($googleUser) ? $googleUser->getEmail() : 'N/A', // Check if $googleUser exists
