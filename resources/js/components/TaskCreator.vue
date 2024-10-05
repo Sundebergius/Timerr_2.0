@@ -686,6 +686,11 @@ export default {
 
       switch (this.task_type) {
         case 'project_based':
+          // Validate the projectPrice and set it to 0 if empty or invalid
+          if (!this.projectPrice || isNaN(this.projectPrice) || this.projectPrice <= 0) {
+              this.projectPrice = 0;
+          }
+
           data = {
             ...data,
             price: this.projectPrice,
@@ -697,6 +702,11 @@ export default {
           };
           break;
         case 'hourly':
+          // Check if rate_per_hour is empty or invalid, and set it to 0 if needed
+          if (!this.rate_per_hour || isNaN(this.rate_per_hour) || this.rate_per_hour <= 0) {
+              this.rate_per_hour = 0;
+          }
+
           data = {
             ...data,
             task_hourly_id: this.task_hourly_id,
@@ -739,6 +749,11 @@ export default {
             break;
 
         case 'distance':
+          // Check if pricePerKm is empty or invalid, and set it to 0 if needed
+          if (!this.pricePerKm || isNaN(this.pricePerKm) || this.pricePerKm <= 0) {
+              this.pricePerKm = 0;
+          }
+
           data = {
             ...data,
             price_per_km: this.pricePerKm,
