@@ -7,101 +7,104 @@ use App\Models\Product;
 use App\Models\User;
 use App\Models\Team;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Task;
+use App\Models\Project;
+use App\Models\TaskProduct;
 
 class ProductController extends Controller
 {
     public function store(Request $request)
-{
-    \Log::info('Store method called');
+    {
+        \Log::info('Store method called');
 
-    // Log the request data
-    \Log::info('Request data:', $request->all());
+        // Log the request data
+        \Log::info('Request data:', $request->all());
 
-    // Common validation rules
-    $rules = [
-        'title' => 'required|string|max:255',
-        'category' => 'nullable|string|max:255',
-        'description' => 'nullable|string|max:1000',
-        'price' => 'nullable|numeric|min:0',
-        'quantity_in_stock' => 'nullable|integer|min:0',
-        'active' => 'required|boolean',
-        'parent_id' => 'nullable|exists:products,id',
-        'type' => 'required|in:product,service',
-        'user_id' => 'required|exists:users,id',  // Ensure user exists
-        'team_id' => 'nullable|exists:teams,id',  // Ensure team exists
-    ];
-
-    // Additional validation for services
-    if ($request->input('type') === 'service') {
-        $rules['attributes'] = 'required|array';
-        $rules['attributes.*.key'] = 'required|string|max:255';
-        $rules['attributes.*.value'] = 'required|numeric';
-    }
-
-    $validator = Validator::make($request->all(), $rules);
-
-    if ($validator->fails()) {
-        \Log::error('Validation failed:', $validator->errors()->toArray());
-        return response()->json($validator->errors(), 422);
-    }
-
-    try {
-        \Log::info('Validation passed');
-
-        // Check the provided team ID
-        $teamId = $request->input('team_id');
-        \Log::info('Team ID from request:', ['team_id' => $teamId]);
-
-        $team = Team::find($teamId);  // Get the team from the database
-        \Log::info('Fetched team:', $team ? $team->toArray() : 'No team found');
-
-        // Initialize userId and teamId for product data
-        $assignedUserId = $request->input('user_id'); // Always assign user_id
-        $assignedTeamId = null;
-
-        // Check if a valid team exists
-        if ($team) {
-            if ($team->personal_team) {
-                \Log::info('Personal team detected. Using assigned user_id:', ['assigned_user_id' => $assignedUserId]);
-                // Don't assign team_id for personal teams
-            } else {
-                \Log::info('Non-personal team detected. Assigning team_id.');
-                $assignedTeamId = $team->id; // Use team_id for public teams
-                \Log::info('Assigned team_id:', ['assigned_team_id' => $assignedTeamId]);
-            }
-        } else {
-            \Log::error('No valid team found for the user. Team ID: ' . $teamId);
-            return response()->json(['error' => 'Invalid team provided'], 422);
-        }
-
-        // Prepare the product data
-        $productData = [
-            'user_id' => $assignedUserId, // Always set user_id
-            'team_id' => $assignedTeamId, // Set team_id if public team or null if personal
-            'title' => $request->title,
-            'category' => $request->category,
-            'description' => $request->description,
-            'price' => $request->price ?: 0,
-            'quantity_in_stock' => $request->quantity_in_stock ?: 0,
-            'active' => $request->active,
-            'parent_id' => $request->parent_id,
-            'type' => $request->type,
-            'attributes' => $request->input('attributes') ? $this->formatAttributes($request->input('attributes')) : null,
+        // Common validation rules
+        $rules = [
+            'title' => 'required|string|max:255',
+            'category' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'price' => 'nullable|numeric|min:0',
+            'quantity_in_stock' => 'nullable|integer|min:0',
+            'active' => 'required|boolean',
+            'parent_id' => 'nullable|exists:products,id',
+            'type' => 'required|in:product,service',
+            'user_id' => 'required|exists:users,id',  // Ensure user exists
+            'team_id' => 'nullable|exists:teams,id',  // Ensure team exists
         ];
 
-        \Log::info('Product data to be saved:', $productData);
+        // Additional validation for services
+        if ($request->input('type') === 'service') {
+            $rules['attributes'] = 'required|array';
+            $rules['attributes.*.key'] = 'required|string|max:255';
+            $rules['attributes.*.value'] = 'required|numeric';
+        }
 
-        // Create the product
-        $product = Product::create($productData);
+        $validator = Validator::make($request->all(), $rules);
 
-        \Log::info('Product created successfully:', $product->toArray());
+        if ($validator->fails()) {
+            \Log::error('Validation failed:', $validator->errors()->toArray());
+            return response()->json($validator->errors(), 422);
+        }
 
-        return response()->json(['message' => 'Product created successfully', 'product' => $product], 200);
-    } catch (\Exception $e) {
-        \Log::error('Error creating product:', ['exception' => $e->getMessage()]);
-        return response()->json(['error' => 'Unable to create product'], 500);
+        try {
+            \Log::info('Validation passed');
+
+            // Check the provided team ID
+            $teamId = $request->input('team_id');
+            \Log::info('Team ID from request:', ['team_id' => $teamId]);
+
+            $team = Team::find($teamId);  // Get the team from the database
+            \Log::info('Fetched team:', $team ? $team->toArray() : 'No team found');
+
+            // Initialize userId and teamId for product data
+            $assignedUserId = $request->input('user_id'); // Always assign user_id
+            $assignedTeamId = null;
+
+            // Check if a valid team exists
+            if ($team) {
+                if ($team->personal_team) {
+                    \Log::info('Personal team detected. Using assigned user_id:', ['assigned_user_id' => $assignedUserId]);
+                    // Don't assign team_id for personal teams
+                } else {
+                    \Log::info('Non-personal team detected. Assigning team_id.');
+                    $assignedTeamId = $team->id; // Use team_id for public teams
+                    \Log::info('Assigned team_id:', ['assigned_team_id' => $assignedTeamId]);
+                }
+            } else {
+                \Log::error('No valid team found for the user. Team ID: ' . $teamId);
+                return response()->json(['error' => 'Invalid team provided'], 422);
+            }
+
+            // Prepare the product data
+            $productData = [
+                'user_id' => $assignedUserId, // Always set user_id
+                'team_id' => $assignedTeamId, // Set team_id if public team or null if personal
+                'title' => $request->title,
+                'category' => $request->category,
+                'description' => $request->description,
+                'price' => $request->price ?: 0,
+                'quantity_in_stock' => $request->quantity_in_stock ?: 0,
+                'active' => $request->active,
+                'parent_id' => $request->parent_id,
+                'type' => $request->type,
+                'attributes' => $request->input('attributes') ? $this->formatAttributes($request->input('attributes')) : null,
+            ];
+
+            \Log::info('Product data to be saved:', $productData);
+
+            // Create the product
+            $product = Product::create($productData);
+
+            \Log::info('Product created successfully:', $product->toArray());
+
+            return response()->json(['message' => 'Product created successfully', 'product' => $product], 200);
+        } catch (\Exception $e) {
+            \Log::error('Error creating product:', ['exception' => $e->getMessage()]);
+            return response()->json(['error' => 'Unable to create product'], 500);
+        }
     }
-}
 
 
 
@@ -185,13 +188,50 @@ class ProductController extends Controller
         ]);
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
+        // Check if the product is associated with any tasks via TaskProduct
+        $tasksCount = TaskProduct::where('product_id', $product->id)->count();
+
+        // If the user hasn't confirmed the deletion yet, show a warning
+        if ($tasksCount > 0 && !$request->has('confirm')) {
+            $projects = TaskProduct::where('product_id', $product->id)
+                ->with('task.project')
+                ->limit(5)  // Limit the number of displayed tasks
+                ->get()
+                ->map(function ($taskProduct) {
+                    return [
+                        'project_title' => $taskProduct->task->project->title,
+                        'task_title' => $taskProduct->task->title,
+                    ];
+                });
+
+            $projectSummary = $projects->map(function ($item) {
+                return 'Project: ' . $item['project_title'] . ', Task: ' . $item['task_title'];
+            })->join('; ');
+
+            // If there are more than 5 tasks, display a message saying there are more
+            if ($tasksCount > 5) {
+                $projectSummary .= ' and ' . ($tasksCount - 5) . ' more tasks';
+            }
+
+            // Show warning and confirmation form
+            return redirect()->route('products.index')
+                ->with('warning', 'This product is associated with the following tasks and projects: ' . $projectSummary . '. Are you sure you want to delete it? <form action="' . route('products.destroy', $product->id) . '" method="POST" class="inline">
+                    ' . csrf_field() . '
+                    ' . method_field('DELETE') . '
+                    <input type="hidden" name="confirm" value="1">
+                    <button type="submit" class="text-red-500 underline">Click here to confirm</button>
+                </form>');
+        }
+
+        // Authorize the deletion
         $this->authorize('delete', $product);
 
+        // Proceed with deletion
         $product->delete();
 
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully');
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
     }
 
     public function edit(Product $product)

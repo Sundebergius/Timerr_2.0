@@ -5,6 +5,45 @@
         </h2>
     </x-slot>
 
+    <!-- Success and Error Messages -->
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
+        @if (session('success'))
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ session('success') }}</span>
+                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
+                    <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <title>Close</title>
+                        <path d="M14.348 5.652a.5.5 0 0 0-.706 0L10 9.293 6.358 5.652a.5.5 0 1 0-.706.707L9.293 10l-3.641 3.641a.5.5 0 1 0 .707.707L10 10.707l3.641 3.641a.5.5 0 1 0 .707-.707z"/>
+                    </svg>
+                </span>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{{ session('error') }}</span>
+                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
+                    <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <title>Close</title>
+                        <path d="M14.348 5.652a.5.5 0 0 0-.706 0L10 9.293 6.358 5.652a.5.5 0 1 0-.706.707L9.293 10l-3.641 3.641a.5.5 0 1 0 .707.707L10 10.707l3.641 3.641a.5.5 0 1 0 .707-.707z"/>
+                    </svg>
+                </span>
+            </div>
+        @endif
+
+        @if (session('warning'))
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
+                <span class="block sm:inline">{!! session('warning') !!}</span> <!-- Render raw HTML here -->
+                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
+                    <svg class="fill-current h-6 w-6 text-yellow-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <title>Close</title>
+                        <path d="M14.348 5.652a.5.5 0 0 0-.706 0L10 9.293 6.358 5.652a.5.5 0 1 0-.706.707L9.293 10l-3.641 3.641a.5.5 0 1 0 .707.707L10 10.707l3.641 3.641a.5.5 0 1 0 .707-.707z"/>
+                    </svg>
+                </span>
+            </div>
+        @endif
+    </div>
+
     <div class="py-12" id="app" data-user-id="{{ auth()->id() }}" data-team-id="{{ auth()->user()->currentTeam->id }}">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
