@@ -1,4 +1,5 @@
 <template>
+    <div class="task-creator">
   <div class="container mx-auto px-4">
     <!-- <h1 class="text-2xl font-bold mb-6">Add New Task</h1> -->
     <!-- @submit.prevent="handleFormSubmission" -->
@@ -77,94 +78,112 @@
             <label for="note" class="block text-gray-700 text-sm font-bold mb-2">Note:</label>
             <textarea id="note" v-model="note" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea> -->
       
-            <div v-if="task_type === 'product'" class="mb-4">
-    <div v-if="products.length === 0" class="mb-4 text-red-500">
-        <p>No products found. Please <a :href="productUrl" class="text-blue-500 underline">create a product or service</a> first.</p>
-    </div>
+      <div v-if="task_type === 'product'" class="mb-8">
+        <!-- No products warning -->
+        <div v-if="products.length === 0" class="mb-6 text-red-500">
+          <p>No products found. Please <a :href="productUrl" class="text-blue-500 underline">create a product or service</a> first.</p>
+        </div>
 
-    <!-- Display product dropdown -->
-    <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-4" v-if="products.length > 0">
-        <label for="product" class="block text-gray-700 text-sm font-bold mb-2">Product:</label>
-        <div class="flex items-center">
+        <!-- Product dropdown -->
+        <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-6" v-if="products.length > 0">
+          <label for="product" class="block text-lg font-bold mb-2 text-gray-700">Select Product or Service:</label>
+          <div class="relative">
             <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                <option v-for="product in products" :value="product.id">{{ product.title }}</option>
+              class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+              <option v-for="product in products" :value="product.id">{{ product.title }}</option>
             </select>
-        </div>
+          </div>
 
-        <!-- Show the quantity input if a physical product is selected -->
-        <div v-if="taskProduct.type === 'product' && taskProduct.selectedProduct" class="mt-4">
-            <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-            <input type="number" id="quantity" v-model="taskProduct.quantity"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                min="1" />
-        </div>
-
-        <!-- Show attributes selection if the selected product is a service -->
-        <div v-if="taskProduct.type === 'service' && taskProduct.selectedProduct" class="mt-4">
-            <label for="attributes" class="block text-gray-700 text-sm font-bold mb-2">Select Attributes:</label>
-            <div v-for="(attribute, index) in taskProduct.attributes" :key="index" class="mb-2">
-                <div class="flex items-center">
-                    <input type="checkbox" :id="attribute.key" v-model="taskProduct.selectedAttributes[attribute.key]" :true-value="1" :false-value="0" class="mr-2">
-                    <label :for="attribute.key">{{ attribute.key }} - {{ attribute.value }} kr</label>
-
-                    <div v-if="taskProduct.selectedAttributes[attribute.key] > 0" class="ml-4 flex items-center">
-                        <label :for="attribute.key + '-quantity'" class="text-sm font-bold mr-2">Quantity:</label>
-                        <input type="number" :id="attribute.key + '-quantity'" v-model="taskProduct.selectedAttributesQuantities[attribute.key]"
-                            class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                            min="1" />
-                    </div>
-                </div>
+          <!-- Product/Service Details Section -->
+          <div v-if="taskProduct.selectedProductDetails" class="bg-white shadow-lg rounded-lg p-6 mt-4">
+            <!-- For Physical Product -->
+            <div v-if="taskProduct.selectedProductDetails && taskProduct.selectedProductDetails.type === 'product'">
+              <p class="text-xl font-semibold text-blue-700 mb-2">Product Details</p>
+              <p><strong>Price:</strong> {{ taskProduct.selectedProductDetails.price }} kr</p>
+              <p><strong>Quantity in Stock:</strong> {{ taskProduct.selectedProductDetails.quantity_in_stock }}</p>
+              <p v-if="taskProduct.selectedProductDetails.description"><strong>Description:</strong> {{ taskProduct.selectedProductDetails.description }}</p>
             </div>
+
+            <!-- For Service -->
+            <div v-if="taskProduct.selectedProductDetails && taskProduct.selectedProductDetails.type === 'service'">
+              <p class="text-xl font-semibold text-blue-700 mb-2">Service Details</p>
+              <p><strong>Base Price:</strong> {{ taskProduct.selectedProductDetails.price }} kr</p>
+              <p v-if="taskProduct.selectedProductDetails.description"><strong>Description:</strong> {{ taskProduct.selectedProductDetails.description }}</p>
+
+              <!-- Interactive Attribute Selection -->
+              <p class="mt-4 font-semibold">Available Attributes:</p>
+              
+              <!-- Stacked attributes with scrollable section -->
+              <div class="overflow-y-auto max-h-64 space-y-4">
+                <div v-for="(attribute, attrIndex) in taskProduct.selectedProductDetails.attributes" :key="attrIndex" class="flex flex-col md:flex-row md:items-center mb-2">
+                  
+                  <!-- Select button -->
+                  <div
+                    @click="toggleAttribute(taskProduct, attribute)"
+                    class="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out mb-2 md:mb-0 md:mr-4">
+                    {{ taskProduct.selectedAttributes[attribute.key] ? 'Selected' : 'Select' }} {{ attribute.key }}
+                  </div>
+
+                  <!-- Attribute price -->
+                  <span class="ml-2 text-gray-600">{{ attribute.value }} kr</span>
+
+                  <!-- Attribute Quantity if selected -->
+                  <div v-if="taskProduct.selectedAttributes[attribute.key]" class="flex items-center ml-0 mt-2 md:ml-4 md:mt-0">
+                    <label class="text-gray-600 mr-2">Quantity:</label>
+                    <input type="number" v-model="taskProduct.selectedAttributesQuantities[attribute.key]" min="1"
+                      class="shadow border rounded py-1 px-2 w-16 text-center text-gray-700 focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Product Quantity Input for Physical Products -->
+            <div v-if="taskProduct.selectedProductDetails && taskProduct.selectedProductDetails.type === 'product'" class="mt-6">
+              <label for="quantity" class="block text-gray-700 font-semibold mb-2">Quantity:</label>
+              <input type="number" id="quantity" v-model="taskProduct.quantity" min="1"
+                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+            </div>
+
+            <!-- Add Product Button -->
+            <div class="mt-4">
+              <button type="button" @click="validateAndAddProduct(index)"
+                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                Add {{ taskProduct.selectedProductDetails.type === 'product' ? 'Product' : 'Service' }}
+              </button>
+            </div>
+          </div>
         </div>
 
-        <!-- Add Product Button -->
-        <button type="button" @click="validateAndAddProduct(index)"
-            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-            Add this product
-        </button>
-    </div>
+        <!-- List of Added Products -->
+        <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-6 bg-white shadow-md rounded-lg p-6">
+          <h2 class="text-xl font-bold mb-2 text-gray-800">{{ product.title }}</h2>
 
-    <div v-for="(product, index) in addedProducts" :key="'addedProduct' + index" class="mb-4 p-4 bg-white rounded shadow">
-      <h2 class="text-xl font-bold mb-2">{{ product.title }}</h2>
+          <!-- Editable quantity for physical products -->
+          <div v-if="product.type === 'product'" class="mb-4">
+            <label for="quantity" class="block text-gray-700 font-semibold mb-2">Quantity:</label>
+            <input type="number" v-model="product.quantity" min="1"
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+            <p class="text-gray-700 mt-2"><strong>Total Price:</strong> {{ calculateTotalPrice(product) }} kr</p>
+          </div>
 
-      <!-- Editable quantity for physical products -->
-      <div v-if="product.type === 'product'" class="text-gray-700 mb-1">
-          <label for="quantity" class="block text-gray-700 text-sm font-bold mb-2">Quantity:</label>
-          <input type="number" v-model="product.quantity"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              min="1" />
-          <p class="text-gray-700"><strong>Price per unit:</strong> {{ product.price }} kr</p>
-          <p class="text-gray-700"><strong>Total Price:</strong> {{ calculateTotalPrice(product) }} kr</p>
+          <!-- Editable attributes and prices for services -->
+          <div v-if="product.type === 'service'">
+            <p class="text-gray-700 font-semibold">Selected Attributes:</p>
+            <ul class="list-disc pl-5 mt-2">
+              <li v-for="(attr, attrIndex) in product.selectedAttributes" :key="attrIndex">
+                <label>{{ attr.attribute }} - Quantity: {{ attr.quantity }} ({{ attr.price }} kr each)</label>
+              </li>
+            </ul>
+            <p class="text-gray-700 mt-2"><strong>Total Price:</strong> {{ product.totalPrice }} kr</p>
+          </div>
+
+          <!-- Remove Button -->
+          <button type="button" @click="removeProduct(index)"
+            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out mt-4">
+            Remove
+          </button>
+        </div>
       </div>
-
-      <!-- Editable attributes and prices for services -->
-    <div v-if="product.type === 'service'">
-        <p class="text-gray-700 mb-1"><span class="font-bold">Selected Attributes:</span></p>
-        <ul class="list-disc pl-5">
-            <li v-for="(attr, attrIndex) in product.selectedAttributes" :key="attrIndex" class="mb-1">
-                <label :for="'attribute-' + index + '-' + attrIndex">{{ attr.attribute }}</label> - 
-                <input type="number" v-model="attr.quantity"
-                    class="shadow appearance-none border rounded py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    min="1" /> ({{ attr.price }} kr each)
-            </li>
-        </ul>
-        <p class="text-gray-700 mb-1"><span class="font-bold">Standard Price:</span> {{ product.price }} kr</p>
-        <!-- Display the calculated total price for the service -->
-        <p class="text-gray-700 mb-1"><span class="font-bold">Total Price:</span> {{ product.totalPrice }} kr</p>
-    </div>
-
-      <!-- Remove button -->
-      <button type="button" @click="removeProduct(index)"
-          class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4">
-          Remove
-      </button>
-  </div>
-</div>
-
-
-
-
 
       <div v-if="task_type === 'distance'" class="mb-4">
         <!-- <label for="distance" class="block text-gray-700 text-sm font-bold mb-2">Distance (KM):</label>
@@ -252,7 +271,7 @@
         </div>
       </div>
 
-      <input type="hidden" id="hiddenInput" v-model="formData">
+      <!-- <input type="hidden" id="hiddenInput" v-model="formData"> -->
       <div class="flex items-center justify-between mt-8">
         <button type="button" @click="handleFormSubmission"
           class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-96">
@@ -265,6 +284,7 @@
   <product-modal v-if="showModal && localProject" :project_id="localProject.id" :userId="localProject.user_id"
     @close="showModal = false" @product-created="handleProductEvent"></product-modal>
   <!-- @product-created="updateProductList"   -->
+</div>
 </template>
 
 <script>
@@ -277,7 +297,7 @@ export default {
   },
   props: {
     project: {
-      type: String,
+      type: Object,
       required: true
     },
     productUrl: {
@@ -285,22 +305,20 @@ export default {
       required: true // Make sure this prop is required so the warning is cleared
     },
     userId: {
-      type: Number,
-      required: true
-    }
+      type: [Number, String], // Accept both types
+      required: true,
+      coerce(value) {
+        return Number(value); // Convert it to a number
+      }
+    },
   },
+  emits: ['formSubmitted'], // Declare the custom event here
 
-  // props: {
-  //   project: {
-  //     type: String,
-  //     required: true,
-  // },
-  // },
   data() {
     return {
       // localProject: JSON.parse(this.project),
       // userId: this.userId,
-      localProject: this.project ? JSON.parse(this.project) : {},
+      localProject: this.project || {}, // No need to parse, it's already an object
       task_type: 'project_based',
       initialTaskType: 'project_based',
       task_title: '',
@@ -368,28 +386,20 @@ export default {
     // },
   },
   mounted() {
-    // Fetch the products
+    // Directly assign the project prop to localProject
     if (this.project) {
-    try {
-      this.localProject = JSON.parse(this.project);
-      console.log('Parsed Project in TaskCreator:', this.localProject);
+      this.localProject = this.project;
 
-      // Fetch the products only after localProject is initialized
+      console.log('Project in TaskCreator:', this.localProject);
+
+      // Fetch products only if localProject is available and has user_id
       if (this.localProject && this.localProject.user_id) {
-        this.fetchProducts(); // Moved inside after successful parsing
+        this.fetchProducts();
       } else {
         console.warn('User ID is not available in the project data');
       }
-    } catch (e) {
-      console.error('Error parsing project prop:', e);
     }
-  }
 
-  let hiddenInput = document.getElementById('hiddenInput');
-  if (hiddenInput) {
-  } else {
-    console.log('hiddenInput does not exist');
-  }
     // console.log('Project:', this.project);
     // console.log('localProject:', this.localProject);
     // console.log('Type:', typeof this.project);
@@ -401,41 +411,76 @@ export default {
     addCustomField() {
       this.customFields.push({ value: '' });
     },
+
     handleFileUpload(event) {
       this.attachment = event.target.files[0];
     },
+
     toggleChecklistSection() {
       this.showChecklistSection = !this.showChecklistSection;
     },
+
     addChecklistItem(sectionIndex) {
       this.checklistSections[sectionIndex].items = [...this.checklistSections[sectionIndex].items, { value: '' }];
     },
+
     addChecklistSection() {
       this.checklistSections.push({ title: '', items: [{ value: '' }] });
     },
+
     deleteChecklistSection(index) {
       this.checklistSections.splice(index, 1);
     },
+
     deleteChecklistItem(sectionIndex, itemIndex) {
       this.checklistSections[sectionIndex].items.splice(itemIndex, 1);
     },
+
     onProductChange(index) {
-      const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
-      if (selectedProduct) {
-        const attributes = typeof selectedProduct.attributes === 'string'
-          ? JSON.parse(selectedProduct.attributes)
-          : selectedProduct.attributes || {}; // Use empty object if no attributes
-        
-        // Directly modify the taskProducts array
-        this.taskProducts[index] = {
-          ...this.taskProducts[index],
-          type: selectedProduct.type, // Use type instead of productType
-          attributes: selectedProduct.type === 'service' ? attributes : {},
-          selectedAttributes: [],
-          quantity: 1,
-        };
+        const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
+
+        if (selectedProduct) {
+            const attributes = typeof selectedProduct.attributes === 'string'
+                ? JSON.parse(selectedProduct.attributes)
+                : selectedProduct.attributes || {}; // Ensure attributes is always an object
+
+            const selectedAttributes = {};
+            const selectedAttributesQuantities = {};
+
+            if (selectedProduct.type === 'service') {
+                attributes.forEach(attr => {
+                    selectedAttributes[attr.key] = false;
+                    selectedAttributesQuantities[attr.key] = 1;
+                });
+            }
+
+            // Directly modify the `taskProducts` array using Vue's automatic reactivity
+            this.taskProducts[index] = {
+                ...this.taskProducts[index],
+                type: selectedProduct.type || 'unknown', // Default to 'unknown' if type is not available
+                attributes: selectedProduct.type === 'service' ? attributes : [],
+                selectedAttributes: selectedAttributes,
+                selectedAttributesQuantities: selectedAttributesQuantities,
+                quantity: 1,
+                selectedProductDetails: selectedProduct, // Ensure details are set correctly
+            };
+        } else {
+            console.error('Selected product not found.');
+        }
+    },
+
+    toggleAttribute(taskProduct, attribute) {
+      if (taskProduct.selectedAttributes[attribute.key]) {
+        // Deselect the attribute
+        taskProduct.selectedAttributes[attribute.key] = false;
+        taskProduct.selectedAttributesQuantities[attribute.key] = 1; // Reset quantity to 1
+      } else {
+        // Select the attribute
+        taskProduct.selectedAttributes[attribute.key] = true;
+        taskProduct.selectedAttributesQuantities[attribute.key] = 1; // Set default quantity to 1
       }
     },
+
     fetchProducts() {
       this.initialTaskType = 'product';
       if (this.localProject && this.localProject.user_id) {
@@ -450,10 +495,12 @@ export default {
         console.error('Cannot fetch products because user_id is not available');
       }
     },
+
     handleProductEvent(newProduct) {
       this.handleProductCreated(newProduct);
       this.updateProductList(newProduct);
     },
+
     // handleProductCreated(newProduct) {
     //   // Handle the new product here
     // },
@@ -465,6 +512,7 @@ export default {
       this.products.push(newProduct);
     }
   },
+
   addProduct(index) {
     const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
     
