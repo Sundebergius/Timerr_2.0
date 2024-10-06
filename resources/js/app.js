@@ -8,15 +8,12 @@ import { createApp } from 'vue/dist/vue.esm-bundler.js';
 
 //import './bootstrap';
 //import Alpine from 'alpinejs' ;
-import axios from 'axios';
 //window.Alpine = Alpine;
 //Alpine.start();
 
-import 'select2';
 import '../css/app.css';
 
 // import vue components
-import TagEditor from './components/TagEditor.vue'; // Import your component
 import TaskCreator from './components/TaskCreator.vue'; // Import your new component
 import ProductModal from './components/productModal.vue'; // Import your new component
 
@@ -26,131 +23,57 @@ import ProductModal from './components/productModal.vue'; // Import your new com
  * to use in your application's views. An example is included for you.
  */
 
+// Create the Vue application instance
 const app = createApp({
-     data() {
-         return {
-             showModal: false,
-         // products: [],
+    data() {
+        return {
+            showModal: false,
             userId: null,
-            teamId: null, // Add teamId here
-            products: [],
-         };
-     },
+            teamId: null,
+        };
+    },
     async created() {
-        console.log('created() called from app.js');
-        const appElement = document.querySelector('#app');
+        // Get user ID and team ID from the DOM (assuming they are added as data attributes)
+        const appElement = document.querySelector("#app");
         if (appElement) {
             this.userId = Number(appElement.getAttribute('data-user-id'));
-            this.teamId = Number(appElement.getAttribute('data-team-id')); // Retrieve teamId
-
-            console.log('User ID from app.js:', this.userId);
-            console.log('Team ID from app.js:', this.teamId); // Log teamId
-
-            if (this.userId) {
-                try {
-                    console.log('Fetching products from app.js...');
-                    const response = await axios.get(`/api/products/${this.userId}`);
-                    console.log('Products fetched successfully from app.js:', response.data);
-                    this.products = response.data;
-                } catch (error) {
-                    console.error('Error fetching products from app.js:', error);
-                }
-            } else {
-                console.error('User ID is null from app.js');
-            }
-        } else {
-            console.error('App element not found from app.js');
+            this.teamId = Number(appElement.getAttribute('data-team-id'));
         }
-
     },
-    
-     methods: {
-        
-         handleProductCreated(newProduct) {
-        //     // Add the newly created product to the products array
-        //     this.products.push(newProduct);
-            
-        //     // Fetch updated list of products after a new product is created
-        //     this.fetchProducts();
-         },
-         fetchProducts() {
-            console.log('Fetching products from app.js...');
-            axios.get(`/api/products/${this.userId}`)
-                .then(response => {
-                    console.log('Products fetched successfully from app.js:', response.data);
-                    // Filter out any undefined or null values
-                    const validProducts = response.data.filter(product => product != null);
-                    this.products = validProducts;
-                })
-                .catch(error => {
-                    console.error('Error fetching products from app.js:', error);
-                });
-         },
-     }
-});
-
-app.component('tag-editor', TagEditor); // Register your component
-
-app.component('task-creator', TaskCreator, {
     methods: {
-        // Other methods...
+        // Handles the product creation modal
         handleProductCreated(newProduct) {
-            // Add the newly created product to the products array
-            this.products.push(newProduct);
-            
-            // Fetch updated list of products after a new product is created
-            this.fetchProducts();
+            console.log('New product created:', newProduct);
+            this.showModal = false;
+            // Handle further actions after product creation
         },
-        fetchProducts() {
-            console.log('Fetching products from app.js...');
-            axios.get(`/api/products/${this.userId}`)
+        toggleModal() {
+            this.showModal = !this.showModal;
+        },
+
+        // New submitForm method to handle form submissions from task-creator
+        submitForm({ route, data }) {
+            console.log('submitForm called with data:', data);
+
+            // Perform the actual form submission
+            axios.post(route, data)
                 .then(response => {
-                    console.log('Products fetched successfully from app.js:', response.data);
-                    // Filter out any undefined or null values
-                    const validProducts = response.data.filter(product => product != null);
-                    this.products = validProducts;
+                    console.log('Form submitted successfully:', response.data);
+                    // Redirect or handle success
+                    window.location.href = `/projects/${data.project_id}`;
                 })
                 .catch(error => {
-                    console.error('Error fetching products from app.js:', error);
+                    console.error('Error submitting form:', error);
                 });
-        },
-    },
-    created() {
-        // Other created lifecycle hook code...
-        this.$on('fetchProducts', this.fetchProducts);
-        this.$on('productCreated', this.handleProductCreated);
-    },
-}); // Register your new component
-
-// Handle the product-created event emitted by the ProductModal component
-app.component('product-modal', ProductModal, {
-    // Register event handler for the product-created event
-    // emits: ['product-created']
+        }
+    }
 });
 
-import ExampleComponent from './components/ExampleComponent.vue';
-app.component('example-component', ExampleComponent);
+// Register components globally
+app.component('task-creator', TaskCreator);
+app.component('product-modal', ProductModal);
 
-
-/**
- * The following block of code may be used to automatically register your
- * Vue components. It will recursively scan this directory for the Vue
- * components and automatically register them with their "basename".
- *
- * Eg. ./components/ExampleComponent.vue -> <example-component></example-component>
- */
-
-// Object.entries(import.meta.glob('./**/*.vue', { eager: true })).forEach(([path, definition]) => {
-//     app.component(path.split('/').pop().replace(/\.\w+$/, ''), definition.default);
-// });
-
-/**
- * Finally, we will attach the application instance to a HTML element with
- * an "id" attribute of "app". This element is included with the "auth"
- * scaffolding. Otherwise, you will need to add an element yourself.
- */
-
-// Check if the "#app" element exists before trying to mount the app
+// Mount the Vue instance if #app exists
 if (document.querySelector("#app")) {
     app.mount("#app");
 }
