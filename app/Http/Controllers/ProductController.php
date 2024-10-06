@@ -139,9 +139,9 @@ class ProductController extends Controller
     {
         try {
             // Fetch the current user
-            $user = User::find($userId);
+            $user = User::findOrFail($userId);
             
-            // Check if the user is working within their personal team
+            // Determine if the user is working within their personal team
             if ($user->currentTeam && $user->currentTeam->personal_team) {
                 // Fetch products for the user's personal account
                 $products = Product::where('user_id', $user->id)->get();
@@ -150,7 +150,25 @@ class ProductController extends Controller
                 $products = Product::where('team_id', $user->current_team_id)->get();
             }
 
-            return response()->json(['products' => $products], 200);
+            // Format the products and ensure attributes and type are correctly returned
+            $formattedProducts = $products->map(function ($product) {
+                // Check if attributes is a string, if so decode it, otherwise return the array
+                $attributes = is_string($product->attributes) ? json_decode($product->attributes) : $product->attributes;
+
+                return [
+                    'id' => $product->id,
+                    'title' => $product->title,
+                    'type' => $product->type,  // Ensure type is returned
+                    'price' => $product->price,
+                    'quantity_in_stock' => $product->quantity_in_stock,
+                    'description' => $product->description,
+                    'attributes' => $attributes ? $attributes : [],  // Always return an array for attributes
+                    'created_at' => $product->created_at,
+                    'updated_at' => $product->updated_at,
+                ];
+            });
+
+            return response()->json(['products' => $formattedProducts], 200);
         } catch (\Exception $e) {
             \Log::error('Error fetching products: '.$e->getMessage());
             return response()->json(['error' => 'An error occurred while fetching products.'], 500);
