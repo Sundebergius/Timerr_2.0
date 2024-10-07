@@ -31,6 +31,8 @@ class GoogleController extends Controller
     {
         Log::info('Google callback initiated.');
 
+        $googleUser = null; // Initialize variable
+
         try {
             $googleUser = Socialite::driver('google')->user();
             Log::info('Received Google user data.', ['google_email' => $googleUser->getEmail()]);
@@ -39,7 +41,6 @@ class GoogleController extends Controller
             $googleAccountUser = User::where('google_id', $googleUser->getId())->first();
 
             if ($googleAccountUser) {
-                // If the user exists with this Google ID, log them in
                 Log::info('Google account linked to user, logging in.', ['google_id' => $googleUser->getId(), 'user_id' => $googleAccountUser->id]);
                 Auth::login($googleAccountUser);
                 return redirect()->intended('/dashboard');
@@ -50,17 +51,14 @@ class GoogleController extends Controller
 
             if ($existingUser) {
                 if (!$existingUser->google_id) {
-                    // Link Google account to the existing user
                     $existingUser->update([
                         'google_id' => $googleUser->getId(),
                         'google_token' => encrypt($googleUser->token),
                     ]);
                     Log::info('Google account linked to existing user by email.', ['user_id' => $existingUser->id]);
-
                     Auth::login($existingUser);
                     return redirect()->intended('/dashboard');
                 } else {
-                    // If the email matches but the Google ID is already linked, handle gracefully
                     Log::warning('Google account already linked to another user.', ['google_id' => $googleUser->getId(), 'user_id' => $existingUser->id]);
                     return redirect()->route('login')->withErrors(['error' => 'This Google account is already linked to another Timerr account.']);
                 }
@@ -72,34 +70,34 @@ class GoogleController extends Controller
                 'email' => $googleUser->getEmail(),
                 'google_id' => $googleUser->getId(),
                 'google_token' => encrypt($googleUser->token),
-                'password' => null, // No password for Google login
+                'password' => null,
             ]);
             Log::info('New user registered via Google.', ['user_id' => $newUser->id]);
 
             // Create personal team for the new user
             $team = Team::create([
                 'user_id' => $newUser->id,
-                'name' => $newUser->name . "'s Team",
+                'name' => $newUser->name . "'s Personal Workspace",
                 'personal_team' => true,
             ]);
-
-            // Assign the team to the user
             $newUser->ownedTeams()->save($team);
             $newUser->current_team_id = $team->id;
             $newUser->teams()->attach($team, ['role' => 'owner']);
             $newUser->save();
-
             Log::info('Personal team created for new user.', ['team_id' => $team->id]);
 
             // Create Stripe customer without subscription
-            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-            $stripeCustomer = \Stripe\Customer::create([
-                'email' => $newUser->email,
-            ]);
-            $newUser->stripe_id = $stripeCustomer->id;
-            $newUser->save();
-
-            Log::info('Stripe customer created for new user.', ['stripe_id' => $newUser->stripe_id]);
+            try {
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+                $stripeCustomer = \Stripe\Customer::create([
+                    'email' => $newUser->email,
+                ]);
+                $newUser->stripe_id = $stripeCustomer->id;
+                $newUser->save();
+                Log::info('Stripe customer created for new user.', ['stripe_id' => $newUser->stripe_id]);
+            } catch (\Exception $stripeException) {
+                Log::error('Failed to create Stripe customer.', ['error' => $stripeException->getMessage(), 'user_id' => $newUser->id]);
+            }
 
             // Log the new user in
             Auth::login($newUser);
@@ -108,15 +106,13 @@ class GoogleController extends Controller
             return redirect()->intended('/dashboard');
 
         } catch (\Exception $e) {
-            $googleEmail = isset($googleUser) ? $googleUser->getEmail() : 'N/A'; // Safely check if $googleUser is set
-
             Log::critical('Error during Google login.', [
                 'message' => $e->getMessage(),
-                'google_email' => isset($googleUser) ? $googleUser->getEmail() : 'N/A', // Check if $googleUser exists
+                'google_email' => isset($googleUser) ? $googleUser->getEmail() : 'N/A',
             ]);
-        
+
             return redirect()->route('login')->withErrors(['error' => 'Google login failed. Please try again or contact support.']);
-        }        
+        }
     }
 
     public function linkGoogle(Request $request)
