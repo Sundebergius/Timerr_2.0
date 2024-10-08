@@ -20,12 +20,12 @@
                         @formSubmitted="submitForm">
                     </task-creator>
 
-                    <!-- Submit Button -->
+                    {{-- <!-- Submit Button -->
                     <div class="mt-8 flex justify-end">
                         <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full shadow-lg transition duration-300 ease-in-out">
                             Save Task
                         </button>
-                    </div>
+                    </div> --}}
                 </form>
             </div>
         </div>
