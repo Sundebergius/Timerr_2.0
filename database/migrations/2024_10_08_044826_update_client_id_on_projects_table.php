@@ -12,11 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('projects', function (Blueprint $table) {
-            // Drop the current client_id foreign key if it exists
-            $table->dropForeign(['client_id']);
-    
-            // Re-add the foreign key with onDelete('set null')
-            $table->foreign('client_id')->references('id')->on('clients')->onDelete('set null')->change();
+            // Check and drop the existing foreign key if it exists
+            if (DB::select(DB::raw("SHOW KEYS FROM projects WHERE Key_name = 'projects_client_id_foreign'"))) {
+                $table->dropForeign(['client_id']);
+            }
+
+            // Modify the client_id foreign key to include onDelete('set null')
+            $table->foreign('client_id')->references('id')->on('clients')->onDelete('set null');
         });
     }
 
@@ -27,8 +29,8 @@ return new class extends Migration
     {
         Schema::table('projects', function (Blueprint $table) {
             $table->dropForeign(['client_id']);
-    
-            // Re-add the original foreign key constraint if needed (e.g., onDelete cascade or restrict)
+
+            // Restore the original foreign key constraint if needed
             $table->foreign('client_id')->references('id')->on('clients');
         });
     }
