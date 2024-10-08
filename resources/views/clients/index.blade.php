@@ -4,6 +4,90 @@
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
 
+<style>
+    /* General Alert Styling */
+    .alert {
+        position: relative;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.3s ease-in-out;
+    }
+    /* Success and Warning Alerts */
+    .alert-success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+    .alert-warning { background-color: #fff3cd; border-color: #ffeeba; color: #856404; }
+
+    /* Close Button Styling */
+    .alert button {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+    }
+    .alert svg {
+        height: 1.5rem;
+        width: 1.5rem;
+        transition: transform 0.2s;
+    }
+    .alert svg:hover {
+        transform: scale(1.1);
+    }
+
+    /* Main Grid Container for Client Cards */
+    .client-card-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 20px;
+        justify-content: center;
+        width: 100%;
+        margin: 0 auto;
+    }
+    
+    /* Card Styling */
+    .client-card {
+        display: flex;
+        flex-direction: column;
+        max-width: 450px;
+        margin: 0 auto;
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Center Incomplete Rows */
+    .client-card-container.align-last-row { justify-items: center; }
+
+    /* Button & Link Hover Effect */
+    .client-card-container button,
+    .client-card-container a.inline-flex {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .client-card-container button:hover,
+    .client-card-container a.inline-flex:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Tooltip Styling */
+    .tooltip {
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.75);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 1024px) {
+        .client-card-container { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .client-card-container { grid-template-columns: 1fr; }
+    }
+</style>
 
 <x-app-layout>
     <x-slot name="header">
@@ -18,39 +102,31 @@
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
 
-                    <!-- Success message -->
+                    <!-- Success Message -->
                     @if (session('success'))
-                        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
-                            role="alert">
-                            <span class="block sm:inline">{{ session('success') }}</span>
-                            <button type="button" class="absolute top-0 bottom-0 right-0 px-4 py-3"
-                                onclick="this.parentElement.style.display='none';">
-                                <svg class="h-6 w-6 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
+                        <div class="alert alert-success bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative" role="alert">
+                            <span class="block sm:inline font-semibold">{{ session('success') }}</span>
+                            <button type="button" class="absolute top-0 right-0 p-2 focus:outline-none" onclick="this.closest('.alert').remove()">
+                                <svg class="fill-current h-6 w-6 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
                                     <title>Close</title>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
+                                    <path d="M6 6L14 14M14 6L6 14"></path>
                                 </svg>
                             </button>
                         </div>
                     @endif
 
-                    <!-- Error message -->
-                    @error('file')
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-                            role="alert">
-                            <span class="block sm:inline">{{ $message }}</span>
-                            <button type="button" class="absolute top-0 bottom-0 right-0 px-4 py-3"
-                                onclick="this.parentElement.style.display='none';">
-                                <svg class="h-6 w-6 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                    viewBox="0 0 24 24" stroke="currentColor">
+                    <!-- Warning Message (No Auto Dismiss) -->
+                    @if (session('warning'))
+                        <div class="alert alert-warning bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg relative" role="alert">
+                            <span class="block sm:inline font-semibold">{!! session('warning') !!}</span>
+                            <button type="button" class="absolute top-0 right-0 p-2 focus:outline-none" onclick="this.closest('.alert').remove()">
+                                <svg class="fill-current h-6 w-6 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
                                     <title>Close</title>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12" />
+                                    <path d="M6 6L14 14M14 6L6 14"></path>
                                 </svg>
                             </button>
                         </div>
-                    @enderror
+                    @endif
 
                     <!-- Search form -->
                     <form method="GET" action="{{ route('clients.index') }}" class="mb-6">
@@ -493,121 +569,50 @@
 </div>
 </x-app-layout>
 
-<style>
-/* Main grid container for client cards */
-.client-card-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Automatically fill columns */
-    gap: 20px; /* Space between the cards */
-    justify-content: center; /* Ensure grid items are centered horizontally */
-    width: 100%; /* Ensure the grid container takes the full width */
-    margin: 0 auto; /* Center the grid container itself */
-}
-
-/* Ensure last row aligns items properly when there's an extra row */
-.align-last-row {
-    justify-items: center; /* Center the cards in the last row */
-}
-
-/* Card styling */
-.client-card {
-    display: flex;
-    flex-direction: column;
-    margin: 0 auto; /* Center each card within its grid column */
-    width: 100%; /* Ensure cards take full width within grid columns */
-    max-width: 300px; /* Limit the maximum width of each card to prevent overflowing */
-    justify-content: center; /* Center content within the card */
-}
-
-/* Handle single card centering */
-.single-card {
-    justify-content: center;
-    align-items: center;
-}
-
-/* Card styling */
-.client-card {
-    display: flex;
-    flex-direction: column;
-    width: 100%; /* Ensure the card takes full width within grid columns */
-    max-width: 450px; /* Prevent overflowing */
-}
-
-/* Ensure cards behave properly when not a full row */
-.client-card-container.align-last-row {
-    justify-items: center; /* Center incomplete rows */
-}
-
-/* Target only the buttons and links inside client cards */
-.client-card-container button, 
-.client-card-container a.inline-flex {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for emphasis */
-    transition: transform 0.2s ease, box-shadow 0.2s ease; /* Smooth hover effect */
-}
-
-.client-card-container button:hover, 
-.client-card-container a.inline-flex:hover {
-    transform: translateY(-2px); /* Lift on hover */
-    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Stronger shadow on hover */
-}
-
-/* Tooltip styling */
-.tooltip {
-    position: absolute;
-    background-color: rgba(0, 0, 0, 0.75);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    z-index: 1000;
-    pointer-events: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-    .client-card-container {
-        grid-template-columns: repeat(2, 1fr); /* Two cards per row on medium screens */
-    }
-}
-
-@media (max-width: 600px) {
-    .client-card-container {
-        grid-template-columns: 1fr; /* Stack all cards in one column on mobile */
-    }
-}
-</style>
-
-
 {{-- <script src="//unpkg.com/alpinejs" defer></script> --}}
 
 <script>
-    // Initialize tooltips using data attributes
     document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips using data attributes
-    function initializeTooltips() {
-        const tooltipElements = document.querySelectorAll('[data-tooltip]');
+        // Auto-dismiss success alerts only after 5 seconds
+        document.querySelectorAll('.alert-success').forEach(alert => {
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300); // Remove after fade-out
+            }, 5000); // 5-second display
+        });
 
-        tooltipElements.forEach(function(el) {
-            el.addEventListener('mouseenter', function() {
-                const tooltipText = el.getAttribute('data-tooltip');
-                const tooltipDiv = document.createElement('div');
-                tooltipDiv.classList.add('tooltip');
-                tooltipDiv.textContent = tooltipText;
-                document.body.appendChild(tooltipDiv);
-
-                const rect = el.getBoundingClientRect();
-                tooltipDiv.style.left = rect.left + 'px';
-                tooltipDiv.style.top = rect.top - tooltipDiv.offsetHeight - 10 + 'px';
-
-                el.addEventListener('mouseleave', function() {
-                    tooltipDiv.remove();
-                });
+        // Warning/confirmation alerts remain visible until manually closed
+        document.querySelectorAll('.alert-warning').forEach(alert => {
+            alert.querySelector('button').addEventListener('click', () => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300); // Remove after fade-out
             });
         });
-    }
 
-    // Call the function to initialize tooltips on page load
-    initializeTooltips();
+        // Tooltip initialization (if needed)
+        function initializeTooltips() {
+            const tooltipElements = document.querySelectorAll('[data-tooltip]');
+
+            tooltipElements.forEach(function(el) {
+                el.addEventListener('mouseenter', function() {
+                    const tooltipText = el.getAttribute('data-tooltip');
+                    const tooltipDiv = document.createElement('div');
+                    tooltipDiv.classList.add('tooltip');
+                    tooltipDiv.textContent = tooltipText;
+                    document.body.appendChild(tooltipDiv);
+
+                    const rect = el.getBoundingClientRect();
+                    tooltipDiv.style.left = rect.left + 'px';
+                    tooltipDiv.style.top = rect.top - tooltipDiv.offsetHeight - 10 + 'px';
+
+                    el.addEventListener('mouseleave', function() {
+                        tooltipDiv.remove();
+                    });
+                });
+            });
+        }
+
+        initializeTooltips(); // Initialize tooltips on page load
 
     // Toggle Modals and reinitialize tooltips when a modal is shown
     function toggleModal(modalId, show) {
@@ -691,13 +696,6 @@
                 }
             });
         });
-
-        // Automatically dismiss alerts
-        window.setTimeout(function() {
-            $(".alert").fadeTo(500, 0).slideUp(500, function() {
-                $(this).remove();
-            });
-        }, 5000);
 
         // Handle adding multiple search terms
         const searchInput = document.querySelector('input[name="search"]');

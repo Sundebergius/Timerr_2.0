@@ -373,12 +373,41 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client updated successfully!');
     }
 
-    public function destroy(Client $client)
+    public function destroy(Request $request, Client $client)
     {
         $this->authorize('delete', $client);
 
+        // Count associated projects and tasks through those projects
+        $projectsCount = $client->projects()->count();
+        $tasksCount = $client->projects()->withCount('tasks')->get()->sum('tasks_count');
+
+        // If the client is associated and deletion hasn't been confirmed, show a warning
+        if (($projectsCount > 0 || $tasksCount > 0) && !$request->has('confirm')) {
+            // Get the titles of associated projects for display
+            $projectTitles = $client->projects()->limit(5)->pluck('title')->toArray();
+            $projectSummary = implode(', ', $projectTitles);
+
+            if ($projectsCount > 5) {
+                $projectSummary .= ' and ' . ($projectsCount - 5) . ' more projects';
+            }
+
+            // Show warning and confirmation form
+            return redirect()->route('clients.index')
+                ->with('warning', 'This client is associated with the following projects: ' . $projectSummary . '. Are you sure you want to delete it? <form action="' . route('clients.destroy', $client->id) . '" method="POST" class="inline">
+                    ' . csrf_field() . '
+                    ' . method_field('DELETE') . '
+                    <input type="hidden" name="confirm" value="1">
+                    <button type="submit" class="text-red-500 underline">Click here to confirm</button>
+                </form>');
+        }
+
+        // Nullify client_id in related projects to prevent foreign key issues
+        $client->projects()->update(['client_id' => null]);
+
+        // Delete the client
         $client->delete();
-        return redirect()->route('clients.index');
+
+        return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
     }
 
     public function create()

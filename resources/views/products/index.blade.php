@@ -5,42 +5,95 @@
         </h2>
     </x-slot>
 
-    <!-- Success and Error Messages -->
+    <!-- Consolidated Alert Styling -->
+    <style>
+        /* Alert Styling */
+        .alert {
+            display: flex;
+            align-items: start;
+            position: relative;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .alert-success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .alert-warning { background-color: #fff3cd; border-color: #ffeeba; color: #856404; }
+        .alert-error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+
+        .alert button {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert svg {
+            height: 1.5rem;
+            width: 1.5rem;
+            transition: transform 0.2s;
+        }
+
+        .alert svg:hover { transform: scale(1.1); }
+
+        /* Confirmation Link/Button Styling */
+        .delete-warning {
+            display: inline-block;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .delete-warning button.text-red-500 {
+            color: #c53030;
+            font-weight: bold;
+            margin-left: 5px;
+            text-decoration: underline;
+        }
+    </style>
+
+    <!-- Alert Messages -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         @if (session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                <span class="block sm:inline">{{ session('success') }}</span>
-                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
-                    <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <div class="alert alert-success" role="alert">
+                <span class="block sm:inline font-semibold">{{ session('success') }}</span>
+                <button type="button" onclick="this.closest('.alert').remove()">
+                    <svg class="fill-current h-6 w-6 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
                         <title>Close</title>
-                        <path d="M14.348 5.652a.5.5 0 0 0-.706 0L10 9.293 6.358 5.652a.5.5 0 1 0-.706.707L9.293 10l-3.641 3.641a.5.5 0 1 0 .707.707L10 10.707l3.641 3.641a.5.5 0 1 0 .707-.707z"/>
+                        <path d="M6 6L14 14M14 6L6 14"></path>
                     </svg>
-                </span>
+                </button>
             </div>
         @endif
 
         @if (session('error'))
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <span class="block sm:inline">{{ session('error') }}</span>
-                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
-                    <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <div class="alert alert-error" role="alert">
+                <span class="block sm:inline font-semibold">{{ session('error') }}</span>
+                <button type="button" onclick="this.closest('.alert').remove()">
+                    <svg class="fill-current h-6 w-6 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
                         <title>Close</title>
-                        <path d="M14.348 5.652a.5.5 0 0 0-.706 0L10 9.293 6.358 5.652a.5.5 0 1 0-.706.707L9.293 10l-3.641 3.641a.5.5 0 1 0 .707.707L10 10.707l3.641 3.641a.5.5 0 1 0 .707-.707z"/>
+                        <path d="M6 6L14 14M14 6L6 14"></path>
                     </svg>
-                </span>
+                </button>
             </div>
         @endif
 
         @if (session('warning'))
-            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative" role="alert">
-                <span class="block sm:inline">{!! session('warning') !!}</span> <!-- Render raw HTML here -->
-                <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.remove()">
-                    <svg class="fill-current h-6 w-6 text-yellow-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+            <div class="alert alert-warning flex items-start" role="alert">
+                <div class="flex-1">
+                    <!-- Warning Message with Confirmation Link -->
+                    <span class="block sm:inline font-semibold">{!! session('warning') !!}</span>
+                </div>
+                <button type="button" class="p-2 focus:outline-none" onclick="this.closest('.alert').remove()">
+                    <svg class="fill-current h-6 w-6 text-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
                         <title>Close</title>
-                        <path d="M14.348 5.652a.5.5 0 0 0-.706 0L10 9.293 6.358 5.652a.5.5 0 1 0-.706.707L9.293 10l-3.641 3.641a.5.5 0 1 0 .707.707L10 10.707l3.641 3.641a.5.5 0 1 0 .707-.707z"/>
+                        <path d="M6 6L14 14M14 6L6 14"></path>
                     </svg>
-                </span>
-            </div>
+                </button>
+            </div>        
         @endif
     </div>
 
@@ -189,6 +242,22 @@
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.alert-success').forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300); // Remove after fade-out
+                }, 5000); // 5-second display
+            });
+
+            document.querySelectorAll('.alert-warning').forEach(alert => {
+                alert.querySelector('button').addEventListener('click', () => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 300); // Remove after fade-out
+                });
+            });
+        });
+
         function confirmDelete() {
             return confirm('Are you sure you want to delete this product?');
         }

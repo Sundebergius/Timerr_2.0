@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Task;
 use App\Models\Project;
 use App\Models\TaskProduct;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -211,7 +212,7 @@ class ProductController extends Controller
         // Check if the product is associated with any tasks via TaskProduct
         $tasksCount = TaskProduct::where('product_id', $product->id)->count();
 
-        // If the user hasn't confirmed the deletion yet, show a warning
+        // If the user hasn't confirmed the deletion yet, show a warning with associated tasks and projects
         if ($tasksCount > 0 && !$request->has('confirm')) {
             $projects = TaskProduct::where('product_id', $product->id)
                 ->with('task.project')
@@ -228,28 +229,41 @@ class ProductController extends Controller
                 return 'Project: ' . $item['project_title'] . ', Task: ' . $item['task_title'];
             })->join('; ');
 
-            // If there are more than 5 tasks, display a message saying there are more
             if ($tasksCount > 5) {
                 $projectSummary .= ' and ' . ($tasksCount - 5) . ' more tasks';
             }
 
-            // Show warning and confirmation form
+            // Wrap the message and form in a div container
             return redirect()->route('products.index')
-                ->with('warning', 'This product is associated with the following tasks and projects: ' . $projectSummary . '. Are you sure you want to delete it? <form action="' . route('products.destroy', $product->id) . '" method="POST" class="inline">
-                    ' . csrf_field() . '
-                    ' . method_field('DELETE') . '
-                    <input type="hidden" name="confirm" value="1">
+                ->with('warning', '<div class="delete-warning">This product is associated with the following tasks and projects: ' 
+                    . $projectSummary 
+                    . '. Are you sure you want to delete it? <form action="' . route('products.destroy', $product->id) . '" method="POST" class="inline">'
+                    . csrf_field() 
+                    . method_field('DELETE') 
+                    . '<input type="hidden" name="confirm" value="1">
                     <button type="submit" class="text-red-500 underline">Click here to confirm</button>
-                </form>');
+                    </form></div>');
         }
 
-        // Authorize the deletion
-        $this->authorize('delete', $product);
+        // Clean up related tasks and task products
+        try {
+            DB::transaction(function () use ($product) {
+                // Delete associated TaskProduct records
+                TaskProduct::where('product_id', $product->id)->each(function ($taskProduct) {
+                    // Delete the associated tasks if needed
+                    $taskProduct->task->delete();
+                    $taskProduct->delete();
+                });
 
-        // Proceed with deletion
-        $product->delete();
+                // Delete the product
+                $product->delete();
+            });
+        } catch (\Exception $e) {
+            return redirect()->route('products.index')
+                ->with('error', 'Failed to delete product and associated tasks. Please try again.');
+        }
 
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully.');
+        return redirect()->route('products.index')->with('success', 'Product and all associated tasks deleted successfully.');
     }
 
     public function edit(Product $product)
