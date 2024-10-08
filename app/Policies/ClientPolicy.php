@@ -19,6 +19,8 @@ class ClientPolicy
 
     public function create(User $user): bool
     {
+        \Log::info("User {$user->id} attempting to access the create policy for Client/Project.");
+
         return true;
     }
 

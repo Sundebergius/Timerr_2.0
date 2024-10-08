@@ -30,6 +30,8 @@ class ProjectPolicy
      */
     public function create(User $user): bool
     {
+        \Log::info("User {$user->id} attempting to access the create policy for Client/Project.");
+
         // You can allow all authenticated users to create projects
         return true;
     }
