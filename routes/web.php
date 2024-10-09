@@ -166,15 +166,15 @@ Route::middleware('auth')->group(function () {
     | Invoice Management Routes
     |--------------------------------------------------------------------------
     */
-    // Route::prefix('invoices')->group(function () {
-    //     Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
-    //     Route::post('/', [InvoiceController::class, 'store'])->name('invoices.store');
-    //     Route::get('/{id}', [InvoiceController::class, 'show'])->name('invoices.show');
-    //     Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
-    //     Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
-    //     Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('invoices.download');
-    //     Route::get('/{id}/send', [InvoiceController::class, 'send'])->name('invoices.send');
-    // });
+    Route::prefix('invoices')->group(function () {
+        Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
+        Route::post('/', [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::get('/{id}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+        Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+        Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+        Route::get('/{id}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -246,20 +246,20 @@ Route::middleware('auth')->group(function () {
     | Webhook Management Routes
     |--------------------------------------------------------------------------
     */
-    // Route::prefix('integrations')->name('integrations.')->group(function () {
-    //     Route::prefix('webhooks')->name('webhooks.')->group(function () {
-    //         Route::get('/', [WebhookController::class, 'index'])->name('index');
-    //         Route::post('/', [WebhookController::class, 'store'])->name('store');
-    //         Route::delete('/{webhook}', [WebhookController::class, 'destroy'])->name('destroy');
-    //         Route::post('/trigger', [WebhookController::class, 'triggerWebhook'])->name('trigger');
-    //         Route::post('/{webhook}/toggle', [WebhookController::class, 'toggleActive'])->name('toggle');
-    //         Route::post('/client-status-updated', [WebhookController::class, 'handleClientStatusUpdated'])->name('client_status_updated');
-    //         Route::post('/project-created', [WebhookController::class, 'handleProjectCreated'])->name('project_created');
-    //         Route::post('/project-completed', [WebhookController::class, 'handleProjectCompleted'])->name('project_completed');
-    //         Route::post('/task-created', [WebhookController::class, 'handleTaskCreated'])->name('task_created');
-    //         Route::post('/task-completed', [WebhookController::class, 'handleTaskCompleted'])->name('task_completed');
-    //     });
-    // });
+    Route::prefix('integrations')->name('integrations.')->group(function () {
+        Route::prefix('webhooks')->name('webhooks.')->group(function () {
+            Route::get('/', [WebhookController::class, 'index'])->name('index');
+            Route::post('/', [WebhookController::class, 'store'])->name('store');
+            Route::delete('/{webhook}', [WebhookController::class, 'destroy'])->name('destroy');
+            Route::post('/trigger', [WebhookController::class, 'triggerWebhook'])->name('trigger');
+            Route::post('/{webhook}/toggle', [WebhookController::class, 'toggleActive'])->name('toggle');
+            Route::post('/client-status-updated', [WebhookController::class, 'handleClientStatusUpdated'])->name('client_status_updated');
+            Route::post('/project-created', [WebhookController::class, 'handleProjectCreated'])->name('project_created');
+            Route::post('/project-completed', [WebhookController::class, 'handleProjectCompleted'])->name('project_completed');
+            Route::post('/task-created', [WebhookController::class, 'handleTaskCreated'])->name('task_created');
+            Route::post('/task-completed', [WebhookController::class, 'handleTaskCompleted'])->name('task_completed');
+        });
+    });
 });
 
 // Include Auth Routes
