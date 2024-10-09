@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Project Report</title>
+    <title>{{ $headerDetails['title'] }}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
             font-size: 0.875rem;
         }
-
         .report-container {
             max-width: 800px;
             margin: 0 auto;
@@ -18,38 +17,33 @@
             border: 1px solid #edf2f7;
             border-radius: 0.5rem;
         }
-
-        .report-header {
-            border-bottom: 2px solid #edf2f7;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
+        .report-header, .report-section, .report-total {
+            margin-bottom: 1.5rem;
+            page-break-inside: avoid; /* Avoid splitting sections */
         }
-
+        .report-section, .report-item {
+            page-break-inside: avoid; /* Prevent splitting within sections */
+        }
+        .logo-container img {
+            max-width: 150px;
+            height: auto;
+        }
         .report-header h1 {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #2d3748;
+            color: #08577a; /* Logo color */
         }
-
-        .report-header .meta-info {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-            color: #4a5568;
-        }
-
-        .report-section {
-            margin-bottom: 2rem;
-        }
-
         .report-section h2 {
             font-size: 1.25rem;
             font-weight: bold;
-            color: #2d3748;
-            margin-bottom: 0.5rem;
+            color: #08577a;
+            page-break-after: avoid;
         }
-
+        .report-section h2 {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #08577a; /* Logo color */
+        }
         .report-item {
             display: grid;
             grid-template-columns: 2fr 1fr 1fr;
@@ -58,59 +52,85 @@
             background-color: #ffffff;
             border: 1px solid #edf2f7;
             border-radius: 0.5rem;
+            page-break-inside: avoid;
         }
-
+        .report-item:nth-child(even) {
+            background-color: #f7fafc;
+        }
         .report-item p {
             margin: 0;
             font-size: 0.875rem;
             color: #4a5568;
         }
-
         .report-total {
             display: grid;
             grid-template-columns: 3fr 1fr;
-            gap: 1rem;
-            margin-top: 2rem;
             padding: 1rem;
             background-color: #ffffff;
             border: 1px solid #edf2f7;
             border-radius: 0.5rem;
+            color: #08577a; /* Logo color for the total section */
+            page-break-before: always; /* Force the total section to a new page if it doesn't fit */
         }
-
+        .report-total, .vat-discount-section {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            padding: 1rem;
+            background-color: #ffffff;
+            border: 1px solid #edf2f7;
+            border-radius: 0.5rem;
+            page-break-inside: avoid;
+        }
+        .report-total p, .vat-discount-section p {
+            margin: 0;
+            font-size: 1rem;
+            color: #08577a;
+            font-weight: bold;
+        }
         .report-total p {
             margin: 0;
             font-size: 1rem;
-            color: #2d3748;
-        }
-
-        .report-section-total {
+            color: #08577a; /* Highlight in logo color */
             font-weight: bold;
-            text-align: right;
-            margin-top: 0.5rem;
         }
-    </style>
+        .signature-section, .notes-section {
+            font-size: 0.875rem;
+            color: #4a5568;
+        }
+        .footer {
+            font-size: 0.75rem;
+            color: #4a5568;
+            text-align: center;
+            margin-top: 2rem;
+            page-break-inside: avoid;
+        }
+    </style>        
 </head>
 <body class="bg-gray-100 text-gray-800">
     <div class="report-container">
+        <!-- Logo -->
+        @if($logoData)
+        <div class="logo-container text-center mb-4">
+            <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
+        </div>
+        @endif
+
+        <!-- Header -->
         <div class="report-header">
-            <h1>Project Report: {{ $project->title }}</h1>
+            <h1>{{ $headerDetails['title'] }}</h1>
             <div class="meta-info">
                 <div>
-                    @if($project->client)
-                        <p><strong>Client Name:</strong> {{ $project->client->name }}</p>
-                        <p><strong>Client Email:</strong> {{ $project->client->email }}</p>
-                    @else
-                        <p><strong>Client:</strong> Information not available</p>
-                    @endif
+                    <p><strong>Client Name:</strong> {{ $headerDetails['client_name'] }}</p>
+                    <p><strong>Client Email:</strong> {{ $headerDetails['client_email'] }}</p>
                 </div>
                 <div>
-                    <p><strong>Report Date:</strong> {{ now()->toFormattedDateString() }}</p>
-                    <p><strong>Project ID:</strong> #{{ $project->id }}</p>
+                    <p><strong>Report Date:</strong> {{ $headerDetails['report_date'] }}</p>
+                    <p><strong>Project ID:</strong> {{ $headerDetails['project_id'] }}</p>
                 </div>
             </div>
         </div>
 
-        <!-- Project-Based Tasks Section -->
+        <!-- Project-Based Tasks -->
         @if($projectTasks->isNotEmpty())
         <div class="report-section">
             <h2>Project-Based Tasks</h2>
@@ -126,7 +146,7 @@
         </div>
         @endif
 
-        <!-- Hourly Tasks Section -->
+        <!-- Hourly Tasks -->
         @if($hourlyTasks->isNotEmpty())
         <div class="report-section">
             <h2>Hourly Tasks</h2>
@@ -148,7 +168,7 @@
         </div>
         @endif
 
-        <!-- Products Sold Section -->
+        <!-- Products Sold -->
         @if($products->isNotEmpty())
         <div class="report-section">
             <h2>Products Sold</h2>
@@ -165,7 +185,7 @@
         </div>
         @endif
 
-        <!-- Distance Driven Section -->
+        <!-- Distance Driven -->
         @if($distanceTasks->isNotEmpty())
         <div class="report-section">
             <h2>Distance Driven</h2>
@@ -185,13 +205,74 @@
         </div>
         @endif
 
-        <!-- Overall Total Section -->
-        <div class="report-total">
-            <p><strong>Total for all sections:</strong></p>
-            <p class="text-xl font-bold">
-                {{ number_format(($projectTotal ?? 0) + ($hourlyTotal ?? 0) + ($productsTotal ?? 0) + ($distanceTotal ?? 0), 2) }} DKK
-            </p>
+        <!-- Subtotal Section (Always Visible) -->
+        <div class="vat-discount-section">
+            <p><strong>Subtotal:</strong></p>
+            <p>{{ number_format($subtotal, 2) }} DKK</p>
         </div>
+
+        <!-- VAT Section (Only for Paid Users) -->
+        @if($vat > 0 && $userPlan !== 'free')
+        <div class="vat-discount-section">
+            <p><strong>VAT ({{ $vat }}%):</strong></p>
+            <p>{{ number_format($subtotal * ($vat / 100), 2) }} DKK</p>
+        </div>
+        @endif
+
+        <!-- Discount Section (Only for Paid Users) -->
+        @if($discount > 0 && $userPlan !== 'free')
+        <div class="vat-discount-section">
+            <p><strong>Discount ({{ $discount }}%):</strong></p>
+            <p>-{{ number_format($subtotal * ($discount / 100), 2) }} DKK</p>
+        </div>
+        @endif
+
+        <!-- Total Calculation Summary (Adjusts Label Based on VAT and Discount Presence) -->
+        @if($userPlan !== 'free' && ($vat > 0 || $discount > 0))
+        <div class="report-total">
+            <p>
+                <strong>
+                    Total 
+                    @if($vat > 0 && $discount > 0)
+                        after VAT and Discount:
+                    @elseif($vat > 0)
+                        after VAT:
+                    @elseif($discount > 0)
+                        after Discount:
+                    @endif
+                </strong>
+            </p>
+            <p class="text-xl font-bold">{{ number_format($totalWithVatAndDiscount, 2) }} DKK</p>
+        </div>
+        @endif
+
+        <!-- Optional Watermark -->
+        @if($includeWatermark)
+        <div class="footer">
+            <div class="flex items-center justify-center space-x-2">
+                <img src="{{ asset('Timerr_icon.svg') }}" alt="Timerr Logo" style="width: 20px; height: 20px;">
+                <p>Created by Timerr</p>
+            </div>
+        </div>
+        @endif
+
+        <!-- Optional Notes Section -->
+        @if($includeNotes)
+        <div class="notes-section">
+            <h2>Additional Notes</h2>
+            <p>{{ $notesContent ?? 'No additional notes provided.' }}</p>
+        </div>
+        @endif
+
+        <!-- Optional Signature Section -->
+        @if($includeSignature)
+        <div class="signature-section">
+            <p>___________________________</p>
+            <p>Client Signature</p>
+            <p>___________________________</p>
+            <p>Service Provider Signature</p>
+        </div>
+        @endif
     </div>
 </body>
 </html>

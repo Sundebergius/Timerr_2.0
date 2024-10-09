@@ -145,106 +145,183 @@ class ProjectController extends Controller
         // Fetch tasks related to the project
         $tasks = $project->tasks;
 
-        // Separate different task types
+        // Separate different task types for easy access in the view
         $projectTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProject');
         $hourlyTasks = $tasks->where('taskable_type', 'App\\Models\\TaskHourly');
         $distanceTasks = $tasks->where('taskable_type', 'App\\Models\\TaskDistance');
         $productTasks = $tasks->where('taskable_type', 'App\\Models\\TaskProduct');
         $otherTasks = $tasks->where('taskable_type', 'App\\Models\\TaskOther');
 
-        // Load related products for product-based tasks
+        // Eager load related taskable data to minimize database queries in the view
+        $projectTasks->load('taskable');
+        $hourlyTasks->load('taskable.registrationHourly');
+        $distanceTasks->load('taskable.registrationDistances');
+        
+        // Load related product data for product-based tasks to access product attributes and pricing
         $productTasks->load('taskProduct.product');
 
+        // Retrieve the user's plan
+        $user = auth()->user();
+        $subscriptionPlan = app(\App\Services\PlanService::class)->getPlanNameByPriceId(
+            $user->subscription('default')?->stripe_price ?? null
+        );
+
         // Pass tasks to the selection view
-        return view('reports.select_tasks', compact('project', 'projectTasks', 'hourlyTasks', 'distanceTasks', 'productTasks', 'otherTasks'));
+        return view('reports.select_tasks', compact(
+            'project',
+            'projectTasks',
+            'hourlyTasks',
+            'distanceTasks',
+            'productTasks',
+            'otherTasks',
+            'subscriptionPlan', // Add subscriptionPlan to the view
+        ));
     }
 
     public function generateReport(Project $project, Request $request)
     {
-        if ($project->status != 'completed') {
-            abort(404); // Or redirect to a different page with an error message
-        }
-
-        // Get the selected task IDs from the form
-        $selectedTasks = $request->input('selected_tasks', []);
-
-        // Fetch only the selected tasks
-        $tasks = $project->tasks()->whereIn('id', $selectedTasks)->get();
-
-        // Separate different task types (project-based, hourly, etc.)
-        $projectTasks = $tasks->filter(function ($task) {
-            return $task->taskable_type === 'App\\Models\\TaskProject';
-        });
-
-        $hourlyTasks = $tasks->filter(function ($task) {
-            return $task->taskable_type === 'App\\Models\\TaskHourly';
-        });
-
-        $distanceTasks = $tasks->filter(function ($task) {
-            return $task->taskable_type === 'App\\Models\\TaskDistance';
-        });
-
-        $productTasks = $tasks->filter(function ($task) {
-            return $task->taskable_type === 'App\\Models\\TaskProduct';
-        });
-
-        // Load related taskable entities
-        $productTasks->load('taskProduct.product');
-        $projectTasks->load('taskable');
-        $hourlyTasks->load('taskable.registrationHourly');
-        $distanceTasks->load('taskable.registrationDistances');
-
-        // Extract products from product tasks for easier processing in the report
-        $products = collect();
-        foreach ($productTasks as $task) {
-            foreach ($task->taskProduct as $taskProduct) {
-                $products->push([
-                    'product' => $taskProduct->product,
-                    'total_sold' => $taskProduct->total_sold,
-                    'total_price' => $taskProduct->product->price * $taskProduct->total_sold,
-                ]);
+        try {
+            if ($project->status != 'completed') {
+                abort(404); 
             }
+    
+            // Validate request input
+            $validated = $request->validate([
+                'report_title' => 'required|string|max:255',
+                'client_name' => 'required|string|max:255',
+                'client_email' => 'required|email',
+                'report_date' => 'required|date',
+                'project_id' => 'required|string',
+                'report_logo' => 'nullable|file|max:2048|mimetypes:image/jpeg,image/png,image/svg+xml',
+                'include_notes' => 'nullable|boolean',
+                'notes_content' => 'nullable|string',
+                'include_signature' => 'nullable|boolean', 
+                'vat' => 'nullable|numeric', // Only used if VAT is enabled
+                'discount' => 'nullable|numeric', // Only used if discount is applied
+            ]);
+    
+            // Force checkbox values to boolean
+            $includeNotes = filter_var($request->input('include_notes', false), FILTER_VALIDATE_BOOLEAN);
+            $notesContent = $request->input('notes_content', '');
+            $includeSignature = filter_var($request->input('include_signature', false), FILTER_VALIDATE_BOOLEAN);
+    
+            // Capture editable header details
+            $headerDetails = [
+                'title' => $validated['report_title'] ?? 'Project Report: ' . $project->title,
+                'client_name' => $validated['client_name'] ?? $project->client->name ?? 'N/A',
+                'client_email' => $validated['client_email'] ?? $project->client->email ?? 'N/A',
+                'report_date' => $validated['report_date'] ?? now()->toFormattedDateString(),
+                'project_id' => $validated['project_id'] ?? '#'.$project->id,
+            ];
+    
+            // Handle logo if provided
+            $logoData = null;
+            if ($request->hasFile('report_logo') && $request->file('report_logo')->isValid()) {
+                try {
+                    $logoData = base64_encode($request->file('report_logo')->openFile()->fread($request->file('report_logo')->getSize()));
+                    \Log::info("Logo successfully processed for report.");
+                } catch (\Exception $e) {
+                    \Log::warning("Failed to process logo file: " . $e->getMessage());
+                }
+            }
+    
+            // Get the user's subscription plan
+            $user = auth()->user();
+            $subscriptionPlan = app(\App\Services\PlanService::class)->getPlanNameByPriceId(
+                $user->subscription('default')?->stripe_price ?? null
+            );
+    
+            // Determine VAT and discount eligibility based on subscription
+            $vatEnabled = $subscriptionPlan !== 'free' && $request->has('vat'); // Paid users only
+            $vatRate = $vatEnabled ? ($validated['vat'] ?? 0) : 0;
+            $discountRate = $subscriptionPlan !== 'free' ? ($validated['discount'] ?? 0) : 0;
+    
+            // Check if watermark should be included
+            $includeWatermark = $subscriptionPlan === 'free' || $request->has('add_watermark');
+    
+            // Get selected tasks and calculate totals
+            $selectedTasks = $request->input('selected_tasks', []);
+            $tasks = $project->tasks()->whereIn('id', $selectedTasks)->get();
+    
+            // Separate and load related entities
+            $projectTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskProject');
+            $hourlyTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskHourly');
+            $distanceTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskDistance');
+            $productTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskProduct');
+            $projectTasks->load('taskable');
+            $hourlyTasks->load('taskable.registrationHourly');
+            $distanceTasks->load('taskable.registrationDistances');
+            $productTasks->load('taskProduct.product');
+    
+            // Calculate subtotal
+            $subtotal = 0;
+            foreach ($projectTasks as $task) {
+                $subtotal += $task->taskable->price ?? 0;
+            }
+            foreach ($hourlyTasks as $task) {
+                $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
+                $subtotal += $hours * ($task->taskable->rate_per_hour ?? 0);
+            }
+            foreach ($distanceTasks as $task) {
+                $distance = $task->taskable->registrationDistances->sum('distance');
+                $subtotal += $distance * ($task->taskable->price_per_km ?? 0);
+            }
+    
+            $products = collect();
+            foreach ($productTasks as $task) {
+                foreach ($task->taskProduct as $taskProduct) {
+                    $productPrice = $taskProduct->product->price ?? 0;
+                    $quantitySold = $taskProduct->quantity ?? 0;
+                    $productTotal = $productPrice * $quantitySold;
+    
+                    if ($taskProduct->product->type === 'service') {
+                        $serviceAttributes = json_decode($taskProduct->attributes, true) ?? [];
+                        foreach ($serviceAttributes as $attribute) {
+                            $attributeTotal = ($attribute['price'] ?? 0) * ($attribute['quantity'] ?? 0);
+                            $productTotal += $attributeTotal;
+                        }
+                    }
+                    $products->push([
+                        'product' => $taskProduct->product,
+                        'total_sold' => $quantitySold,
+                        'total_price' => $productTotal,
+                    ]);
+                    $subtotal += $productTotal;
+                }
+            }
+    
+            // Apply VAT and discount conditionally
+            $totalWithVat = $vatEnabled ? $subtotal * (1 + $vatRate / 100) : $subtotal;
+            $totalWithVatAndDiscount = $totalWithVat * (1 - $discountRate / 100);
+    
+            $data = [
+                'project' => $project,
+                'projectTasks' => $projectTasks,
+                'hourlyTasks' => $hourlyTasks,
+                'distanceTasks' => $distanceTasks,
+                'products' => $products,
+                'subtotal' => $subtotal,
+                'vat' => $vatRate,
+                'discount' => $discountRate,
+                'totalWithVat' => $vatEnabled ? $totalWithVat : null,
+                'totalWithVatAndDiscount' => $vatEnabled ? $totalWithVatAndDiscount : null,
+                'headerDetails' => $headerDetails,
+                'logoData' => $logoData,
+                'includeNotes' => $includeNotes,
+                'notesContent' => $notesContent,
+                'includeSignature' => $includeSignature,
+                'userPlan' => $subscriptionPlan,
+                'includeWatermark' => $includeWatermark,
+            ];
+    
+            // Generate and return the PDF
+            $pdf = PDF::loadView('reports.project_report', $data);
+            return $pdf->download('project_report_' . $project->id . '.pdf');
+        } catch (\Exception $e) {
+            \Log::error("Error generating report: " . $e->getMessage());
+            return redirect()->back()->with('error', 'There was an error generating the report.');
         }
-
-        // Calculate totals for the report
-        $total = 0;
-        foreach ($projectTasks as $task) {
-            $total += $task->taskable->price ?? 0;
-        }
-        foreach ($hourlyTasks as $task) {
-            $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
-            $total += $hours * $task->taskable->rate_per_hour ?? 0;
-        }
-        foreach ($products as $product) {
-            $total += $product['total_price'];
-        }
-        foreach ($distanceTasks as $task) {
-            $distance = $task->taskable->registrationDistances->sum('distance');
-            $total += $distance * $task->taskable->price_per_km ?? 0;
-        }
-
-        // Optionally include VAT or any other totals as needed
-        $vat = $total * 0.25;
-        $totalWithVat = $total * 1.25;
-
-        // Prepare the data for the PDF report
-        $data = [
-            'project' => $project,
-            'projectTasks' => $projectTasks,
-            'hourlyTasks' => $hourlyTasks,
-            'distanceTasks' => $distanceTasks,
-            'products' => $products,
-            'total' => $total,
-            'vat' => $vat,
-            'totalWithVat' => $totalWithVat,
-        ];
-
-        // Generate the PDF using a view
-        $pdf = PDF::loadView('reports.project_report', $data);
-
-        // Return the generated PDF for download
-        return $pdf->download('project_report_' . $project->id . '.pdf');
-    }
+    }          
 
     public function invoice(Project $project)
     {
