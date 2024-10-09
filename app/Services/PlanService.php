@@ -24,6 +24,16 @@ class PlanService
                 'teams' => 1, // Freelancer plan can only have 1 team (personal team)
             ]
         ],
+        'freelancer test' => [
+            'product' => 'prod_QuFyGzwZRxDsqV',
+            'price' => 'price_1Q67XKEEh64CES4EkbdqPmEc',
+            'limits' => [
+                'clients' => 25,
+                'projects' => 10,
+                'products' => 20,
+                'teams' => 1, // Freelancer plan can only have 1 team (personal team)
+            ]
+        ],
         'freelancer_pro' => [
             'product' => 'prod_ProPlanID', // Example product ID for future plan
             'price' => 'price_ProPlanPriceID',
