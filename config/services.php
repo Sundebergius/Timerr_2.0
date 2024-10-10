@@ -50,8 +50,37 @@ return [
         'secret' => env('STRIPE_SECRET'),
         'key' => env('STRIPE_KEY'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+
+        'plans' => [
+            'test' => [
+                'freelancer' => [
+                    'product_id' => 'prod_QuFyGzwZRxDsqV', 
+                    'price_id' => 'price_1Q67XKEEh64CES4EkbdqPmEc',
+                ],
+                'freelancer_pro' => [
+                    'product_id' => 'prod_ProPlanID_Test', 
+                    'price_id' => 'price_ProPlanPriceID_Test',
+                ],
+                'extra_clients' => [
+                    'product_id' => 'prod_TestExtraClientsID', 
+                    'price_id' => 'price_TestExtraClientsPriceID',
+                ],
+            ],
+
+            'live' => [
+                'freelancer' => [
+                    'product_id' => 'prod_Qu6hjkoWOhNiZK', 
+                    'price_id' => 'price_1Q2IToEEh64CES4Eg5xIuPOH',
+                ],
+                'freelancer_pro' => [
+                    'product_id' => 'prod_ProPlanID', 
+                    'price_id' => 'price_ProPlanPriceID',
+                ],
+                'extra_clients' => [
+                    'product_id' => 'prod_LiveExtraClientsID', 
+                    'price_id' => 'price_LiveExtraClientsPriceID',
+                ],
+            ],
+        ],
     ],
-
-
-
 ];
