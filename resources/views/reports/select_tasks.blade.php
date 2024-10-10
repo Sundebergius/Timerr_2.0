@@ -25,131 +25,142 @@
                     <form method="POST" action="{{ route('projects.generateReport', $project->id) }}" enctype="multipart/form-data">
                         @csrf
 
-                        <!-- Display message about edit restrictions -->
-                            @if($subscriptionPlan === 'free')
-                            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded" role="alert">
-                                <p class="font-bold">Upgrade to a Paid Plan</p>
-                                <p>Unlock editing capabilities for report customization fields by upgrading to a paid plan.</p>
+                    <!-- Display message about edit restrictions for Free Users -->
+                    @if($subscriptionPlan === 'free')
+                        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded" role="alert">
+                            <p class="font-bold">Upgrade to a Paid Plan</p>
+                            <p>Unlock additional editing capabilities by upgrading to a paid plan.</p>
+                        </div>
+                    @endif
+
+                    <!-- Editable Fields for All Users -->
+                    <div class="mb-8">
+                        <button type="button" onclick="toggleSection('headerOfferSection')" class="w-full text-left flex justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-md font-semibold text-white focus:outline-none hover:from-blue-600 hover:to-blue-700 transition-colors duration-200 ease-in-out">
+                            Report Details & Customization
+                            <span id="headerOfferToggleIcon" class="text-xl">&minus;</span>
+                        </button>
+
+                        <div id="headerOfferSection" class="mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                <!-- Report Title -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Report Title</label>
+                                    <input type="text" name="report_title" 
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                        value="Project Report: {{ $project->title }}">
+                                </div>
+
+                                <!-- Client Name -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Client Name</label>
+                                    <input type="text" name="client_name" 
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" 
+                                        value="{{ $project->client->name ?? 'Test Client' }}">
+                                </div>
+
+                                <!-- Client Email -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Client Email</label>
+                                    <input type="email" name="client_email" 
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                        value="{{ $project->client->email ?? 'Test@client.dk' }}">
+                                </div>
+
+                                <!-- Report Date -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Report Date</label>
+                                    <input type="date" name="report_date" 
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                        value="{{ now()->toDateString() }}">
+                                </div>
+
+                                <!-- Project ID -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Project ID</label>
+                                    <input type="text" name="project_id" 
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                        value="#{{ $project->id }}">
+                                </div>
                             </div>
-                        @endif
+                        
 
-                        <!-- Collapsible Header Section -->
-                        <div class="mb-8">
-                            <button type="button" onclick="toggleSection('headerOfferSection')" class="w-full text-left flex justify-between items-center bg-gradient-to-r from-blue-500 to-blue-600 p-4 rounded-md font-semibold text-white focus:outline-none hover:from-blue-600 hover:to-blue-700 transition-colors duration-200 ease-in-out">
-                                Header and Offer Details
-                                <span id="headerOfferToggleIcon" class="text-xl">&minus;</span>
-                            </button>
 
-                            <!-- Content to toggle, with reduced opacity for free plan -->
-                            <div id="headerOfferSection" class="mt-4 {{ $subscriptionPlan === 'free' ? 'opacity-50 pointer-events-none' : '' }}">
-                                <!-- Header Information -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                    <!-- Report Title -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Report Title</label>
-                                        <input type="text" name="report_title" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                                            value="Project Report: {{ $project->title }}" 
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Editable on paid plans' : '' }}">
+                            <!-- Paid Features Section (Limited for Free Users) -->
+                            <div class="mb-8">
+                                <!-- Conditional Heading for Paid Features -->
+                                <h3 class="text-lg font-semibold text-blue-600 mt-8 mb-4 border-b-2 border-blue-500 pb-2">
+                                    Additional Customization Options
+                                    <span class="text-sm text-gray-500">
+                                        @if($subscriptionPlan === 'free')
+                                            (Upgrade for more options)
+                                        @else
+                                            (Available on Paid Plans)
+                                        @endif
+                                    </span>
+                                </h3>
+
+                                <div id="paidFeaturesSection" class="mt-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                        <!-- Upload Logo (Disabled for Free Users) -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Upload Logo</label>
+                                            <input type="file" name="report_logo" accept="image/*" 
+                                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                                {{ $subscriptionPlan === 'free' ? 'disabled' : '' }}
+                                                title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                        </div>
+
+                                        <!-- VAT Toggle and Field -->
+                                        <div class="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
+                                            <input type="checkbox" id="vatToggle" class="h-5 w-5 text-blue-600 border-gray-300 rounded" 
+                                                onchange="toggleVAT()" 
+                                                {{ $subscriptionPlan === 'free' ? 'disabled' : '' }}
+                                                title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                            <span class="text-gray-700 font-medium">Enable VAT</span>
+                                        </div>
+
+                                        <div id="vatField" class="hidden">
+                                            <label class="block text-sm font-medium text-gray-700">VAT (%)</label>
+                                            <input type="number" name="vat" id="vatInput" step="0.01" placeholder="Enter VAT percentage" 
+                                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                                readonly title="Enable VAT to edit this field">
+                                        </div>
+
+                                        <!-- Discount Field (Disabled for Free Users) -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Discount (%)</label>
+                                            <input type="number" name="discount" step="0.01" placeholder="Enter discount percentage"
+                                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                                {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
+                                                title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                        </div>
+
+                                        <!-- Total with VAT and Discount (Display Only) -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Total with VAT and Discount</label>
+                                            <input type="text" id="total_with_vat_discount" 
+                                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100" readonly>
+                                        </div>
                                     </div>
 
-                                    <!-- Client Name -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Client Name</label>
-                                        <input type="text" name="client_name" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" 
-                                            value="{{ $project->client->name ?? 'Test Client' }}"
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Editable on paid plans' : '' }}">
+                                    <!-- Watermark Section (Always Checked and Disabled for Free Users) -->
+                                    <div class="mb-8">
+                                        <label class="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
+                                            <input type="checkbox" name="add_watermark" value="1" 
+                                                class="h-5 w-5 text-blue-600 border-gray-300 rounded mt-1" 
+                                                {{ $subscriptionPlan === 'free' ? 'checked disabled' : '' }}>
+                                            <span>
+                                                <span class="text-gray-700 font-medium">Add "Created by Timerr" Watermark</span>
+                                                <p class="text-gray-500 text-sm mt-1">
+                                                    {{ $subscriptionPlan === 'free' ? 'Watermark is mandatory on free plans. Upgrade to remove it.' : 'Optional watermark for paid plans.' }}
+                                                </p>
+                                            </span>
+                                        </label>
                                     </div>
-
-                                    <!-- Client Email -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Client Email</label>
-                                        <input type="email" name="client_email" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                                            value="{{ $project->client->email ?? 'Test@client.dk' }}"
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Editable on paid plans' : '' }}">
-                                    </div>
-
-                                    <!-- Report Date -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Report Date</label>
-                                        <input type="date" name="report_date" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                                            value="{{ now()->toDateString() }}"
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Editable on paid plans' : '' }}">
-                                    </div>
-
-                                    <!-- Project ID -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Project ID</label>
-                                        <input type="text" name="project_id" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                                            value="#{{ $project->id }}" 
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Editable on paid plans' : '' }}">
-                                    </div>
-
-                                    <!-- Upload Logo (disabled for free plan) -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Upload Logo</label>
-                                        <input type="file" name="report_logo" accept="image/*" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" 
-                                            {{ $subscriptionPlan === 'free' ? 'disabled' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans' : '' }}">
-                                    </div>
-                                </div>
-
-                                <!-- Offer Details Section -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                    <!-- VAT Field -->
-                                    <!-- Toggle VAT Inclusion -->
-                                    <div class="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
-                                        <input type="checkbox" id="vatToggle" class="h-5 w-5 text-blue-600 border-gray-300 rounded" onchange="toggleVAT()">
-                                        <span class="text-gray-700 font-medium">Enable VAT</span>
-                                    </div>
-
-                                    <!-- VAT Field -->
-                                    <div id="vatField" class="hidden">
-                                        <label class="block text-sm font-medium text-gray-700">VAT (%)</label>
-                                        <input type="number" name="vat" id="vatInput" step="0.01" placeholder="Enter VAT percentage" 
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" 
-                                            readonly title="Enable VAT to edit this field">
-                                    </div>
-
-                                    <!-- Discount Field -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Discount (%)</label>
-                                        <input type="number" name="discount" step="0.01" placeholder="Enter discount percentage"
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Editable on paid plans' : '' }}">
-                                    </div>
-
-                                    <!-- Total After VAT & Discount -->
-                                    <!-- Total with VAT & Discount -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Total with VAT and Discount</label>
-                                        <input type="text" id="total_with_vat_discount" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-100" readonly>
-                                    </div>
-                                </div>
-
-                                <!-- Watermark Section -->
-                                <div class="mb-8">
-                                    <label class="flex items-start space-x-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
-                                        <input type="checkbox" name="add_watermark" value="1" class="h-5 w-5 text-blue-600 border-gray-300 rounded mt-1" {{ $subscriptionPlan === 'free' ? 'checked disabled' : '' }}>
-                                        <span>
-                                            <span class="text-gray-700 font-medium">Add "Created by Timerr" Watermark</span>
-                                            <p class="text-gray-500 text-sm mt-1">{{ $subscriptionPlan === 'free' ? 'Watermark is included on free plans. Upgrade to remove it.' : 'Optional watermark for paid plans.' }}</p>
-                                        </span>
-                                    </label>
                                 </div>
                             </div>
                         </div>
+                    
 
                         <!-- Summary Preview -->
                         <div class="mb-8">
@@ -183,7 +194,7 @@
                                             $hoursWorked = floor($totalMinutesWorked / 60);
                                             $minutesWorked = $totalMinutesWorked % 60;
                                             $earningsPerMinute = $task->taskable->rate_per_hour / 60;
-                                            $hourlyEarnings = $totalMinutesWorked * $earningsPerMinute;
+                                            $hourlyEarnings = ceil($totalMinutesWorked * $earningsPerMinute); // Round up each task's earnings individually
                                         @endphp
                                         <label class="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition">
                                             <input type="checkbox" name="selected_tasks[]" value="{{ $task->id }}" checked class="h-5 w-5 text-blue-600 border-gray-300 rounded" onchange="updateSummary()">
@@ -270,7 +281,7 @@
 
                             <!-- Include Notes Section -->
                             <div class="mb-8">
-                                <h2 class="text-lg font-semibold text-gray-700 mb-4">Header Information</h2>
+                                <h2 class="text-lg font-semibold text-gray-700 mb-4">Additional Information</h2>
                                 <div class="grid grid-cols-1 gap-4">
 
                                     <!-- Include Notes Checkbox -->
