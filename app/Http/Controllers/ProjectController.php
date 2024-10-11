@@ -187,11 +187,11 @@ class ProjectController extends Controller
     
             // Validate request input
             $validated = $request->validate([
-                'report_title' => 'required|string|max:255',
-                'client_name' => 'required|string|max:255',
-                'client_email' => 'required|email',
-                'report_date' => 'required|date',
-                'project_id' => 'required|string',
+                'report_title' => 'nullable|string|max:255',
+                'client_name' => 'nullable|string|max:255',
+                'client_email' => 'nullable|email',
+                'report_date' => 'nullable|date',
+                'project_id' => 'nullable|string',
                 'report_logo' => 'nullable|file|max:2048|mimetypes:image/jpeg,image/png,image/svg+xml',
                 'include_notes' => 'nullable|boolean',
                 'notes_content' => 'nullable|string',
@@ -205,13 +205,13 @@ class ProjectController extends Controller
             $notesContent = $request->input('notes_content', '');
             $includeSignature = filter_var($request->input('include_signature', false), FILTER_VALIDATE_BOOLEAN);
     
-            // Capture editable header details
+            // Set header details only if fields are provided
             $headerDetails = [
-                'title' => $validated['report_title'] ?? 'Project Report: ' . $project->title,
-                'client_name' => $validated['client_name'] ?? $project->client->name ?? 'N/A',
-                'client_email' => $validated['client_email'] ?? $project->client->email ?? 'N/A',
-                'report_date' => $validated['report_date'] ?? now()->toFormattedDateString(),
-                'project_id' => $validated['project_id'] ?? '#'.$project->id,
+                'title' => $validated['report_title'] ?? '',
+                'client_name' => $validated['client_name'] ?? '',
+                'client_email' => $validated['client_email'] ?? '',
+                'report_date' => $validated['report_date'] ?? '',
+                'project_id' => $validated['project_id'] ?? '',
             ];
     
             // Handle logo if provided
@@ -243,24 +243,33 @@ class ProjectController extends Controller
             $selectedTasks = $request->input('selected_tasks', []);
             $tasks = $project->tasks()->whereIn('id', $selectedTasks)->get();
     
-            // Separate and load related entities
+            // Separate and load related entities for each task type
             $projectTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskProject');
             $hourlyTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskHourly');
             $distanceTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskDistance');
             $productTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskProduct');
+            $otherTasks = $tasks->filter(fn($task) => $task->taskable_type === 'App\\Models\\TaskOther');
+
+            // Load relationships for each task type
             $projectTasks->load('taskable');
             $hourlyTasks->load('taskable.registrationHourly');
             $distanceTasks->load('taskable.registrationDistances');
             $productTasks->load('taskProduct.product');
-    
+            $otherTasks->load(['taskable', 'customFields', 'checklistSections.checklistItems']);
+
             // Calculate subtotal
             $subtotal = 0;
             foreach ($projectTasks as $task) {
                 $subtotal += $task->taskable->price ?? 0;
             }
             foreach ($hourlyTasks as $task) {
-                $hours = $task->taskable->registrationHourly->sum('minutes_worked') / 60;
-                $subtotal += $hours * ($task->taskable->rate_per_hour ?? 0);
+                // Total minutes worked and earnings per minute calculation
+                $totalMinutesWorked = $task->taskable->registrationHourly->sum('minutes_worked');
+                $earningsPerMinute = ($task->taskable->rate_per_hour ?? 0) / 60;
+                $hourlyEarnings = $totalMinutesWorked * $earningsPerMinute;
+            
+                // Round up to match the index view logic
+                $subtotal += ceil($hourlyEarnings);
             }
             foreach ($distanceTasks as $task) {
                 $distance = $task->taskable->registrationDistances->sum('distance');
@@ -270,22 +279,31 @@ class ProjectController extends Controller
             $products = collect();
             foreach ($productTasks as $task) {
                 foreach ($task->taskProduct as $taskProduct) {
-                    $productPrice = $taskProduct->product->price ?? 0;
+                    $product = $taskProduct->product;
+                    $productPrice = $product->price ?? 0;
                     $quantitySold = $taskProduct->quantity ?? 0;
                     $productTotal = $productPrice * $quantitySold;
-    
-                    if ($taskProduct->product->type === 'service') {
+
+                    // Check if the product is a service and has attributes
+                    $isService = $product->type === 'service';
+                    $serviceAttributes = [];
+                    if ($isService) {
                         $serviceAttributes = json_decode($taskProduct->attributes, true) ?? [];
                         foreach ($serviceAttributes as $attribute) {
                             $attributeTotal = ($attribute['price'] ?? 0) * ($attribute['quantity'] ?? 0);
                             $productTotal += $attributeTotal;
                         }
                     }
+
+                    // Store each product with relevant details for the PDF
                     $products->push([
-                        'product' => $taskProduct->product,
+                        'product' => $product,
                         'total_sold' => $quantitySold,
                         'total_price' => $productTotal,
+                        'is_service' => $isService,
+                        'service_attributes' => $serviceAttributes,
                     ]);
+
                     $subtotal += $productTotal;
                 }
             }
@@ -293,6 +311,11 @@ class ProjectController extends Controller
             // Apply VAT and discount conditionally
             $totalWithVat = $vatEnabled ? $subtotal * (1 + $vatRate / 100) : $subtotal;
             $totalWithVatAndDiscount = $totalWithVat * (1 - $discountRate / 100);
+
+            // Filter out empty fields from header details
+            $filteredHeaderDetails = array_filter($headerDetails, function ($value) {
+                return !is_null($value) && $value !== '';
+            });
     
             $data = [
                 'project' => $project,
@@ -300,12 +323,13 @@ class ProjectController extends Controller
                 'hourlyTasks' => $hourlyTasks,
                 'distanceTasks' => $distanceTasks,
                 'products' => $products,
+                'otherTasks' => $otherTasks,
                 'subtotal' => $subtotal,
                 'vat' => $vatRate,
                 'discount' => $discountRate,
                 'totalWithVat' => $vatEnabled ? $totalWithVat : null,
                 'totalWithVatAndDiscount' => $vatEnabled ? $totalWithVatAndDiscount : null,
-                'headerDetails' => $headerDetails,
+                'headerDetails' => $filteredHeaderDetails,
                 'logoData' => $logoData,
                 'includeNotes' => $includeNotes,
                 'notesContent' => $notesContent,

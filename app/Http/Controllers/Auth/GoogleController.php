@@ -35,12 +35,26 @@ class GoogleController extends Controller
 
         try {
             $googleUser = Socialite::driver('google')->user();
+            $email = $googleUser->getEmail();
+
+            if (!$email) {
+                Log::warning('Google user data missing email.', ['google_id' => $googleUser->getId() ?? 'N/A']);
+                return redirect()->route('login')->withErrors(['error' => 'Google login failed due to missing email. Please try again or contact support.']);
+            }
+
             Log::info('Received Google user data.', ['google_email' => $googleUser->getEmail()]);
 
             // Check if a user already exists with this Google ID
             $googleAccountUser = User::where('google_id', $googleUser->getId())->first();
 
             if ($googleAccountUser) {
+                // Check and set email_verified_at if it's not set
+                if (!$googleAccountUser->email_verified_at) {
+                    $googleAccountUser->email_verified_at = now();
+                    $googleAccountUser->save();
+                    Log::info('Email verification date set for Google user.', ['user_id' => $googleAccountUser->id]);
+                }
+
                 Log::info('Google account linked to user, logging in.', ['google_id' => $googleUser->getId(), 'user_id' => $googleAccountUser->id]);
                 Auth::login($googleAccountUser);
                 return redirect()->intended('/dashboard');
@@ -54,6 +68,7 @@ class GoogleController extends Controller
                     $existingUser->update([
                         'google_id' => $googleUser->getId(),
                         'google_token' => encrypt($googleUser->token),
+                        'email_verified_at' => $existingUser->email_verified_at ?? now(), // Set verification date if not set
                     ]);
                     Log::info('Google account linked to existing user by email.', ['user_id' => $existingUser->id]);
                     Auth::login($existingUser);
@@ -70,6 +85,7 @@ class GoogleController extends Controller
                 'email' => $googleUser->getEmail(),
                 'google_id' => $googleUser->getId(),
                 'google_token' => encrypt($googleUser->token),
+                'email_verified_at' => now(), // Mark as verified for social logins
                 'password' => null,
             ]);
             Log::info('New user registered via Google.', ['user_id' => $newUser->id]);
