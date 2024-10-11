@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use App\Services\StripeService;
 use Illuminate\Support\Facades\Log;
+use App\Notifications\SubscriptionUpdated;
 // might not need this
 use Stripe\Stripe;
 use Stripe\Subscription;
