@@ -166,15 +166,15 @@ Route::middleware('auth')->group(function () {
     | Invoice Management Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('invoices')->group(function () {
-        Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
-        Route::post('/', [InvoiceController::class, 'store'])->name('invoices.store');
-        Route::get('/{id}', [InvoiceController::class, 'show'])->name('invoices.show');
-        Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
-        Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
-        Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('invoices.download');
-        Route::get('/{id}/send', [InvoiceController::class, 'send'])->name('invoices.send');
-    });
+    // Route::prefix('invoices')->group(function () {
+    //     Route::get('/', [InvoiceController::class, 'index'])->name('invoices.index');
+    //     Route::post('/', [InvoiceController::class, 'store'])->name('invoices.store');
+    //     Route::get('/{id}', [InvoiceController::class, 'show'])->name('invoices.show');
+    //     Route::get('/{id}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+    //     Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+    //     Route::get('/{id}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+    //     Route::get('/{id}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+    // });
 
     /*
     |--------------------------------------------------------------------------
