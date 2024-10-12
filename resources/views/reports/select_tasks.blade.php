@@ -257,7 +257,7 @@
                                 <p class="text-sm text-gray-500 mt-2 mb-4">Unlock VAT and Discount options by upgrading to a paid plan.</p>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-md border border-gray-300">
-                                    <!-- VAT Toggle and Field -->
+                                    <!-- VAT Toggle and Percentage Field Combined -->
                                     <div class="flex items-center space-x-3">
                                         <input type="checkbox" id="vatToggle" class="h-5 w-5 text-blue-600 border-gray-300 rounded"
                                             onchange="toggleVAT()"
@@ -266,23 +266,23 @@
                                         <span class="text-gray-700 font-medium">Enable VAT</span>
                                     </div>
                                     
-                                    <!-- VAT Percentage Input -->
-                                    <div id="vatField" class="hidden">
-                                        <label for="vatInput" class="block text-sm font-medium text-gray-700">VAT (%)</label>
+                                    <!-- VAT Percentage Input, Visible Based on VAT Toggle -->
+                                    <div id="vatField" class="hidden md:flex items-center space-x-3">
+                                        <label for="vatInput" class="text-sm font-medium text-gray-700">VAT (%)</label>
                                         <input type="number" name="vat" id="vatInput" step="0.01" min="0" max="100"
                                                oninput="validatePercentage(this)" placeholder="Enter VAT percentage"
-                                               class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                                               class="block w-full border-gray-300 rounded-md shadow-sm"
                                                readonly title="Enable VAT to edit this field">
                                     </div>
                                     
                                     <!-- Discount Percentage Input -->
-                                    <div>
-                                        <label for="discountInput" class="block text-sm font-medium text-gray-700">Discount (%)</label>
+                                    <div class="md:col-span-2 flex items-center space-x-3">
+                                        <label for="discountInput" class="text-sm font-medium text-gray-700">Discount (%)</label>
                                         <input type="number" name="discount" id="discountInput" step="0.01" min="0" max="100"
-                                            oninput="validatePercentage(this)" placeholder="Enter discount percentage"
-                                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
-                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                               oninput="validatePercentage(this)" placeholder="Enter discount percentage"
+                                               class="block w-full border-gray-300 rounded-md shadow-sm"
+                                               {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
+                                               title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
                                     </div>
                                 </div>
                             </div>
@@ -352,9 +352,11 @@
             let vat = vatInput && vatInput.value ? Math.min(Math.max(parseFloat(vatInput.value), 0), 100) : 0;
             let discount = discountInput && discountInput.value ? Math.min(Math.max(parseFloat(discountInput.value), 0), 100) : 0;
     
-            // Calculate total with VAT and Discount
-            let totalWithVAT = subtotal * (1 + vat / 100);
-            let totalWithVATAndDiscount = totalWithVAT * (1 - discount / 100);
+            // Apply discount on subtotal first
+            let discountedSubtotal = subtotal * (1 - discount / 100);
+
+            // Calculate total with VAT applied to the discounted subtotal
+            let totalWithVATAndDiscount = discountedSubtotal * (1 + vat / 100);
     
             // Update the summary section totals dynamically
             document.getElementById('summarySubtotal').innerText = subtotal.toFixed(2) + ' DKK';
