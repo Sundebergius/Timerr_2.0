@@ -345,23 +345,26 @@
                 summary.innerHTML += `<li class="mb-2 border-b border-gray-200 pb-1">${label}</li>`;
             });
     
-            // Calculate VAT and discount with default values if fields are empty or invalid
+           // Calculate VAT and discount with default values if fields are empty or invalid
             let vatInput = document.querySelector('input[name="vat"]');
             let discountInput = document.querySelector('input[name="discount"]');
             
             let vat = vatInput && vatInput.value ? Math.min(Math.max(parseFloat(vatInput.value), 0), 100) : 0;
             let discount = discountInput && discountInput.value ? Math.min(Math.max(parseFloat(discountInput.value), 0), 100) : 0;
-    
-            // Apply discount on subtotal first
+
+            // Calculate discount on subtotal first
             let discountedSubtotal = subtotal * (1 - discount / 100);
 
-            // Calculate total with VAT applied to the discounted subtotal
-            let totalWithVATAndDiscount = discountedSubtotal * (1 + vat / 100);
-    
+            // Calculate VAT on discounted subtotal
+            let vatAmount = discountedSubtotal * (vat / 100);
+
+            // Final total with VAT applied to discounted subtotal
+            let totalWithVATAndDiscount = discountedSubtotal + vatAmount;
+
             // Update the summary section totals dynamically
             document.getElementById('summarySubtotal').innerText = subtotal.toFixed(2) + ' DKK';
-            document.getElementById('summaryVAT').innerText = (subtotal * (vat / 100)).toFixed(2) + ' DKK';
-            document.getElementById('summaryDiscount').innerText = (totalWithVAT * (discount / 100)).toFixed(2) + ' DKK';
+            document.getElementById('summaryDiscount').innerText = (subtotal * (discount / 100)).toFixed(2) + ' DKK';
+            document.getElementById('summaryVAT').innerText = vatAmount.toFixed(2) + ' DKK';
             document.getElementById('summaryTotal').innerText = totalWithVATAndDiscount.toFixed(2) + ' DKK';
         }
 
