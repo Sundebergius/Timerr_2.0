@@ -257,7 +257,7 @@
                                 <p class="text-sm text-gray-500 mt-2 mb-4">Unlock VAT and Discount options by upgrading to a paid plan.</p>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-md border border-gray-300">
-                                    <!-- VAT Toggle and Percentage Field Combined -->
+                                    <!-- VAT Toggle -->
                                     <div class="flex items-center space-x-3">
                                         <input type="checkbox" id="vatToggle" class="h-5 w-5 text-blue-600 border-gray-300 rounded"
                                             onchange="toggleVAT()"
@@ -266,23 +266,23 @@
                                         <span class="text-gray-700 font-medium">Enable VAT</span>
                                     </div>
                                     
-                                    <!-- VAT Percentage Input, Visible Based on VAT Toggle -->
-                                    <div id="vatField" class="hidden md:flex items-center space-x-3">
+                                    <!-- VAT Percentage Input, Controlled by Toggle -->
+                                    <div class="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 w-full" id="vatField" style="display: none;">
                                         <label for="vatInput" class="text-sm font-medium text-gray-700">VAT (%)</label>
                                         <input type="number" name="vat" id="vatInput" step="0.01" min="0" max="100"
-                                               oninput="validatePercentage(this)" placeholder="Enter VAT percentage"
-                                               class="block w-full border-gray-300 rounded-md shadow-sm"
-                                               readonly title="Enable VAT to edit this field">
+                                            oninput="validatePercentage(this)" placeholder="Enter VAT percentage"
+                                            class="w-full md:w-1/2 border-gray-300 rounded-md shadow-sm"
+                                            readonly title="Enable VAT to edit this field">
                                     </div>
-                                    
+
                                     <!-- Discount Percentage Input -->
-                                    <div class="md:col-span-2 flex items-center space-x-3">
+                                    <div class="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 w-full">
                                         <label for="discountInput" class="text-sm font-medium text-gray-700">Discount (%)</label>
                                         <input type="number" name="discount" id="discountInput" step="0.01" min="0" max="100"
-                                               oninput="validatePercentage(this)" placeholder="Enter discount percentage"
-                                               class="block w-full border-gray-300 rounded-md shadow-sm"
-                                               {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
-                                               title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                            oninput="validatePercentage(this)" placeholder="Enter discount percentage"
+                                            class="w-full md:w-1/2 border-gray-300 rounded-md shadow-sm"
+                                            {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
+                                            title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
                                     </div>
                                 </div>
                             </div>
