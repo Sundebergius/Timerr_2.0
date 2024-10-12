@@ -193,16 +193,15 @@ class ProjectController extends Controller
                 'report_date' => 'nullable|date',
                 'project_id' => 'nullable|string',
                 'report_logo' => 'nullable|file|max:2048|mimetypes:image/jpeg,image/png,image/svg+xml',
-                'include_notes' => 'nullable|boolean',
                 'notes_content' => 'nullable|string',
                 'include_signature' => 'nullable|boolean', 
-                'vat' => 'nullable|numeric', // Only used if VAT is enabled
-                'discount' => 'nullable|numeric', // Only used if discount is applied
+                'vat' => 'nullable|numeric|min:0|max:100',  // Range check for VAT
+                'discount' => 'nullable|numeric|min:0|max:100',  // Range check for Discount
             ]);
     
             // Force checkbox values to boolean
-            $includeNotes = filter_var($request->input('include_notes', false), FILTER_VALIDATE_BOOLEAN);
-            $notesContent = $request->input('notes_content', '');
+            $notesContent = $request->input('notes_content');
+            $includeNotes = !empty($notesContent);
             $includeSignature = filter_var($request->input('include_signature', false), FILTER_VALIDATE_BOOLEAN);
     
             // Set header details only if fields are provided
@@ -332,7 +331,7 @@ class ProjectController extends Controller
                 'headerDetails' => $filteredHeaderDetails,
                 'logoData' => $logoData,
                 'includeNotes' => $includeNotes,
-                'notesContent' => $notesContent,
+                'notesContent' => $includeNotes ? $notesContent : '',
                 'includeSignature' => $includeSignature,
                 'userPlan' => $subscriptionPlan,
                 'includeWatermark' => $includeWatermark,

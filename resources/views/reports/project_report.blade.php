@@ -96,6 +96,16 @@
             font-weight: bold;
         }
 
+        .report-section-total {
+            font-size: 1rem;
+            font-weight: bold;
+            color: #2d3748; /* Darker color for clarity */
+            padding-top: 0.5rem;
+            border-top: 1px solid #edf2f7;
+            margin-top: 1.25rem;
+            border-top: 1px solid #e2e8f0; /* Light gray for a subtle separation */        
+        }
+
         .notes-section {
             font-size: 0.875rem;
             color: #4a5568;
@@ -151,15 +161,21 @@
             margin-top: 2rem;
             page-break-inside: avoid;
         }
+
+        /* Additional page-break rules for each subsection */
+        .vat-discount-section, .report-total, .notes-section, .signature-section, .footer {
+            page-break-inside: avoid;
+            margin-top: 1rem;
+        }
     </style>    
 </head>
 <body class="bg-gray-100 text-gray-800">
     <div class="report-container">
         <!-- Logo -->
         @if($logoData)
-        <div class="logo-container text-center mb-4">
-            <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
-        </div>
+            <div class="logo-container text-center mb-4">
+                <img src="data:image/png;base64,{{ $logoData }}" alt="Company Logo">
+            </div>
         @endif
 
         <!-- Header -->
@@ -185,40 +201,40 @@
 
         <!-- Project-Based Tasks -->
         @if($projectTasks->isNotEmpty())
-        <div class="report-section">
-            <h2>Project-Based Tasks</h2>
-            @php $projectTotal = 0; @endphp
-            @foreach ($projectTasks as $task)
-                <div class="report-item">
-                    <p><strong>Task:</strong> {{ $task->title }}</p>
-                    <p><strong>Price:</strong> {{ number_format($task->taskable->price, 2) }} DKK</p>
-                    @php $projectTotal += $task->taskable->price; @endphp
-                </div>
-            @endforeach
-            <p class="report-section-total">Total for Project-Based Tasks: {{ number_format($projectTotal, 2) }} DKK</p>
-        </div>
+            <div class="report-section">
+                <h2>Project-Based Tasks</h2>
+                @php $projectTotal = 0; @endphp
+                @foreach ($projectTasks as $task)
+                    <div class="report-item">
+                        <p><strong>Task:</strong> {{ $task->title }}</p>
+                        <p><strong>Price:</strong> {{ number_format($task->taskable->price, 2) }} DKK</p>
+                        @php $projectTotal += $task->taskable->price; @endphp
+                    </div>
+                @endforeach
+                <p class="report-section-total">Total for Project-Based Tasks: {{ number_format($projectTotal, 2) }} DKK</p>
+            </div>
         @endif
 
         <!-- Hourly Tasks -->
         @if($hourlyTasks->isNotEmpty())
-        <div class="report-section">
-            <h2>Hourly Tasks</h2>
-            @php $hourlyTotal = 0; @endphp
-            @foreach ($hourlyTasks as $task)
-                @php 
-                    $hours = floor($task->taskable->registrationHourly->sum('minutes_worked') / 60);
-                    $minutes = $task->taskable->registrationHourly->sum('minutes_worked') % 60;
-                    $hoursTotal = ($hours + $minutes / 60) * $task->taskable->rate_per_hour;
-                    $hourlyTotal += $hoursTotal;
-                @endphp
-                <div class="report-item">
-                    <p><strong>Task:</strong> {{ $task->title }}</p>
-                    <p><strong>Time:</strong> {{ sprintf('%02d:%02d', $hours, $minutes) }}</p>
-                    <p><strong>Total:</strong> {{ number_format($hoursTotal, 2) }} DKK</p>
-                </div>
-            @endforeach
-            <p class="report-section-total">Total for Hourly Tasks: {{ number_format($hourlyTotal, 2) }} DKK</p>
-        </div>
+            <div class="report-section">
+                <h2>Hourly Tasks</h2>
+                @php $hourlyTotal = 0; @endphp
+                @foreach ($hourlyTasks as $task)
+                    @php 
+                        $hours = floor($task->taskable->registrationHourly->sum('minutes_worked') / 60);
+                        $minutes = $task->taskable->registrationHourly->sum('minutes_worked') % 60;
+                        $hoursTotal = ($hours + $minutes / 60) * $task->taskable->rate_per_hour;
+                        $hourlyTotal += $hoursTotal;
+                    @endphp
+                    <div class="report-item">
+                        <p><strong>Task:</strong> {{ $task->title }}</p>
+                        <p><strong>Time:</strong> {{ sprintf('%02d:%02d', $hours, $minutes) }}</p>
+                        <p><strong>Total:</strong> {{ number_format($hoursTotal, 2) }} DKK</p>
+                    </div>
+                @endforeach
+                <p class="report-section-total">Total for Hourly Tasks: {{ number_format($hourlyTotal, 2) }} DKK</p>
+            </div>
         @endif
 
         <!-- Products Sold -->
@@ -234,11 +250,11 @@
 
                         <!-- Display service attributes if it's a service -->
                         @if($product['is_service'] && !empty($product['service_attributes']))
-                            <div class="service-attributes mt-2">
+                            <div class="report-item mt-2">
                                 <h5><strong>Service Attributes:</strong></h5>
-                                <ul class="list-disc list-inside">
+                                <ul class="list-disc list-inside pl-4">
                                     @foreach ($product['service_attributes'] as $attribute)
-                                        <li>
+                                        <li class="report-item">
                                             <strong>Attribute:</strong> {{ $attribute['attribute'] ?? 'N/A' }}
                                             <ul class="ml-6">
                                                 <li><strong>Price:</strong> {{ number_format($attribute['price'] ?? 0, 2) }} DKK</li>
@@ -258,24 +274,24 @@
             </div>
         @endif
 
-        <!-- Distance Driven -->
-        @if($distanceTasks->isNotEmpty())
-            <div class="report-section">
-                <h2>Distance Driven</h2>
-                @php $distanceTotal = 0; @endphp
-                @foreach ($distanceTasks as $task)
-                    @php 
-                        $distance = $task->taskable->registrationDistances->sum('distance');
-                        $distancePrice = $distance * $task->taskable->price_per_km;
-                        $distanceTotal += $distancePrice;
-                    @endphp
-                    <div class="report-item">
-                        <p><strong>Distance:</strong> {{ $distance }} km</p>
-                        <p><strong>Total:</strong> {{ number_format($distancePrice, 2) }} DKK</p>
-                    </div>
-                @endforeach
-                <p class="report-section-total">Total for Distance Driven: {{ number_format($distanceTotal, 2) }} DKK</p>
-            </div>
+            <!-- Distance Driven -->
+            @if($distanceTasks->isNotEmpty())
+                <div class="report-section">
+                    <h2>Distance Driven</h2>
+                    @php $distanceTotal = 0; @endphp
+                    @foreach ($distanceTasks as $task)
+                        @php 
+                            $distance = $task->taskable->registrationDistances->sum('distance');
+                            $distancePrice = $distance * $task->taskable->price_per_km;
+                            $distanceTotal += $distancePrice;
+                        @endphp
+                        <div class="report-item">
+                            <p><strong>Distance:</strong> {{ $distance }} km</p>
+                            <p><strong>Total:</strong> {{ number_format($distancePrice, 2) }} DKK</p>
+                        </div>
+                    @endforeach
+                    <p class="report-section-total">Total for Distance Driven: {{ number_format($distanceTotal, 2) }} DKK</p>
+                </div>
             @endif
 
             <!-- Other Tasks -->
@@ -283,35 +299,44 @@
                 <div class="report-section">
                     <h2>Other Task Summary</h2>
                     @foreach ($otherTasks as $task)
-                        <div class="bg-gray-50 p-4 rounded-lg shadow-md space-y-4">
-                            <div class="space-y-2">
+                        <div class="report-item space-y-4">
+                            <!-- Description -->
+                            <div class="report-item space-y-2">
                                 <p class="text-gray-600"><strong>Description:</strong></p>
                                 <p class="text-gray-800">{{ \Illuminate\Support\Str::limit($task->taskable->description, 100, '...') }}</p>
                                 @if(strlen($task->taskable->description) > 100)
                                     <p class="text-gray-800">{{ $task->taskable->description }}</p>
                                 @endif
                             </div>
+
+                            <!-- Custom Fields -->
                             @if($task->customFields->count() > 0)
-                                <p class="text-gray-600 font-bold">Custom Fields:</p>
-                                <ul class="list-disc pl-5 space-y-1 text-gray-800">
-                                    @foreach($task->customFields as $field)
-                                        <li>{{ $field->field }}</li>
-                                    @endforeach
-                                </ul>
+                                <div class="report-item">
+                                    <p class="text-gray-600 font-bold">Custom Fields:</p>
+                                    <ul class="list-disc pl-5 space-y-1 text-gray-800">
+                                        @foreach($task->customFields as $field)
+                                            <li>{{ $field->field }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
                             @endif
+
+                            <!-- Checklist Sections -->
                             @if($task->checklistSections->count() > 0)
-                                <p class="text-gray-600 font-bold">Checklist Sections:</p>
-                                <div class="pl-5 space-y-4">
-                                    @foreach($task->checklistSections as $section)
-                                        <p class="font-bold text-lg text-gray-800">{{ $section->title }}</p>
-                                        @if($section->checklistItems->count() > 0)
-                                            <ul class="list-disc pl-5 space-y-1">
-                                                @foreach($section->checklistItems as $item)
-                                                    <li>{{ $item->item }}</li>
-                                                @endforeach
-                                            </ul>
-                                        @endif
-                                    @endforeach
+                                <div class="report-item">
+                                    <p class="text-gray-600 font-bold">Checklist Sections:</p>
+                                    <div class="pl-5 space-y-4">
+                                        @foreach($task->checklistSections as $section)
+                                            <p class="font-bold text-lg text-gray-800">{{ $section->title }}</p>
+                                            @if($section->checklistItems->count() > 0)
+                                                <ul class="list-disc pl-5 space-y-1">
+                                                    @foreach($section->checklistItems as $item)
+                                                        <li>{{ $item->item }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        @endforeach
+                                    </div>
                                 </div>
                             @endif
                         </div>
@@ -320,79 +345,79 @@
             @endif
 
             <div class="report-footer">
-            <!-- Subtotal Section (Always Visible) -->
-            <div class="vat-discount-section">
-                <p><strong>Subtotal:</strong></p>
-                <p>{{ number_format($subtotal, 2) }} DKK</p>
-            </div>
-
-            <!-- VAT Section (Only for Paid Users) -->
-            @if($vat > 0 && $userPlan !== 'free')
-            <div class="vat-discount-section">
-                <p><strong>VAT ({{ $vat }}%):</strong></p>
-                <p>{{ number_format($subtotal * ($vat / 100), 2) }} DKK</p>
-            </div>
-            @endif
-
-            <!-- Discount Section (Only for Paid Users) -->
-            @if($discount > 0 && $userPlan !== 'free')
-            <div class="vat-discount-section">
-                <p><strong>Discount ({{ $discount }}%):</strong></p>
-                <p>-{{ number_format($subtotal * ($discount / 100), 2) }} DKK</p>
-            </div>
-            @endif
-
-            <!-- Total Calculation Summary (Adjusts Label Based on VAT and Discount Presence) -->
-            @if($userPlan !== 'free' && ($vat > 0 || $discount > 0))
-            <div class="report-total">
-                <p>
-                    <strong>
-                        Total 
-                        @if($vat > 0 && $discount > 0)
-                            after VAT and Discount:
-                        @elseif($vat > 0)
-                            after VAT:
-                        @elseif($discount > 0)
-                            after Discount:
-                        @endif
-                    </strong>
-                </p>
-                <p class="text-xl font-bold">{{ number_format($totalWithVatAndDiscount, 2) }} DKK</p>
-            </div>
-            @endif
-
-            <!-- Optional Notes Section -->
-            @if($includeNotes)
-            <div class="notes-section">
-                <h2>Additional Notes</h2>
-                <p>{{ $notesContent ?? 'No additional notes provided.' }}</p>
-            </div>
-            @endif
-
-           <!-- Optional Signature Section -->
-            @if($includeSignature)
-            <div class="signature-section">
-                <div class="signature-item">
-                    <p>Client Signature</p>
-                    <div class="signature-line"></div> <!-- Replace underscores with div line -->
+                <!-- Subtotal Section (Always Visible) -->
+                <div class="vat-discount-section">
+                    <p><strong>Subtotal:</strong></p>
+                    <p>{{ number_format($subtotal, 2) }} DKK</p>
                 </div>
-                <div class="signature-item">
-                    <p>Service Provider Signature</p>
-                    <div class="signature-line"></div>
-                </div>
-            </div>
-            @endif
 
-            <!-- Optional Watermark -->
-            @if($includeWatermark)
-            <div class="footer">
-                <div class="flex items-center justify-center space-x-2">
-                    <img src="{{ asset('Timerr_icon.svg') }}" alt="Timerr Logo" style="width: 20px; height: 20px;">
-                    <p>Created by Timerr</p>
-                </div>
+                <!-- VAT Section (Only for Paid Users) -->
+                @if($vat > 0 && $userPlan !== 'free')
+                    <div class="vat-discount-section">
+                        <p><strong>VAT ({{ $vat }}%):</strong></p>
+                        <p>{{ number_format($subtotal * ($vat / 100), 2) }} DKK</p>
+                    </div>
+                @endif
+
+                <!-- Discount Section (Only for Paid Users) -->
+                @if($discount > 0 && $userPlan !== 'free')
+                    <div class="vat-discount-section">
+                        <p><strong>Discount ({{ $discount }}%):</strong></p>
+                        <p>-{{ number_format($subtotal * ($discount / 100), 2) }} DKK</p>
+                    </div>
+                @endif
+
+                <!-- Total Calculation Summary (Adjusts Label Based on VAT and Discount Presence) -->
+                @if($userPlan !== 'free' && ($vat > 0 || $discount > 0))
+                    <div class="report-total">
+                        <p>
+                            <strong>
+                                Total 
+                                @if($vat > 0 && $discount > 0)
+                                    after VAT and Discount:
+                                @elseif($vat > 0)
+                                    after VAT:
+                                @elseif($discount > 0)
+                                    after Discount:
+                                @endif
+                            </strong>
+                        </p>
+                        <p class="text-xl font-bold">{{ number_format($totalWithVatAndDiscount, 2) }} DKK</p>
+                    </div>
+                @endif
+
+                <!-- Optional Notes Section -->
+                @if($includeNotes)
+                    <div class="notes-section">
+                        <h2>Additional Notes</h2>
+                        <p>{{ $notesContent ?? 'No additional notes provided.' }}</p>
+                    </div>
+                @endif
+
+                <!-- Optional Signature Section -->
+                @if($includeSignature)
+                    <div class="signature-section">
+                        <div class="signature-item">
+                            <p>Client Signature</p>
+                            <div class="signature-line"></div> <!-- Replace underscores with div line -->
+                        </div>
+                        <div class="signature-item">
+                            <p>Service Provider Signature</p>
+                            <div class="signature-line"></div>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Optional Watermark -->
+                @if($includeWatermark)
+                    <div class="footer">
+                        <div class="flex items-center justify-center space-x-2">
+                            <img src="{{ asset('Timerr_icon.svg') }}" alt="Timerr Logo" style="width: 20px; height: 20px;">
+                            <p>Created by Timerr</p>
+                        </div>
+                    </div>
+                @endif
             </div>
-            @endif
         </div>
-    </div>
-</body>
+    </body>
 </html>
