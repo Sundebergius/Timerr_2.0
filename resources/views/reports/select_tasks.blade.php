@@ -255,27 +255,19 @@
                             <div class="mb-8">
                                 <h3 class="text-lg font-semibold text-blue-600 border-b-2 border-blue-500 pb-2">Additional Options (Paid Plans Only)</h3>
                                 <p class="text-sm text-gray-500 mt-2 mb-4">Unlock VAT and Discount options by upgrading to a paid plan.</p>
-                                
+                            
+                                <!-- VAT Toggle Button Outside of Gray Area -->
+                                <div class="flex items-center space-x-3 mb-4">
+                                    <input type="checkbox" id="vatToggle" class="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                                        onchange="toggleVAT()"
+                                        {{ $subscriptionPlan === 'free' ? 'disabled' : '' }}
+                                        title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                    <span class="text-gray-700 font-medium">Enable VAT</span>
+                                </div>
+                            
+                                <!-- Gray Input Field Area -->
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-md border border-gray-300">
-                                    <!-- VAT Toggle -->
-                                    <div class="flex items-center space-x-3">
-                                        <input type="checkbox" id="vatToggle" class="h-5 w-5 text-blue-600 border-gray-300 rounded"
-                                            onchange="toggleVAT()"
-                                            {{ $subscriptionPlan === 'free' ? 'disabled' : '' }}
-                                            title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
-                                        <span class="text-gray-700 font-medium">Enable VAT</span>
-                                    </div>
-                                    
-                                    <!-- VAT Percentage Input, Controlled by Toggle -->
-                                    <div class="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 w-full" id="vatField" style="display: none;">
-                                        <label for="vatInput" class="text-sm font-medium text-gray-700">VAT (%)</label>
-                                        <input type="number" name="vat" id="vatInput" step="0.01" min="0" max="100"
-                                            oninput="validatePercentage(this)" placeholder="Enter VAT percentage"
-                                            class="w-full md:w-1/2 border-gray-300 rounded-md shadow-sm"
-                                            readonly title="Enable VAT to edit this field">
-                                    </div>
-
-                                    <!-- Discount Percentage Input -->
+                                    <!-- Discount Percentage Input on Left -->
                                     <div class="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 w-full">
                                         <label for="discountInput" class="text-sm font-medium text-gray-700">Discount (%)</label>
                                         <input type="number" name="discount" id="discountInput" step="0.01" min="0" max="100"
@@ -283,6 +275,15 @@
                                             class="w-full md:w-1/2 border-gray-300 rounded-md shadow-sm"
                                             {{ $subscriptionPlan === 'free' ? 'readonly' : '' }}
                                             title="{{ $subscriptionPlan === 'free' ? 'Available on paid plans only' : '' }}">
+                                    </div>
+                            
+                                    <!-- VAT Percentage Input, Hidden Initially, Controlled by Toggle -->
+                                    <div id="vatField" class="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 w-full hidden">
+                                        <label for="vatInput" class="text-sm font-medium text-gray-700">VAT (%)</label>
+                                        <input type="number" name="vat" id="vatInput" step="0.01" min="0" max="100"
+                                            oninput="validatePercentage(this)" placeholder="Enter VAT percentage"
+                                            class="w-full md:w-1/2 border-gray-300 rounded-md shadow-sm"
+                                            readonly title="Enable VAT to edit this field">
                                     </div>
                                 </div>
                             </div>
@@ -294,14 +295,14 @@
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm text-gray-600">Subtotal:</span>
                                         <span id="summarySubtotal" class="font-bold text-gray-800">0.00 DKK</span>
+                                    </div> 
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-600">Discount:</span>
+                                        <span id="summaryDiscount" class="font-bold text-gray-800">0.00 DKK</span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <span class="text-sm text-gray-600">VAT:</span>
                                         <span id="summaryVAT" class="font-bold text-gray-800">0.00 DKK</span>
-                                    </div>
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm text-gray-600">Discount:</span>
-                                        <span id="summaryDiscount" class="font-bold text-gray-800">0.00 DKK</span>
                                     </div>
                                     <hr class="my-2">
                                     <div class="flex justify-between items-center">
