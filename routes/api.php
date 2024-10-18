@@ -49,6 +49,7 @@ Route::post('/products', [ProductController::class, 'store']);
 // Chattie wants to test the getUserProducts method to work without the userId parameter
 // Route::get('/products', [ProductController::class, 'getUserProducts']);
 Route::get('/products/{userId}', [ProductController::class, 'getUserProducts']);
+Route::get('/products/{productId}/materials', [ProductController::class, 'getProductMaterials']);
 
 // Apply Sanctum authentication middleware to the event routes
 Route::middleware(['auth:sanctum'])->prefix('events')->group(function () {
