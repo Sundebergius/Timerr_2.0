@@ -340,12 +340,7 @@ class TaskController extends Controller
                         'attributes' => $attributes, // JSON data for services, null for physical products
                         'total_price' => $productData['total_price'], // Save the total price for both products and services
                     ]);
-
-                    // If the product is a physical product, increment the quantity sold
-                    if ($productData['type'] === 'product') {
-                        $product = Product::find($productData['product_id']);
-                        $product->increment('quantity_sold', $productData['quantity']);
-                    }
+                    
                 }
             } catch (\Exception $e) {
                 Log::error('Failed to create task and task product: ' . $e->getMessage());
