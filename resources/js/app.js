@@ -6,6 +6,14 @@
 
 import { createApp } from 'vue/dist/vue.esm-bundler.js';
 
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
+
+// Add icons to the library
+library.add(faChevronUp, faChevronDown);
+
+
 //import './bootstrap';
 //import Alpine from 'alpinejs' ;
 //window.Alpine = Alpine;
@@ -72,6 +80,7 @@ const app = createApp({
 // Register components globally
 app.component('task-creator', TaskCreator);
 app.component('product-modal', ProductModal);
+app.component('font-awesome-icon', FontAwesomeIcon);
 
 // Mount the Vue instance if #app exists
 if (document.querySelector("#app")) {
