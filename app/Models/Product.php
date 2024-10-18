@@ -22,12 +22,26 @@ class Product extends Model
         'active',
         'parent_id',
         'type',
-        'attributes'
+        'attributes',
+        'manage_inventory',
+        'unit_type',           // New field
+        'usage_per_unit',       // New field
+        'is_material',          // New field
+        'is_parent_material',
+        'minimum_stock_alert',  // New field
+        'cost_per_unit',        // Ensure cost_per_unit is fillable
+        'price_per_unit',       // New field
     ];
 
     protected $casts = [
         'attributes' => 'array', // To handle JSON attributes as an array
         'type' => 'string', // Cast type to string
+        'manage_inventory' => 'boolean', // Cast manage_inventory to boolean
+        'usage_per_unit' => 'decimal:2', // Cast usage_per_unit to decimal with 2 decimal places
+        'is_material' => 'boolean',      // Cast is_material to boolean
+        'cost_per_unit' => 'decimal:2',  // Cast cost_per_unit to decimal with 2 decimal places
+        'price_per_unit' => 'decimal:2', // Cast price_per_unit to decimal with 2 decimal places
+        'is_parent_material' => 'boolean' // Cast is_parent_material to boolean
     ];
 
     public function user()
@@ -52,4 +66,10 @@ class Product extends Model
     {
         return $this->hasMany(Product::class, 'parent_id');
     }
+
+    public function materials()
+    {
+        return $this->hasMany(Product::class, 'parent_id')->where('type', 'material');
+    }
+
 }

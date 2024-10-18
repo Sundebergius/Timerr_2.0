@@ -22,6 +22,10 @@ class TaskProduct extends Model
         'total_price',  // Add this
     ];
 
+    protected $casts = [
+        'attributes' => 'array',
+    ];
+
     public function task()
     {
         return $this->belongsTo(Task::class);
@@ -35,6 +39,35 @@ class TaskProduct extends Model
     public function registrationProducts()
     {
         return $this->hasMany(RegistrationProduct::class, 'task_product_id');
+    }
+
+    public function productMaterials()
+    {
+        return $this->product()->with('materials'); // Assuming you have a materials relationship on the Product model
+    }
+
+    public function calculateTotalMaterialQuantity()
+    {
+        $totalQuantity = 0;
+
+        foreach ($this->product->materials as $material) {
+            $totalQuantity += $material->quantity_in_stock; // Or use usage per unit if applicable
+        }
+
+        return $totalQuantity;
+    }
+
+    public function calculateTotalPrice()
+    {
+        $totalPrice = $this->product->price * $this->quantity;
+
+        if ($this->type === 'service' && is_array($this->attributes)) {
+            foreach ($this->attributes as $attribute) {
+                $totalPrice += ($attribute['price'] ?? 0) * ($attribute['quantity'] ?? 1);
+            }
+        }
+
+        return $totalPrice;
     }
 
     public function deleteWithRegistrations()
