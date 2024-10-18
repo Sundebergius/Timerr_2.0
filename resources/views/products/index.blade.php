@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Products
+            Products & Services Overview
         </h2>
     </x-slot>
 
@@ -144,122 +144,292 @@
                     <product-modal v-if="showModal" :user-id="userId" :team-id="teamId" @close="showModal = false"
                         @product-created="handleProductCreated"></product-modal>
 
-                    <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        @foreach ($products as $product)
-                            <div class="bg-white overflow-hidden shadow rounded-lg">
-                                <div class="p-5">
-                                    <div class="flex items-center">
-                                        <div class="ml-5 w-0 flex-1">
-                                            <dl>
-                                                <!-- Title with larger and darker font -->
-                                                <dt class="text-lg font-bold text-gray-900">
-                                                    {{ $product->title }} ({{ ucfirst($product->type) }})
-                                                </dt>
-                                                {{-- <dd>
-                                                    <div class="text-lg font-medium text-gray-900">
-                                                        {{ $product->description ?? 'No description provided' }}
-                                                    </div>
-                                                </dd> --}}
+                        <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            @foreach ($products as $product)
+                            <div class="relative bg-white overflow-hidden shadow-lg rounded-lg p-5 transition-shadow hover:shadow-md cursor-pointer"
+                                    onclick="toggleCardExpansion({{ $product->id }})">
+                       
+                                    
+                                    <!-- Badge for Type -->
+                                    <span class="absolute top-0 right-0 mt-4 mr-4 px-2 py-1 text-sm font-semibold rounded-full 
+                                        {{ $product->type === 'product' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800' }}">
+                                        {{ ucfirst($product->type) }}
+                                    </span>
+                        
+                                    <!-- Title and Description -->
+                                    <div class="mb-4">
+                                        <h3 class="text-xl font-bold text-gray-800">{{ $product->title }}</h3>
+                                        <p class="text-gray-600">{{ $product->description ?? 'No description available.' }}</p>
+                                    </div>
+                        
+                                    <!-- Product-Specific Details with Stock Progress Bar -->
+                                    @if($product->type === 'product')
+                                        <div class="mb-2 text-sm">
+                                            <!-- Price Section -->
+                                            @php
+                                                $materialPrice = ($product->price == 0 || $product->price == null) && $product->materials && $product->materials->isNotEmpty()
+                                                    ? $product->materials->sum(function($material) {
+                                                        return $material->price_per_unit * $material->usage_per_unit;
+                                                    })
+                                                    : $product->price;
+                                            @endphp
+                                            <p>Price: <span class="font-semibold">${{ $materialPrice }}</span></p>
 
-                                                <!-- Conditional display for product vs service -->
-                                                @if($product->type == 'product')
-                                                    <dd class="mt-2 text-sm text-gray-500">
-                                                        Price: {{ $product->price }}
-                                                    </dd>
-                                                    <dd class="mt-2 text-sm text-gray-500">
-                                                        Quantity in Stock: {{ $product->quantity_in_stock }}
-                                                    </dd>
-                                                    <dd class="mt-2 text-sm text-gray-500">
-                                                        Quantity Sold: {{ $product->quantity_sold }}
-                                                    </dd>
-                                                    @elseif($product->type == 'service')
-                                                    <dd class="mt-2 text-sm text-gray-500">
-                                                        Attributes:
-                                                        <ul>
-                                                            @if($product->attributes)
-                                                                @php
-                                                                    $attributes = is_string($product->attributes)
-                                                                        ? json_decode($product->attributes, true) // Decode as associative array
-                                                                        : $product->attributes;
-                                                                @endphp
-                                                                @foreach($attributes as $attribute)
-                                                                    <li>{{ $attribute['key'] ?? 'N/A' }}: {{ $attribute['value'] ?? 'N/A' }}</li>
-                                                                @endforeach
-                                                            @else
-                                                                <li>No attributes available</li>
-                                                            @endif
-                                                        </ul>
-                                                    </dd>
-                                                @endif
-
-                                                <dd class="mt-2 text-sm">
-                                                    Status: 
-                                                    @if($product->active)
-                                                        <span class="badge bg-success-200 text-dark">Active</span>
-                                                    @else
-                                                        <span class="badge bg-danger-200 text-dark">Inactive</span>
-                                                    @endif
-                                                </dd>
-                                            </dl>
+                                            <!-- Stock Section -->
+                                            @php
+                                                $productStock = $product->quantity_in_stock > 0 
+                                                    ? $product->quantity_in_stock 
+                                                    : ($product->materials && $product->materials->isNotEmpty()
+                                                        ? $product->materials->min(function($material) {
+                                                            return intval($material->quantity_in_stock / max($material->usage_per_unit, 1));
+                                                        })
+                                                        : 0);
+                                                
+                                                // Calculate quantity sold from TaskProducts if available
+                                                $quantitySold = \App\Models\TaskProduct::where('product_id', $product->id)->sum('quantity') ?? 0;
+                                            @endphp
+                                            <p>Quantity in Stock: <span class="font-semibold">{{ $productStock }}</span></p>
+                                            <p>Quantity Sold: <span class="font-semibold">{{ $quantitySold }}</span></p>
                                         </div>
+
+                                        <!-- Stock Progress Bar -->
+                                        @if($product->manage_inventory)
+                                            <div class="w-full bg-gray-300 rounded-full h-2.5 mb-4">
+                                                <div class="bg-blue-500 h-2.5 rounded-full"
+                                                    style="width: {{ ($quantitySold / max(1, $productStock)) * 100 }}%">
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @endif
+
+                                    <!-- Service-Specific Attributes -->
+                                    @if($product->type === 'service')
+                                        <div class="mb-2 text-sm text-gray-700">
+                                            <!-- Base Price -->
+                                            @if($product->price > 0)
+                                                <p><strong>Base Price:</strong> ${{ number_format($product->price, 2) }}</p>
+                                            @endif
+
+                                            <p><strong>Service Options:</strong></p>
+                                            <ul class="list-disc ml-4">
+                                                @php
+                                                    // Decode service attributes if stored as a JSON string
+                                                    $attributes = is_string($product->attributes)
+                                                        ? json_decode($product->attributes, true)
+                                                        : $product->attributes;
+
+                                                    // Fetch task products and initialize totals
+                                                    $taskProducts = \App\Models\TaskProduct::where('product_id', $product->id)->get();
+                                                    $totalQuantitySold = 0;
+                                                    $totalRevenue = 0; // Initialize at zero to add base price once per taskProduct
+
+                                                    // Loop over each task product
+                                                    foreach ($taskProducts as $taskProduct) {
+                                                        $taskAttributes = json_decode($taskProduct->attributes, true) ?? [];
+                                                        $productTotal = $product->price * $taskProduct->quantity; // Base price calculation for each sold unit
+
+                                                        // Add revenue from each attribute in the task product
+                                                        foreach ($taskAttributes as $taskAttribute) {
+                                                            $attributeRevenue = ($taskAttribute['price'] ?? 0) * ($taskAttribute['quantity'] ?? 0);
+                                                            $productTotal += $attributeRevenue;
+                                                        }
+
+                                                        // Accumulate totals
+                                                        $totalRevenue += $productTotal;
+                                                    }
+                                                @endphp
+
+                                                <!-- Display each service option with price and quantity sold -->
+                                                @foreach($attributes as $attribute)
+                                                    @php
+                                                        // Calculate total quantity sold for each attribute across all taskProducts
+                                                        $attributeKey = $attribute['key'] ?? '';
+                                                        $attributeQuantitySold = $taskProducts->reduce(function ($carry, $taskProduct) use ($attributeKey) {
+                                                            $taskAttributes = json_decode($taskProduct->attributes, true) ?? [];
+                                                            foreach ($taskAttributes as $taskAttribute) {
+                                                                if ($taskAttribute['attribute'] == $attributeKey) {
+                                                                    $carry += $taskAttribute['quantity'];
+                                                                }
+                                                            }
+                                                            return $carry;
+                                                        }, 0);
+
+                                                        $totalQuantitySold += $attributeQuantitySold;
+                                                    @endphp
+                                                    <li>
+                                                        {{ $attributeKey }}: {{ number_format($attribute['value'] ?? 0, 2) }}
+                                                        <span class="text-gray-500">(Sold: {{ $attributeQuantitySold }})</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+
+                                            <!-- Display total quantity sold and revenue for the service -->
+                                            <p class="mt-2 font-semibold">Total Quantity Sold: {{ $totalQuantitySold }}</p>
+                                            <p class="font-semibold">Total Revenue: {{ number_format($totalRevenue, 2) }}</p>
+                                        </div>
+                                    @endif
+
+                                    <!-- Status -->
+                                    <p class="mt-4 text-sm">
+                                        Status: 
+                                        <span class="{{ $product->active ? 'text-green-500' : 'text-red-500' }}">
+                                            {{ $product->active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </p>
+                        
+                                    <!-- Expandable Analytics Section -->
+                                    <div id="analytics-{{ $product->id }}" class="hidden mt-4">
+                                        <!-- Chart Container -->
+                                        <canvas id="chart-{{ $product->id }}" class="mb-4"></canvas>
+                                        <p>Total Revenue: ${{ $product->price * $product->quantity_sold }}</p> <!-- Display total revenue -->
+                                    </div>
+                        
+                                    <!-- Actions -->
+                                    <div class="mt-5 flex justify-between">
+                                        <!-- Edit button with stopPropagation -->
+                                        <a href="{{ route('products.edit', $product->id) }}" 
+                                        onclick="event.stopPropagation()"
+                                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700">
+                                            Edit
+                                        </a>
+
+                                        <!-- Delete form with stopPropagation on button -->
+                                        <form method="POST" action="{{ route('products.destroy', $product->id) }}" onsubmit="return confirmDelete();">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" 
+                                                    onclick="event.stopPropagation()"
+                                                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-700">
+                                                Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-
-                                <div class="p-5 flex justify-end space-x-4">
-                                    <!-- Edit button -->
-                                    <a href="{{ route('products.edit', $product->id) }}" class="inline-flex items-center px-4 py-2 bg-blue-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:shadow-outline-gray disabled:opacity-25 transition ease-in-out duration-150">
-                                        <i class="fas fa-edit mr-2"></i> Edit
-                                    </a>
-                    
-                                    <!-- Delete button -->
-                                    <form method="POST" action="{{ route('products.destroy', $product->id) }}" onsubmit="return confirmDelete();">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 active:bg-red-900 focus:outline-none focus:border-red-900 focus:shadow-outline-gray disabled:opacity-25 transition ease-in-out duration-150">
-                                            <i class="fas fa-trash mr-2"></i> Delete
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <!-- Page size dropdown -->
-                    <form method="GET" action="{{ route('products.index') }}" style="flex-grow: 1; text-align: right;">
-                        <div class="inline-block relative w-32">
-                            <select name="pageSize" onchange="this.form.submit()" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
-                                <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option>
-                            </select>
+                            @endforeach
                         </div>
-                    </form>
+                        
+
+                    @if ($products->total() > 10)
+                        <!-- Pagination links and Page size dropdown -->
+                        <div class="mt-6 flex items-center justify-between">
+                            {{ $products->links() }}
+                            <form method="GET" action="{{ route('products.index') }}" style="flex-grow: 1; text-align: right;">
+                                <div class="inline-block relative w-32">
+                                    <select name="pageSize" onchange="this.form.submit()" 
+                                            class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+                                        <option value="10" {{ request('pageSize') == 10 ? 'selected' : '' }}>10</option>
+                                        <option value="25" {{ request('pageSize') == 25 ? 'selected' : '' }}>25</option>
+                                        <option value="50" {{ request('pageSize') == 50 ? 'selected' : '' }}>50</option>
+                                        <option value="100" {{ request('pageSize') == 100 ? 'selected' : '' }}>100</option>
+                                        <option value="all" {{ request('pageSize') == 'all' ? 'selected' : '' }}>All</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.alert-success').forEach(alert => {
-                setTimeout(() => {
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 300); // Remove after fade-out
-                }, 5000); // 5-second display
-            });
-
-            document.querySelectorAll('.alert-warning').forEach(alert => {
-                alert.querySelector('button').addEventListener('click', () => {
-                    alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 300); // Remove after fade-out
-                });
-            });
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.alert-success').forEach(alert => {
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
         });
 
-        function confirmDelete() {
-            return confirm('Are you sure you want to delete this product?');
+        document.querySelectorAll('.alert-warning').forEach(alert => {
+            alert.querySelector('button').addEventListener('click', () => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            });
+        });
+    });
+
+    // Product and Service data array from Laravel
+    const products = {!! json_encode($products->items()) !!};
+    
+    // Track created charts by product ID
+    const charts = {};
+
+    // Function to toggle card expansion and render chart
+    function toggleCardExpansion(productId) {
+        const analyticsSection = document.getElementById(`analytics-${productId}`);
+        if (analyticsSection.classList.contains('hidden')) {
+            analyticsSection.classList.remove('hidden');
+            renderChart(productId); // Render chart on first expansion
+        } else {
+            analyticsSection.classList.add('hidden');
+            // Destroy chart if it exists to free up canvas
+            if (charts[productId]) {
+                charts[productId].destroy();
+                delete charts[productId]; // Remove from tracking
+            }
         }
-    </script>
+    }
+
+    // Render chart based on product/service type
+    function renderChart(productId) {
+        const ctx = document.getElementById(`chart-${productId}`).getContext('2d');
+        const productData = products.find(product => product.id === productId);
+
+        if (!productData) return; // Check if the productData exists to prevent errors
+
+        // Destroy existing chart instance on this canvas before creating a new one
+        if (charts[productId]) {
+            charts[productId].destroy();
+        }
+
+        const isProduct = productData.type === 'product';
+        const chartData = {
+            labels: isProduct ? ['Sold', 'In Stock'] : ['Sold'],
+            datasets: [{
+                label: 'Quantity',
+                data: isProduct ? [productData.quantity_sold, productData.quantity_in_stock] : [productData.quantity_sold],
+                backgroundColor: ['#4caf50', '#f44336']
+            }]
+        };
+
+        charts[productId] = new Chart(ctx, {
+            type: 'bar',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `${productData.title} Analytics`
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (isProduct && context.dataIndex === 0) {
+                                    return `Total Revenue: $${productData.price * productData.quantity_sold}`;
+                                }
+                                return `${context.label}: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Quantity'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function confirmDelete() {
+        return confirm('Are you sure you want to delete this product?');
+    }
+</script>
 </x-app-layout>
