@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Config;
 
 class PlanService
@@ -97,5 +98,24 @@ class PlanService
             }
         }
         return 'unknown';
+    }
+
+    public function getUserSubscriptionPlan(User $user): string
+    {
+        $subscription = $user->subscriptions()->whereIn('type', ['default', 'canceled'])->first();
+
+        if (!$subscription) {
+            return 'free';
+        }
+
+        if ($subscription->ends_at && $subscription->ends_at->isPast() && $subscription->type === 'canceled') {
+            return 'free';
+        }
+
+        if ($subscription->type === 'canceled' && !$subscription->ends_at->isPast()) {
+            return $this->getPlanNameByPriceId($subscription->stripe_price);
+        }
+
+        return $subscription->type === 'default' ? $this->getPlanNameByPriceId($subscription->stripe_price) : 'free';
     }
 }
