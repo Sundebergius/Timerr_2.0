@@ -86,72 +86,162 @@
 
         <!-- Product dropdown -->
         <div v-for="(taskProduct, index) in taskProducts" :key="index" class="mb-6" v-if="products.length > 0">
-          <label for="product" class="block text-lg font-bold mb-2 text-gray-700">Select Product or Service:</label>
-          <div class="relative">
-            <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
-              class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
-              <option v-for="product in products" :value="product.id">{{ product.title }}</option>
-            </select>
-          </div>
-
-          <!-- Product/Service Details Section -->
-          <div v-if="taskProduct.selectedProductDetails" class="bg-white shadow-lg rounded-lg p-6 mt-4">
-            <!-- For Physical Product -->
-            <div v-if="taskProduct.selectedProductDetails && taskProduct.selectedProductDetails.type === 'product'">
-              <p class="text-xl font-semibold text-blue-700 mb-2">Product Details</p>
-              <p><strong>Price:</strong> {{ taskProduct.selectedProductDetails.price }} kr</p>
-              <p><strong>Quantity in Stock:</strong> {{ taskProduct.selectedProductDetails.quantity_in_stock }}</p>
-              <p v-if="taskProduct.selectedProductDetails.description"><strong>Description:</strong> {{ taskProduct.selectedProductDetails.description }}</p>
+            <label for="product" class="block text-lg font-bold mb-2 text-gray-700">Select Product or Service:</label>
+            <div class="relative">
+                <select id="product" v-model="taskProduct.selectedProduct" @change="onProductChange(index)"
+                    class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                    <option 
+                        v-for="product in products.filter(p => p.type !== 'material')" 
+                        :value="product.id">
+                        {{ product.title }}
+                    </option>
+                </select>
             </div>
 
-            <!-- For Service -->
-            <div v-if="taskProduct.selectedProductDetails && taskProduct.selectedProductDetails.type === 'service'">
-              <p class="text-xl font-semibold text-blue-700 mb-2">Service Details</p>
-              <p><strong>Base Price:</strong> {{ taskProduct.selectedProductDetails.price }} kr</p>
-              <p v-if="taskProduct.selectedProductDetails.description"><strong>Description:</strong> {{ taskProduct.selectedProductDetails.description }}</p>
+            <!-- Product/Service Details Section -->
+            <div v-if="taskProduct.selectedProductDetails" class="bg-white shadow-lg rounded-lg p-6 mt-4">
 
-              <!-- Interactive Attribute Selection -->
-              <p class="mt-4 font-semibold">Available Attributes:</p>
-              
-              <!-- Stacked attributes with scrollable section -->
-              <div class="overflow-y-auto max-h-64 space-y-4">
-                <div v-for="(attribute, attrIndex) in taskProduct.selectedProductDetails.attributes" :key="attrIndex" class="flex flex-col md:flex-row md:items-center mb-2">
-                  
-                  <!-- Select button -->
-                  <div
-                    @click="toggleAttribute(taskProduct, attribute)"
-                    class="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out mb-2 md:mb-0 md:mr-4">
-                    {{ taskProduct.selectedAttributes[attribute.key] ? 'Selected' : 'Select' }} {{ attribute.key }}
-                  </div>
+                <!-- Conditional Section for Products -->
+                <div v-if="taskProduct.selectedProductDetails.type === 'product'">
+                    <p class="text-2xl font-semibold text-blue-700 mb-3">Product Details</p>
+                    <div class="flex flex-col space-y-4 mb-4">
+                        <div>
+                            <p class="text-lg font-bold">Price:</p>
+                            <p class="text-xl text-green-700">{{ taskProduct.selectedProductDetails.derivedPrice }} kr</p>
+                        </div>
+                        <div>
+                            <p class="text-lg font-bold">Quantity in Stock:</p>
+                            <p class="text-xl" :class="{'text-red-600': taskProduct.selectedProductDetails.derivedStock < 0, 'text-green-700': taskProduct.selectedProductDetails.derivedStock >= 0}">
+                                {{ taskProduct.selectedProductDetails.derivedStock }}
+                            </p>
+                            <p v-if="taskProduct.selectedProductDetails.derivedStock < 0" class="text-sm text-gray-500 mt-1 italic">
+                                Note: Negative values are allowed, and you can adjust your stock later.
+                            </p>
+                        </div>
+                    </div>
 
-                  <!-- Attribute price -->
-                  <span class="ml-2 text-gray-600">{{ attribute.value }} kr</span>
+                    <!-- Optional Description for Product -->
+                    <div v-if="taskProduct.selectedProductDetails.description" class="mb-4">
+                        <p class="text-lg font-bold">Description:</p>
+                        <p class="text-gray-600">{{ taskProduct.selectedProductDetails.description }}</p>
+                    </div>
 
-                  <!-- Attribute Quantity if selected -->
-                  <div v-if="taskProduct.selectedAttributes[attribute.key]" class="flex items-center ml-0 mt-2 md:ml-4 md:mt-0">
-                    <label class="text-gray-600 mr-2">Quantity:</label>
-                    <input type="number" v-model="taskProduct.selectedAttributesQuantities[attribute.key]" min="1"
-                      class="shadow border rounded py-1 px-2 w-16 text-center text-gray-700 focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
-                  </div>
+                    <!-- Product Quantity Input -->
+                    <div class="mt-6">
+                        <label for="quantity" class="block text-gray-700 font-semibold mb-2">Quantity:</label>
+                        <input type="number" id="quantity" v-model="taskProduct.quantity" min="0" @input="onProductQuantityChange(index)"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                    </div>
                 </div>
-              </div>
-            </div>
 
-            <!-- Product Quantity Input for Physical Products -->
-            <div v-if="taskProduct.selectedProductDetails && taskProduct.selectedProductDetails.type === 'product'" class="mt-6">
-              <label for="quantity" class="block text-gray-700 font-semibold mb-2">Quantity:</label>
-              <input type="number" id="quantity" v-model="taskProduct.quantity" min="1"
-                class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
-            </div>
+                <!-- Conditional Section for Services -->
+                <div v-if="taskProduct.selectedProductDetails.type === 'service'" class="p-6 bg-gray-50 rounded-lg shadow-lg space-y-4 mt-6">
+                    <h3 class="text-2xl font-semibold text-blue-700">Service Details</h3>
+                    
+                    <!-- Base Price -->
+                    <div class="flex items-center justify-between">
+                        <p class="text-lg font-bold text-gray-700">Base Price:</p>
+                        <p class="text-xl text-green-700">{{ taskProduct.selectedProductDetails.price }} kr</p>
+                    </div>
+                    
+                    <!-- Description -->
+                    <div v-if="taskProduct.selectedProductDetails.description" class="text-gray-600 mt-2">
+                        <p class="font-medium text-gray-700">Description:</p>
+                        <p>{{ taskProduct.selectedProductDetails.description }}</p>
+                    </div>
 
-            <!-- Add Product Button -->
-            <div class="mt-4">
-              <button type="button" @click="validateAndAddProduct(index)"
-                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
-                Add {{ taskProduct.selectedProductDetails.type === 'product' ? 'Product' : 'Service' }}
-              </button>
+                    <!-- Available Attributes Section -->
+                    <div class="mt-4">
+                        <h4 class="text-lg font-semibold text-gray-700 mb-3">Available Attributes</h4>
+                        <div class="overflow-y-auto max-h-64 space-y-4">
+                            <div v-for="(attribute, attrIndex) in taskProduct.selectedProductDetails.attributes" :key="attrIndex" 
+                                class="flex flex-col md:flex-row items-center justify-between p-4 bg-white rounded-lg shadow-md transition duration-300 ease-in-out hover:bg-gray-50">
+                                
+                                <!-- Attribute Title and Price -->
+                                <div class="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-4 w-full">
+                                    <div class="flex items-center justify-between w-full md:w-auto">
+                                        <p class="font-semibold text-gray-800">{{ attribute.key }}</p>
+                                        <span class="ml-4 text-gray-600">{{ attribute.value }} kr</span>
+                                    </div>
+                                    
+                                    <!-- Toggle for Attribute Selection -->
+                                    <div class="flex items-center mt-2 md:mt-0 md:ml-4">
+                                        <button @click.prevent="toggleAttribute(taskProduct, attribute)" 
+                                            class="flex items-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-400">
+                                            <span v-if="taskProduct.selectedAttributes[attribute.key]">Deselect</span>
+                                            <span v-else>Select</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Attribute Quantity if selected -->
+                                <div v-if="taskProduct.selectedAttributes[attribute.key]" class="flex items-center mt-2 md:mt-0 md:ml-6">
+                                    <label class="text-gray-600 mr-2">Quantity:</label>
+                                    <input type="number" v-model="taskProduct.selectedAttributesQuantities[attribute.key]" min="1"
+                                        class="shadow border rounded py-1 px-3 w-20 text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-300 ease-in-out">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Shared Materials Section -->
+                <div v-if="taskProduct.linkedMaterials && taskProduct.linkedMaterials.length > 0" class="mt-6">
+                    <p class="text-lg font-semibold text-blue-700 mb-4">Select Materials:</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div 
+                            v-for="material in taskProduct.linkedMaterials" 
+                            :key="material.id" 
+                            class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
+                            
+                            <!-- Material Header -->
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="text-xl font-semibold text-gray-800">{{ material.title }}</p>
+                                <input type="checkbox" v-model="material.selected" @change="onMaterialSelectionChange(index)" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
+                            </div>
+
+                            <!-- Material Details -->
+                            <div class="text-sm text-gray-700 space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-gray-600">Unit Type:</span>
+                                    <span>{{ material.unit_type }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-gray-600">Stock:</span>
+                                    <span :class="{'text-red-600': material.displayStock <= material.minimum_stock_alert || material.displayStock < 0, 'text-green-600': material.displayStock > material.minimum_stock_alert}">
+                                        {{ material.displayStock }}
+                                    </span>
+                                </div>
+                                <p v-if="material.displayStock < 0" class="text-sm text-gray-500 italic mt-1">
+                                    Negative values are allowed, and you can update stock levels later.
+                                </p>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-gray-600">Usage per Unit:</span>
+                                    <span>{{ material.usage_per_unit }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-gray-600">Price per Unit:</span>
+                                    <span>{{ material.price_per_unit }} kr</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-medium text-gray-600">Min Stock Alert:</span>
+                                    <span v-if="material.minimum_stock_alert" class="text-orange-500">{{ Number(material.minimum_stock_alert).toFixed(2) }}</span>
+                                    <span v-else class="italic text-gray-400">None</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Product/Service Button -->
+                <div class="mt-4">
+                    <button type="button" @click="validateAndAddProduct(index)"
+                        class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                        Add {{ taskProduct.selectedProductDetails.type === 'product' ? 'Product' : 'Service' }}
+                    </button>
+                </div>
             </div>
-          </div>
         </div>
 
         <!-- List of Added Products -->
@@ -164,6 +254,20 @@
             <input type="number" v-model="product.quantity" min="1"
               class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
             <p class="text-gray-700 mt-2"><strong>Total Price:</strong> {{ calculateTotalPrice(product) }} kr</p>
+          </div>
+
+          <!-- Display Selected Materials for Dynamic Products -->
+          <div v-if="product.selectedMaterials && product.selectedMaterials.length > 0" class="mt-4">
+            <p class="text-gray-700 font-semibold">Selected Materials:</p>
+            <ul class="list-disc pl-5 mt-2">
+              <li v-for="(material, matIndex) in product.selectedMaterials" :key="matIndex">
+                <span>
+                  {{ material.title }} ({{ material.unitType }}) - 
+                  Used: {{ material.quantityUsed }} {{ material.unitType }}, 
+                  Cost: {{ material.totalCost }} kr
+                </span>
+              </li>
+            </ul>
           </div>
 
           <!-- Editable attributes and prices for services -->
@@ -182,6 +286,66 @@
             class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out mt-4">
             Remove
           </button>
+        </div>
+
+        <!-- Material Stock Overview Section -->
+        <div v-if="materialStockOverview.length > 0" class="mt-6 bg-gray-50 p-4 rounded-lg shadow-md">
+          <h3 class="text-xl font-bold text-gray-800 mb-3">Material Stock Overview</h3>
+
+          <!-- Info Message -->
+          <p class="text-sm text-gray-500 italic mb-3">
+              Note: Negative stock levels are allowed. You can proceed and update stock levels later if needed.
+          </p>
+
+          <!-- Overall Summary Section -->
+          <div class="mb-4 p-3 bg-gray-100 rounded-md shadow-inner">
+              <h4 class="text-lg font-semibold text-gray-700">Overall Summary</h4>
+              <p class="text-gray-800"><strong>Total Price:</strong> {{ totalProductSummary.totalPrice }} kr</p>
+              <p class="text-gray-800"><strong>Total Quantity:</strong> {{ totalProductSummary.totalQuantity }}</p>
+
+              <!-- List each product with title, quantity, and price -->
+              <ul class="mt-2 space-y-2">
+                  <li v-for="(product, index) in totalProductSummary.products" :key="index" class="text-gray-700">
+                      <p><strong>Product:</strong> {{ product.title }}</p>
+                      <p><strong>Quantity:</strong> {{ product.quantity }}</p>
+                      <p><strong>Product Total Price:</strong> {{ product.totalPrice }} kr</p>
+                  </li>
+              </ul>
+          </div>
+
+          <ul class="list-disc pl-5 space-y-4">
+              <li v-for="(material, index) in materialStockOverview" :key="index" class="space-y-1">
+                  
+                  <!-- Material Title with Remaining Stock Label -->
+                  <div :class="{'text-red-600': material.remainingStock < 0, 'text-green-700': material.remainingStock >= 0}">
+                      <strong>{{ material.title }}</strong> - <span>Remaining Stock: </span> 
+                      <span>{{ material.remainingStock }} {{ material.unitType }}</span>
+                  </div>
+                  
+                  <!-- Progress Bar for Stock Levels -->
+                  <div class="w-full h-3 bg-gray-200 rounded-full overflow-hidden mt-1">
+                      <div 
+                          :style="{ width: Math.max((material.remainingStock / material.initialStock) * 100, 0) + '%' }"
+                          :class="{
+                              'bg-green-500': material.remainingStock >= material.initialStock * 0.2,
+                              'bg-orange-400': material.remainingStock < material.initialStock * 0.2 && material.remainingStock >= 0,
+                              'bg-red-500': material.remainingStock < 0
+                          }"
+                          class="h-full transition-width duration-300">
+                      </div>
+                  </div>
+
+                  <!-- Warning Message for Low Stock -->
+                  <p v-if="material.remainingStock <= material.minimumStockAlert" class="text-orange-500 text-sm font-semibold mt-1">
+                      Warning: Stock is low (minimum threshold: {{ material.minimumStockAlert }} {{ material.unitType }})
+                  </p>
+
+                  <!-- Usage Summary Below Each Material with a Clear Label -->
+                  <p class="text-gray-600 text-sm mt-1">
+                      <strong>Total Used:</strong> {{ material.initialStock - material.remainingStock }} {{ material.unitType }}
+                  </p>
+              </li>
+          </ul>
         </div>
       </div>
 
@@ -336,6 +500,9 @@ export default {
       hourly_rate: '',
       workDate: '',
       note: '',
+      materialsCache: {}, // To store preloaded materials by product ID
+      productChangedFlag: false, // Flag to track if the product was changed
+      previousProductType: null, // Track the type of the previously selected product
       products: [],
       product: '',
       quantity: '',
@@ -356,7 +523,7 @@ export default {
       taskProducts: [
         {
           selectedProduct: null,
-          quantity: 1,
+          quantity: 0,
           type: 'product', // or 'service'
           attributes: {}, // { 'size': 'Large', 'color': 'Red' }
           selectedAttributes: {}, // { 'size': 0, 'color': 0 }
@@ -373,8 +540,79 @@ export default {
     };
   },
   computed: {
-  },
+    materialStockOverview() {
+        const stockMap = {};
+
+        // Loop through each added product/service and accumulate material usage
+        this.addedProducts.forEach(product => {
+            if (product.selectedMaterials && product.selectedMaterials.length > 0) {
+                product.selectedMaterials.forEach(material => {
+                    if (!stockMap[material.title]) {
+                        // Initialize material in stockMap with initial values
+                        stockMap[material.title] = {
+                            title: material.title,
+                            unitType: material.unitType,
+                            initialStock: parseFloat(material.initialStock) || 0,
+                            remainingStock: parseFloat(material.initialStock) - parseFloat(material.quantityUsed),
+                            minimumStockAlert: parseFloat(material.minimumStockAlert) || 0
+                        };
+                    } else {
+                        // Deduct used quantity from remaining stock for the material
+                        stockMap[material.title].remainingStock -= parseFloat(material.quantityUsed) || 0;
+                    }
+                });
+            }
+        });
+
+        // Return as an array for rendering
+        return Object.values(stockMap);
+    },
+
+    totalProductSummary() {
+        const summary = {
+            totalPrice: 0,
+            totalQuantity: 0,
+            products: []
+        };
+
+        this.addedProducts.forEach(product => {
+            let productTotalPrice = parseFloat(product.totalPrice) || 0;
+            let quantity = 0;
+
+            if (product.type === 'product') {
+                // For products, use quantity directly
+                productTotalPrice = this.calculateTotalPrice(product);
+                quantity = product.quantity || 0;
+            } else if (product.type === 'service') {
+                // For services, accumulate based on attribute quantities
+                quantity = product.selectedAttributes.reduce((sum, attr) => sum + (attr.quantity || 0), 0);
+            }
+
+            // Accumulate total values
+            summary.totalPrice += productTotalPrice;
+            summary.totalQuantity += quantity;
+
+            // Add each product/service instance to the products array with independent quantities
+            summary.products.push({
+                title: product.title,
+                quantity: quantity,
+                totalPrice: productTotalPrice.toFixed(2)
+            });
+        });
+
+        // Round total price for display consistency
+        summary.totalPrice = Math.round(summary.totalPrice * 100) / 100;
+
+        return summary;
+    }
+},
+
   watch: {
+    // Watch for changes in selected product and set the flag to true
+    'taskProducts.selectedProduct': function() {
+        this.productChangedFlag = true;
+    },
+
     localProject: {
       handler(newValue) {
         this.formData = JSON.stringify(newValue);
@@ -386,26 +624,18 @@ export default {
     // },
   },
   mounted() {
-    // Directly assign the project prop to localProject
-    if (this.project) {
-      this.localProject = this.project;
-
-      console.log('Project in TaskCreator:', this.localProject);
-
-      // Fetch products only if localProject is available and has user_id
-      if (this.localProject && this.localProject.user_id) {
-        this.fetchProducts();
-      } else {
-        console.warn('User ID is not available in the project data');
+      if (this.project) {
+          this.localProject = this.project;
+          
+          if (this.localProject && this.localProject.user_id) {
+              this.fetchProducts().then(() => {
+                  // Preload materials only after products are fetched
+                  this.preloadMaterialsForProducts();
+              });
+          } else {
+              console.warn('User ID is not available in the project data');
+          }
       }
-    }
-
-    // console.log('Project:', this.project);
-    // console.log('localProject:', this.localProject);
-    // console.log('Type:', typeof this.project);
-    // console.log('Type local:', typeof this.localProject);
-    // console.log('Value id:', this.localProject.id);
-    // console.log('Type id:', typeof this.localProject.id);
   },
   methods: {
     addCustomField() {
@@ -436,64 +666,218 @@ export default {
       this.checklistSections[sectionIndex].items.splice(itemIndex, 1);
     },
 
-    onProductChange(index) {
-        const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
+    preloadMaterialsForProducts() {
+        this.products.forEach(product => {
+            if (product.type !== 'material') { // Skip material type products
+                axios.get(`/api/products/${product.id}/materials`)
+                    .then(response => {
+                        // Directly assign the cached materials without using this.$set
+                        this.materialsCache[product.id] = response.data || [];
+                    })
+                    .catch(error => {
+                        console.error(`Error preloading materials for product ${product.id}:`, error);
+                    });
+            }
+        });
+    },
 
-        if (selectedProduct) {
-            const attributes = typeof selectedProduct.attributes === 'string'
-                ? JSON.parse(selectedProduct.attributes)
-                : selectedProduct.attributes || {}; // Ensure attributes is always an object
+    simulatedMaterialStock(materials, quantity) {
+    const materialStockOverviewLookup = this.materialStockOverview.reduce((acc, material) => {
+        acc[material.title] = material.remainingStock;
+        return acc;
+    }, {});
 
-            const selectedAttributes = {};
-            const selectedAttributesQuantities = {};
+    return materials.map(material => {
+        const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
+        const initialStock = materialStockOverviewLookup[material.title] !== undefined
+            ? materialStockOverviewLookup[material.title]
+            : parseFloat(material.quantity_in_stock) || 0;
 
-            if (selectedProduct.type === 'service') {
-                attributes.forEach(attr => {
-                    selectedAttributes[attr.key] = false;
-                    selectedAttributesQuantities[attr.key] = 1;
-                });
+        // Calculate quantity used based on user input for each service attribute or product quantity
+        const quantityUsed = material.selected ? usagePerUnit * quantity : 0;
+
+        return {
+            ...material,
+            displayStock: initialStock - quantityUsed,
+            minimumStockAlert: material.minimum_stock_alert || 0
+        };
+    });
+},
+
+onProductChange(index) {
+    const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
+
+    if (selectedProduct) {
+        // Reset quantity only when switching between product types
+        if (this.previousProductType !== selectedProduct.type) {
+            this.taskProducts[index].quantity = 0;
+            this.previousProductType = selectedProduct.type;
+        }
+
+        const attributes = typeof selectedProduct.attributes === 'string'
+            ? JSON.parse(selectedProduct.attributes)
+            : selectedProduct.attributes || {};
+
+        const selectedAttributes = {};
+        const selectedAttributesQuantities = {};
+
+        if (selectedProduct.type === 'service') {
+            attributes.forEach(attr => {
+                selectedAttributes[attr.key] = false;
+                selectedAttributesQuantities[attr.key] = 0;
+            });
+        }
+
+        let derivedPrice = selectedProduct.type === 'product' && selectedProduct.price === 0 ? 0 : parseFloat(selectedProduct.price) || 0;
+        let derivedStock = selectedProduct.quantity_in_stock;
+
+        // Initialize totalAttributeQuantity for services
+        let totalAttributeQuantity = 0;
+
+        // Calculate total attribute quantity for services
+        if (selectedProduct.type === 'service') {
+            totalAttributeQuantity = Object.values(this.taskProducts[index].selectedAttributesQuantities)
+                .reduce((sum, quantity) => sum + quantity, 0);
+
+            // Adjust derived price based on attributes for services
+            derivedPrice = attributes.reduce((total, attr) => {
+                const attrQuantity = this.taskProducts[index].selectedAttributesQuantities[attr.key] || 0;
+                return total + (attrQuantity * (parseFloat(attr.value) || 0));
+            }, derivedPrice);
+        }
+
+        const materialStockOverviewLookup = this.materialStockOverview.reduce((acc, material) => {
+            acc[material.title] = material.remainingStock;
+            return acc;
+        }, {});
+
+        const calculateDerivedValues = (materials) => {
+            const productQuantity = this.taskProducts[index].quantity || 0;
+
+            // Calculate derived price based on selected materials for products
+            if (selectedProduct.type === 'product' && derivedPrice === 0) {
+                derivedPrice = materials.reduce((total, material) => {
+                    return material.selected ? total + (material.price_per_unit * material.usage_per_unit * productQuantity) : total;
+                }, 0);
             }
 
-            // Directly modify the `taskProducts` array using Vue's automatic reactivity
+            // Adjust stock for selected materials based on the product quantity or service attribute quantities
+            const stockQuantities = materials
+                .filter(material => material.selected)
+                .map(material => {
+                    const adjustedStock = materialStockOverviewLookup[material.title] !== undefined
+                        ? materialStockOverviewLookup[material.title]
+                        : material.quantity_in_stock;
+
+                    // Directly subtract the `usage_per_unit` multiplied by the product or service quantity
+                    const usageMultiplier = selectedProduct.type === 'service' ? totalAttributeQuantity : productQuantity;
+
+                    return adjustedStock - (material.usage_per_unit * usageMultiplier);
+                });
+
+            // Set derived stock as the minimum stock available across selected materials
+            derivedStock = stockQuantities.length ? Math.min(...stockQuantities) : selectedProduct.quantity_in_stock;
+
+            const selectedStates = materials.reduce((acc, material) => {
+                acc[material.id] = material.selected;
+                return acc;
+            }, {});
+
+            materials.forEach(material => {
+                const adjustedStock = materialStockOverviewLookup[material.title] !== undefined
+                    ? materialStockOverviewLookup[material.title]
+                    : material.quantity_in_stock;
+
+                // Adjust material stock based on the exact usage, not a percentage
+                const usageMultiplier = selectedProduct.type === 'service' ? totalAttributeQuantity : productQuantity;
+
+                material.displayStock = material.selected
+                    ? adjustedStock - (material.usage_per_unit * usageMultiplier)
+                    : adjustedStock;
+
+                material.selected = selectedStates[material.id] || false;
+            });
+
             this.taskProducts[index] = {
                 ...this.taskProducts[index],
-                type: selectedProduct.type || 'unknown', // Default to 'unknown' if type is not available
+                type: selectedProduct.type || 'unknown',
                 attributes: selectedProduct.type === 'service' ? attributes : [],
-                selectedAttributes: selectedAttributes,
-                selectedAttributesQuantities: selectedAttributesQuantities,
-                quantity: 1,
-                selectedProductDetails: selectedProduct, // Ensure details are set correctly
+                selectedAttributes,
+                selectedAttributesQuantities,
+                quantity: productQuantity,
+                selectedProductDetails: { ...selectedProduct, derivedPrice, derivedStock },
+                linkedMaterials: materials
             };
+        };
+
+        // Fetch materials and calculate derived values
+        if (this.materialsCache[selectedProduct.id]) {
+            const materials = this.materialsCache[selectedProduct.id];
+            calculateDerivedValues(materials);
         } else {
-            console.error('Selected product not found.');
+            axios.get(`/api/products/${selectedProduct.id}/materials`)
+                .then(response => {
+                    const materials = response.data.map(material => ({
+                        ...material,
+                        selected: false
+                    }));
+                    this.materialsCache[selectedProduct.id] = materials;
+                    calculateDerivedValues(materials);
+                })
+                .catch(error => {
+                    console.error('Error fetching linked materials:', error);
+                    this.taskProducts[index].linkedMaterials = [];
+                    this.taskProducts[index].selectedProductDetails = {
+                        ...selectedProduct,
+                        derivedPrice: selectedProduct.price,
+                        derivedStock: selectedProduct.quantity_in_stock
+                    };
+                });
         }
+    } else {
+        console.error('Selected product not found.');
+    }
+},
+
+
+
+
+
+    // New method to handle material selection changes
+    onMaterialSelectionChange(index) {
+        this.onProductChange(index); // Recalculate values based on selected materials
+    },
+
+    onProductQuantityChange(index) {
+        this.onProductChange(index); // Recalculate values based on the new quantity
     },
 
     toggleAttribute(taskProduct, attribute) {
       if (taskProduct.selectedAttributes[attribute.key]) {
         // Deselect the attribute
         taskProduct.selectedAttributes[attribute.key] = false;
-        taskProduct.selectedAttributesQuantities[attribute.key] = 1; // Reset quantity to 1
+        taskProduct.selectedAttributesQuantities[attribute.key] = 0; // Reset quantity to 1
       } else {
         // Select the attribute
         taskProduct.selectedAttributes[attribute.key] = true;
-        taskProduct.selectedAttributesQuantities[attribute.key] = 1; // Set default quantity to 1
+        taskProduct.selectedAttributesQuantities[attribute.key] = 0; // Set default quantity to 1
       }
     },
 
     fetchProducts() {
-      this.initialTaskType = 'product';
-      if (this.localProject && this.localProject.user_id) {
-        axios.get(`/api/products/${this.localProject.user_id}`)
-          .then(response => {
-            this.products = response.data.products;
-          })
-          .catch(error => {
-            console.error('Error fetching products:', error);
-          });
-      } else {
-        console.error('Cannot fetch products because user_id is not available');
-      }
+        this.initialTaskType = 'product';
+        if (this.localProject && this.localProject.user_id) {
+            return axios.get(`/api/products/${this.localProject.user_id}`)
+                .then(response => {
+                    this.products = response.data.products;
+                })
+                .catch(error => {
+                    console.error('Error fetching products:', error);
+                });
+        } else {
+            console.error('Cannot fetch products because user_id is not available');
+            return Promise.reject('User ID is not available');
+        }
     },
 
     handleProductEvent(newProduct) {
@@ -514,63 +898,107 @@ export default {
   },
 
   addProduct(index) {
-    const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
-    
+    const taskProduct = this.taskProducts[index];
+    const selectedProduct = this.products.find(product => product.id === taskProduct.selectedProduct);
+
     if (selectedProduct) {
-        let basePrice = parseFloat(selectedProduct.price || 0); // Default to 0 if no price is set
-        let totalPrice = 0; // Initialize total price as 0
+        let totalPrice = 0;
+        const isService = selectedProduct.type === 'service';
+        const basePrice = isService ? parseFloat(selectedProduct.price) || 0 : 0;
 
-        const selectedAttributes = Object.keys(this.taskProducts[index].selectedAttributes)
-            .filter(attrKey => this.taskProducts[index].selectedAttributes[attrKey] > 0)
-            .map(attrKey => {
-                const quantity = this.taskProducts[index].selectedAttributesQuantities[attrKey] || 0;
-                const attribute = selectedProduct.attributes?.find(attr => attr.key === attrKey);
-                const price = attribute ? parseFloat(attribute.value) : 0;
-                
-                // Calculate price for each attribute: (standard price + attribute price) * quantity
-                let attributeTotal = (basePrice + price) * quantity;
+        // Products with materials
+        if (selectedProduct.type === 'product') {
+            const selectedMaterials = taskProduct.linkedMaterials
+                .filter(material => material.selected)
+                .map(material => {
+                    const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
+                    const pricePerUnit = parseFloat(material.price_per_unit) || 0;
+                    const quantityUsed = usagePerUnit * (taskProduct.quantity || 1);
+                    const materialCost = quantityUsed * pricePerUnit;
 
-                // Round the result to 2 decimal places to avoid floating-point precision issues
-                totalPrice += Math.round(attributeTotal * 100) / 100;
+                    totalPrice += materialCost;
 
-                return {
-                    attribute: attrKey,
-                    quantity: quantity,
-                    price: price
-                };
-            });
+                    return {
+                        title: material.title,
+                        unitType: material.unit_type,
+                        quantityUsed: quantityUsed.toFixed(2),
+                        totalCost: materialCost.toFixed(2),
+                        initialStock: material.quantity_in_stock,
+                        minimumStockAlert: material.minimum_stock_alert
+                    };
+                });
 
-        // If it's a service, process the total differently
-        if (this.taskProducts[index].type === 'service') {
+            // Add the product with total price and selected materials
             this.addedProducts.push({
                 ...selectedProduct,
-                selectedAttributes: selectedAttributes, // Attach selected attributes
-                totalPrice: totalPrice.toFixed(2), // Final total price, rounded
-                quantity: this.taskProducts[index].quantity || 1
-            });
-        } 
-        // For physical products
-        else if (this.taskProducts[index].type === 'product') {
-            totalPrice = basePrice * (this.taskProducts[index].quantity || 1); // Product price * quantity
-            this.addedProducts.push({
-                ...selectedProduct,
-                totalPrice: totalPrice.toFixed(2), // Final total for product, rounded
-                quantity: this.taskProducts[index].quantity || 1
+                quantity: taskProduct.quantity,
+                totalPrice: totalPrice.toFixed(2),
+                selectedMaterials,
             });
         }
 
-        // Clear input after adding the product
+        // Services with attributes and materials
+        if (isService) {
+            const selectedAttributes = Object.keys(taskProduct.selectedAttributes)
+                .filter(key => taskProduct.selectedAttributes[key])
+                .map(key => {
+                    const attribute = selectedProduct.attributes.find(attr => attr.key === key);
+                    const attrQuantity = taskProduct.selectedAttributesQuantities[key];
+                    const attrPrice = parseFloat(attribute.value) || 0;
+                    const attributeTotal = attrQuantity * (attrPrice + basePrice);
+
+                    totalPrice += attributeTotal;
+
+                    return {
+                        attribute: key,
+                        quantity: attrQuantity,
+                        price: attrPrice,
+                        basePricePerItem: basePrice,
+                        total: attributeTotal.toFixed(2),
+                    };
+                });
+
+            const selectedMaterials = taskProduct.linkedMaterials
+                .filter(material => material.selected)
+                .map(material => {
+                    const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
+                    const pricePerUnit = parseFloat(material.price_per_unit) || 0;
+                    const totalAttributeQuantity = selectedAttributes.reduce((sum, attr) => sum + attr.quantity, 0);
+                    const quantityUsed = usagePerUnit * totalAttributeQuantity;
+                    const materialCost = quantityUsed * pricePerUnit;
+
+                    totalPrice += materialCost;
+
+                    return {
+                        title: material.title,
+                        unitType: material.unit_type,
+                        quantityUsed: quantityUsed.toFixed(2),
+                        totalCost: materialCost.toFixed(2),
+                        initialStock: material.quantity_in_stock,
+                        minimumStockAlert: material.minimum_stock_alert
+                    };
+                });
+
+            this.addedProducts.push({
+                ...selectedProduct,
+                totalPrice: totalPrice.toFixed(2),
+                selectedAttributes,
+                selectedMaterials,
+            });
+        }
+
+        // Reset task product fields after adding to ongoing tasks
         this.taskProducts[index] = {
             selectedProduct: null,
-            quantity: 1,
+            quantity: 0,
             type: 'product',
             attributes: [],
             selectedAttributes: {},
-            selectedAttributesQuantities: {}
+            selectedAttributesQuantities: {},
         };
     }
 
-    console.log('Added Products: ', this.addedProducts);
+    console.log('Added Products/Services: ', this.addedProducts);
 },
 
     handleProductCreated(product) {
@@ -634,60 +1062,64 @@ export default {
       }
     },
     removeProduct(index) {
-      // Check if the index is valid for addedProducts
-      if (index >= 0 && index < this.addedProducts.length) {
-        this.addedProducts.splice(index, 1);
-        console.log('Product removed from addedProducts:', index);
-      } else {
-        console.error('Invalid index for removing product from addedProducts:', index);
-      }
+        // Check if the index is valid for addedProducts
+        if (index >= 0 && index < this.addedProducts.length) {
+            this.addedProducts.splice(index, 1);
+            console.log('Product removed from addedProducts:', index);
+        } else {
+            console.error('Invalid index for removing product from addedProducts:', index);
+        }
 
-      // Check if the index is valid for taskProducts
-      if (index >= 0 && index < this.taskProducts.length) {
-        // Reset the taskProducts entry at the correct index
-        this.$set(this.taskProducts, index, {
-          selectedProduct: null,
-          quantity: 1,
-          type: 'product',
-          attributes: [],
-          selectedAttributes: {},
-          selectedAttributesQuantities: {}
-        });
-        console.log('Task product reset at index:', index);
-      } else {
-        console.error('Invalid index for resetting taskProducts:', index);
-      }
+        // Check if the index is valid for taskProducts
+        if (index >= 0 && index < this.taskProducts.length) {
+            // Directly reset the taskProducts entry at the correct index
+            this.taskProducts[index] = {
+                selectedProduct: null,
+                quantity: 0,
+                type: 'product',
+                attributes: [],
+                selectedAttributes: {},
+                selectedAttributesQuantities: {}
+            };
+            console.log('Task product reset at index:', index);
+        } else {
+            console.error('Invalid index for resetting taskProducts:', index);
+        }
 
-      console.log('Removed Product: ', this.addedProducts);
-      console.log('Task Products After Removal: ', this.taskProducts);
-      console.log('Added Products Length:', this.addedProducts.length);
-      console.log('Task Products Length:', this.taskProducts.length);
+        console.log('Removed Product: ', this.addedProducts);
+        console.log('Task Products After Removal: ', this.taskProducts);
+        console.log('Added Products Length:', this.addedProducts.length);
+        console.log('Task Products Length:', this.taskProducts.length);
     },
     calculateTotalPrice(product) {
-    let totalPrice = 0;
+        let totalPrice = 0;
 
-    // For physical products, calculate price * quantity
-    if (product.type === 'product') {
-        totalPrice += product.price * product.quantity;
-    }
-
-    // For services, calculate the standard price and attributes' price
-    if (product.type === 'service') {
-        // Add the standard price if it exists
-        if (product.price > 0) {
-            totalPrice += parseFloat(product.price);
-        }
-
-        // Loop through selected attributes and calculate their prices based on quantity
-        if (product.selectedAttributes) {
+        if (product.type === 'product') {
+            // Case for products with a fixed price
+            if (product.price > 0) {
+                totalPrice = product.price * (product.quantity || 1);
+            }
+            // Case for products with selected materials
+            else if (product.selectedMaterials) {
+                product.selectedMaterials.forEach(material => {
+                    const quantityUsed = parseFloat(material.quantityUsed) || 0;
+                    const materialCost = quantityUsed * (parseFloat(material.pricePerUnit) || 0);
+                    material.totalCost = materialCost.toFixed(2); // Update the material's total cost
+                    totalPrice += materialCost;
+                });
+            }
+        } else if (product.type === 'service') {
+            // For services, start with the base price (if any)
+            totalPrice += parseFloat(product.price) || 0;
+            // Sum attribute prices including base price per attribute if provided
             product.selectedAttributes.forEach(attr => {
-                totalPrice += parseFloat((product.price + attr.price) * attr.quantity);
+                const attrTotal = attr.quantity * ((parseFloat(attr.price) || 0) + totalPrice);
+                totalPrice += attrTotal;
             });
         }
-    }
 
-    return Math.round(totalPrice.toFixed(2));
-},
+        return Math.round(totalPrice * 100) / 100;
+    },
 
     handleFormSubmission() {
       console.log('handleFormSubmission called');
