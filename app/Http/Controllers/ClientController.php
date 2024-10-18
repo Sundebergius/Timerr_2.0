@@ -412,6 +412,14 @@ class ClientController extends Controller
 
     public function create()
     {
+        $user = auth()->user();
+        $subscriptionPlan = app(\App\Services\PlanService::class)->getUserSubscriptionPlan($user);
+        $limits = app(\App\Services\PlanService::class)->getPlanLimits($subscriptionPlan);
+
+        if (isset($limits['clients']) && $user->clients()->count() >= $limits['clients']) {
+            return redirect()->route('clients.index')->withErrors(['error' => "You have reached the maximum number of clients for the $subscriptionPlan plan."]);
+        }
+
         $this->authorize('create', Client::class);
 
         return view('clients.create');

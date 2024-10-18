@@ -558,7 +558,20 @@ class ProjectController extends Controller
 
     public function create()
     {
-        $clients = Client::where('user_id', auth()->id())->get();
+        $user = auth()->user();
+        
+        // Fetch the subscription plan and limits
+        $planService = app(\App\Services\PlanService::class);
+        $subscriptionPlan = $planService->getUserSubscriptionPlan($user);
+        $limits = $planService->getPlanLimits($subscriptionPlan);
+
+        // Check if the user has reached the project limit
+        if (isset($limits['projects']) && $user->projects()->count() >= $limits['projects']) {
+            return redirect()->route('projects.index')->withErrors(['error' => "You have reached the maximum number of projects for the $subscriptionPlan plan."]);
+        }
+
+        // If within limit, proceed with loading the create view
+        $clients = Client::where('user_id', $user->id)->get();
         return view('projects.create', compact('clients'));
     }
 
