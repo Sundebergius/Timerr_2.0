@@ -24,27 +24,24 @@ class CheckSubscription
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->user();
-
-        // Get the user's subscription plan (e.g., 'free', 'freelancer')
         $subscriptionPlan = $this->getUserSubscriptionPlan($user);
-        \Log::info("User {$user->id} subscription plan: $subscriptionPlan");
-
-        // Get the plan limits from PlanService
         $limits = $this->planService->getPlanLimits($subscriptionPlan);
-        \Log::info("Plan limits: " . json_encode($limits));
 
-        // Apply restrictions dynamically based on the limits
-        \Log::info("User {$user->id} has {$user->clients()->count()} clients. Limit for {$subscriptionPlan} plan: {$limits['clients']}");
+        // Determine which type of resource is being created based on the route
+        $isCreatingClient = $request->routeIs('clients.store');
+        $isCreatingProject = $request->routeIs('projects.store');
+        $isCreatingProduct = $request->routeIs('products.store');
 
-        if (isset($limits['clients']) && $user->clients()->count() >= $limits['clients']) {
+        // Apply the respective limits based on the resource type
+        if ($isCreatingClient && isset($limits['clients']) && $user->clients()->count() >= $limits['clients']) {
             return redirect()->back()->withErrors(['error' => "You have reached the maximum number of clients for the $subscriptionPlan plan."]);
         }
 
-        if (isset($limits['projects']) && $user->projects()->count() >= $limits['projects']) {
+        if ($isCreatingProject && isset($limits['projects']) && $user->projects()->count() >= $limits['projects']) {
             return redirect()->back()->withErrors(['error' => "You have reached the maximum number of projects for the $subscriptionPlan plan."]);
         }
 
-        if (isset($limits['products']) && $user->products()->count() >= $limits['products']) {
+        if ($isCreatingProduct && isset($limits['products']) && $user->products()->count() >= $limits['products']) {
             return redirect()->back()->withErrors(['error' => "You have reached the maximum number of products for the $subscriptionPlan plan."]);
         }
 
