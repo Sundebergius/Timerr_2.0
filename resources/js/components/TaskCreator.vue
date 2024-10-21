@@ -580,8 +580,8 @@ export default {
             let quantity = 0;
 
             if (product.type === 'product') {
-                // For products, use quantity directly
-                productTotalPrice = this.calculateTotalPrice(product);
+                // Use the already calculated totalPrice from when the product was added
+                productTotalPrice = parseFloat(product.totalPrice) || 0;
                 quantity = product.quantity || 0;
             } else if (product.type === 'service') {
                 // For services, accumulate based on attribute quantities
@@ -607,22 +607,41 @@ export default {
     }
 },
 
-  watch: {
-    // Watch for changes in selected product and set the flag to true
-    'taskProducts.selectedProduct': function() {
-        this.productChangedFlag = true;
+watch: {
+    // Watch for changes in the addedProducts array and recalculate total price and material usage
+    addedProducts: {
+        handler(newProducts) {
+            newProducts.forEach(product => {
+                if (product.type === 'product') {
+                    // Recalculate price and material usage for each product
+                    this.calculateTotalPrice(product);
+                }
+            });
+        },
+        deep: true // Ensure deep reactivity to capture changes within nested objects/arrays
     },
 
+    // Watch for changes in taskProducts array and track changes to selected product
+    taskProducts: {
+        handler(newTaskProducts) {
+            newTaskProducts.forEach(taskProduct => {
+                if (taskProduct.selectedProduct) {
+                    // Flag that a product change has occurred
+                    this.productChangedFlag = true;
+                }
+            });
+        },
+        deep: true // Ensure deep reactivity
+    },
+
+    // Watch for changes in localProject object and update form data
     localProject: {
       handler(newValue) {
         this.formData = JSON.stringify(newValue);
       },
-      deep: true,
-    },
-    // initialTaskType(newType) {
-    //   this.task_type = newType;
-    // },
-  },
+      deep: true // Ensure deep reactivity to nested changes in localProject
+    }
+},
   mounted() {
       if (this.project) {
           this.localProject = this.project;
@@ -899,15 +918,19 @@ onProductChange(index) {
 
   addProduct(index) {
     const taskProduct = this.taskProducts[index];
+    console.log("Task Product:", taskProduct);
+
     const selectedProduct = this.products.find(product => product.id === taskProduct.selectedProduct);
+    console.log("Selected Product:", selectedProduct);
 
     if (selectedProduct) {
         let totalPrice = 0;
         const isService = selectedProduct.type === 'service';
-        const basePrice = isService ? parseFloat(selectedProduct.price) || 0 : 0;
+        console.log("Is Service:", isService);
 
         // Products with materials
         if (selectedProduct.type === 'product') {
+            console.log("Adding product with materials...");
             const selectedMaterials = taskProduct.linkedMaterials
                 .filter(material => material.selected)
                 .map(material => {
@@ -916,7 +939,10 @@ onProductChange(index) {
                     const quantityUsed = usagePerUnit * (taskProduct.quantity || 1);
                     const materialCost = quantityUsed * pricePerUnit;
 
+                    console.log("Material:", material.title, "Usage Per Unit:", usagePerUnit, "Price Per Unit:", pricePerUnit, "Quantity Used:", quantityUsed, "Material Cost:", materialCost);
+
                     totalPrice += materialCost;
+                    console.log("Total Price (after material):", totalPrice);
 
                     return {
                         title: material.title,
@@ -928,32 +954,40 @@ onProductChange(index) {
                     };
                 });
 
-            // Add the product with total price and selected materials
+            console.log("Selected Materials:", selectedMaterials);
+
+            // Add the product with the total price calculated from materials
             this.addedProducts.push({
                 ...selectedProduct,
                 quantity: taskProduct.quantity,
                 totalPrice: totalPrice.toFixed(2),
                 selectedMaterials,
             });
+
+            console.log("Product added with total price:", totalPrice);
         }
 
         // Services with attributes and materials
         if (isService) {
+            console.log("Adding service with attributes and materials...");
+            // Calculate attribute costs and material usage
             const selectedAttributes = Object.keys(taskProduct.selectedAttributes)
                 .filter(key => taskProduct.selectedAttributes[key])
                 .map(key => {
                     const attribute = selectedProduct.attributes.find(attr => attr.key === key);
                     const attrQuantity = taskProduct.selectedAttributesQuantities[key];
                     const attrPrice = parseFloat(attribute.value) || 0;
-                    const attributeTotal = attrQuantity * (attrPrice + basePrice);
+                    const attributeTotal = attrQuantity * attrPrice;
+
+                    console.log("Attribute:", attribute.key, "Quantity:", attrQuantity, "Price:", attrPrice, "Attribute Total:", attributeTotal);
 
                     totalPrice += attributeTotal;
+                    console.log("Total Price (after attribute):", totalPrice);
 
                     return {
                         attribute: key,
                         quantity: attrQuantity,
                         price: attrPrice,
-                        basePricePerItem: basePrice,
                         total: attributeTotal.toFixed(2),
                     };
                 });
@@ -967,7 +1001,10 @@ onProductChange(index) {
                     const quantityUsed = usagePerUnit * totalAttributeQuantity;
                     const materialCost = quantityUsed * pricePerUnit;
 
+                    console.log("Material:", material.title, "Usage Per Unit:", usagePerUnit, "Price Per Unit:", pricePerUnit, "Total Attribute Quantity:", totalAttributeQuantity, "Quantity Used:", quantityUsed, "Material Cost:", materialCost);
+
                     totalPrice += materialCost;
+                    console.log("Total Price (after materials for service):", totalPrice);
 
                     return {
                         title: material.title,
@@ -979,12 +1016,18 @@ onProductChange(index) {
                     };
                 });
 
+            console.log("Selected Attributes:", selectedAttributes);
+            console.log("Selected Materials for Service:", selectedMaterials);
+
+            // Add the service with the total price calculated from attributes and materials
             this.addedProducts.push({
                 ...selectedProduct,
                 totalPrice: totalPrice.toFixed(2),
                 selectedAttributes,
                 selectedMaterials,
             });
+
+            console.log("Service added with total price:", totalPrice);
         }
 
         // Reset task product fields after adding to ongoing tasks
@@ -996,10 +1039,16 @@ onProductChange(index) {
             selectedAttributes: {},
             selectedAttributesQuantities: {},
         };
+
+        console.log("Task Product reset after addition.");
+    } else {
+        console.log("Selected product not found.");
     }
 
-    console.log('Added Products/Services: ', this.addedProducts);
+    console.log('Final Added Products/Services:', this.addedProducts);
 },
+
+
 
     handleProductCreated(product) {
       console.log(product);
@@ -1091,35 +1140,64 @@ onProductChange(index) {
         console.log('Added Products Length:', this.addedProducts.length);
         console.log('Task Products Length:', this.taskProducts.length);
     },
-    calculateTotalPrice(product) {
-        let totalPrice = 0;
 
-        if (product.type === 'product') {
-            // Case for products with a fixed price
-            if (product.price > 0) {
-                totalPrice = product.price * (product.quantity || 1);
-            }
-            // Case for products with selected materials
-            else if (product.selectedMaterials) {
-                product.selectedMaterials.forEach(material => {
-                    const quantityUsed = parseFloat(material.quantityUsed) || 0;
-                    const materialCost = quantityUsed * (parseFloat(material.pricePerUnit) || 0);
-                    material.totalCost = materialCost.toFixed(2); // Update the material's total cost
-                    totalPrice += materialCost;
-                });
-            }
-        } else if (product.type === 'service') {
-            // For services, start with the base price (if any)
-            totalPrice += parseFloat(product.price) || 0;
-            // Sum attribute prices including base price per attribute if provided
+    calculateTotalPrice(product) {
+    let totalPrice = 0;
+
+    // Case for products
+    if (product.type === 'product') {
+        // Products with selected materials
+        if (product.selectedMaterials && product.selectedMaterials.length > 0) {
+            product.selectedMaterials.forEach(material => {
+                const usagePerUnit = parseFloat(material.usage_per_unit) || 0;  // Get usage per unit
+                const quantityUsed = usagePerUnit * (product.quantity || 1);    // Update quantity used based on product quantity
+                const materialCost = quantityUsed * (parseFloat(material.price_per_unit) || 0); // Calculate cost based on quantity used
+
+                // Dynamically update the material data
+                material.quantityUsed = quantityUsed.toFixed(2);  // Update material's quantity used
+                material.totalCost = materialCost.toFixed(2);     // Update material's total cost
+
+                totalPrice += materialCost;
+            });
+        }
+    }
+
+    // Case for services
+    else if (product.type === 'service') {
+        // Start with the base price of the service (if any)
+        totalPrice += parseFloat(product.price) || 0;
+
+        // Add the prices of the selected attributes
+        if (product.selectedAttributes && product.selectedAttributes.length > 0) {
             product.selectedAttributes.forEach(attr => {
-                const attrTotal = attr.quantity * ((parseFloat(attr.price) || 0) + totalPrice);
+                const attrPrice = parseFloat(attr.price) || 0;
+                const attrQuantity = parseInt(attr.quantity) || 0;
+                const attrTotal = attrPrice * attrQuantity;
                 totalPrice += attrTotal;
             });
         }
 
-        return Math.round(totalPrice * 100) / 100;
-    },
+        // Add material costs (if materials are also selected for the service)
+        if (product.selectedMaterials && product.selectedMaterials.length > 0) {
+            product.selectedMaterials.forEach(material => {
+                const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
+                const quantityUsed = usagePerUnit * (product.quantity || 1);  // Update quantity used based on product quantity
+                const materialCost = quantityUsed * (parseFloat(material.price_per_unit) || 0);
+
+                // Dynamically update the material data
+                material.quantityUsed = quantityUsed.toFixed(2);  // Update material's quantity used
+                material.totalCost = materialCost.toFixed(2);     // Update material's total cost
+
+                totalPrice += materialCost;
+            });
+        }
+    }
+
+    // Return the total price rounded to two decimal places
+    return Math.round(totalPrice * 100) / 100;
+},
+
+
 
     handleFormSubmission() {
       console.log('handleFormSubmission called');
