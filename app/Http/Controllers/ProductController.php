@@ -137,6 +137,57 @@ class ProductController extends Controller
         }
     }
 
+    public function storeBatch(Request $request)
+    {
+        $materials = $request->input('materials');
+        \Log::info('Materials received:', $materials);
+
+        // Adjust validation rules
+        $rules = [
+            'materials' => 'required|array|min:1',
+            'materials.*.title' => 'required|string|max:255',
+            'materials.*.unit_type' => 'required|string|max:255',
+            'materials.*.usage_per_unit' => 'required|numeric|min:0',
+            'materials.*.cost_per_unit' => 'nullable|numeric|min:0',
+            'materials.*.price_per_unit' => 'nullable|numeric|min:0',
+            'materials.*.quantity_in_stock' => 'nullable|integer|min:0',
+            'materials.*.parent_id' => 'required|exists:products,id',
+            'materials.*.user_id' => 'required|exists:users,id',
+            'materials.*.team_id' => 'nullable|exists:teams,id',
+        ];
+
+        // Validate the request
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            \Log::error('Batch validation failed:', $validator->errors()->toArray());
+            return response()->json($validator->errors(), 422);
+        }
+
+        try {
+            $createdMaterials = [];
+    
+            foreach ($materials as $materialData) {
+                // Set default values for consistency
+                $materialData['is_material'] = 1;
+                $materialData['price'] = null; // Ensure price is null for materials
+    
+                // Ensure team_id consistency
+                if (!isset($materialData['team_id'])) {
+                    $parentMaterial = Product::find($materialData['parent_id']);
+                    $materialData['team_id'] = $parentMaterial ? $parentMaterial->team_id : null;
+                }
+    
+                $createdMaterials[] = Product::create($materialData);
+            }
+    
+            return response()->json(['message' => 'Materials created successfully', 'materials' => $createdMaterials], 200);
+        } catch (\Exception $e) {
+            \Log::error('Error creating materials:', ['exception' => $e->getMessage()]);
+            return response()->json(['error' => 'Unable to create materials'], 500);
+        }
+    }
+
     private function formatAttributes(array $attributes)
     {
         \Log::info('Original attributes:', $attributes);

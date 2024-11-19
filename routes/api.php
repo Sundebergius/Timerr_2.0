@@ -45,6 +45,7 @@ Route::delete('/tag/{id}', [TagController::class, 'delete']);
 Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
 
 Route::post('/products', [ProductController::class, 'store']);
+Route::post('/products/batch', [ProductController::class, 'storeBatch']);
 
 // Chattie wants to test the getUserProducts method to work without the userId parameter
 // Route::get('/products', [ProductController::class, 'getUserProducts']);
