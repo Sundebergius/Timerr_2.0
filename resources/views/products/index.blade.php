@@ -151,8 +151,12 @@
                        
                                     
                                     <!-- Badge for Type -->
-                                    <span class="absolute top-0 right-0 mt-4 mr-4 px-2 py-1 text-sm font-semibold rounded-full 
-                                        {{ $product->type === 'product' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800' }}">
+                                    <span class="absolute top-0 right-0 mt-4 mr-4 px-2 py-1 text-sm font-semibold rounded-full
+                                        {{ 
+                                            $product->type === 'product' ? 'bg-blue-200 text-blue-800' : 
+                                            ($product->type === 'service' ? 'bg-green-200 text-green-800' : 
+                                            'bg-yellow-200 text-yellow-800') 
+                                        }}">
                                         {{ ucfirst($product->type) }}
                                     </span>
                         
@@ -161,6 +165,42 @@
                                         <h3 class="text-xl font-bold text-gray-800">{{ $product->title }}</h3>
                                         <p class="text-gray-600">{{ $product->description ?? 'No description available.' }}</p>
                                     </div>
+
+                                    <!-- Materials Linked to Product or Service -->
+                                    @if($product->type === 'product' || $product->type === 'service')
+                                    <div class="mb-4 text-sm">
+                                        <p class="font-semibold text-gray-700">Materials:</p>
+                                        <ul class="list-disc ml-4 mt-2">
+                                            @foreach ($product->materials as $material)
+                                            <li class="mt-2">
+                                                <span class="font-bold">{{ $material->title }}</span>
+                                                <span class="text-gray-500">({{ $material->quantity_in_stock }} {{ $material->unit_type }})</span>
+                                                <span class="text-gray-400 ml-2">Usage: {{ $material->usage_per_unit }} per unit</span>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    @endif
+
+                                    <!-- Parent Material and Children -->
+                                    @if($product->is_parent_material)
+                                    <div class="mt-4">
+                                        <p class="font-semibold text-gray-700">Parent Material:</p>
+                                        <ul class="mt-2 space-y-2">
+                                            @foreach ($product->children as $child)
+                                            <li class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                                                <div>
+                                                    <span class="font-bold">{{ $child->title }}</span>
+                                                    <span class="text-gray-500 ml-2">({{ $child->quantity_in_stock }} {{ $child->unit_type }})</span>
+                                                </div>
+                                                <div class="text-sm text-gray-500">
+                                                    Cost: ${{ $child->cost_per_unit }}, Price: ${{ $child->price_per_unit }}
+                                                </div>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    @endif
                         
                                     <!-- Product-Specific Details with Stock Progress Bar -->
                                     @if($product->type === 'product')

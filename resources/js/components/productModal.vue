@@ -72,7 +72,7 @@
           <div v-if="type === 'material'">
             <!-- Link to Product/Service/Material -->
             <div class="bg-gray-50 p-4 rounded-lg mb-4">
-              <h3 class="text-gray-700 font-semibold mb-2">Link to Product/Service/Material</h3>
+              <h3 class="text-gray-700 font-semibold mb-2">Link material</h3>
               <p class="text-gray-500 text-sm mb-2">
                 Choose an existing item to link this material with.
               </p>
@@ -119,12 +119,53 @@
                   <!-- Child Material Fields -->
                   <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label class="block text-gray-700 font-semibold">Title:</label>
+                      <label class="block text-gray-700 font-semibold">Child Material Name:</label>
                       <input
                         type="text"
                         v-model="child.title"
                         class="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
-                        placeholder="Material name"
+                        :placeholder="`e.g., Small, Medium, Large for '${title}'`"
+                        required
+                      />
+                      <p v-if="!child.title" class="text-red-500 text-sm mt-1">This field is required.</p>
+                      <p class="text-gray-500 text-sm mt-1">
+                        This is the specific name for the variation of the parent material "{{ title }}".
+                      </p>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 font-semibold">Unit Type:</label>
+                      <input
+                        type="text"
+                        v-model="child.unitType"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none"
+                        placeholder="e.g., grams, pieces"
+                        required
+                      />
+                      <p v-if="!child.unitType" class="text-red-500 text-sm mt-1">This field is required.</p>
+                      <p class="text-gray-500 text-sm mt-1">
+                        Inherits "{{ unitType }}" by default. Edit if different.
+                      </p>
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 font-semibold">Stock Quantity:</label>
+                      <input
+                        type="number"
+                        v-model="child.quantity"
+                        min="0"
+                        step="1"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700"
+                        placeholder="Total stock"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-gray-700 font-semibold">Minimum Stock Alert:</label>
+                      <input
+                        type="number"
+                        v-model="child.minimumStockAlert"
+                        min="0"
+                        step="1"
+                        class="shadow border rounded w-full py-2 px-3 text-gray-700"
+                        placeholder="Alert level"
                       />
                     </div>
                     <div>
@@ -136,7 +177,12 @@
                         step="0.01"
                         class="shadow border rounded w-full py-2 px-3 text-gray-700"
                         placeholder="Usage per unit"
+                        required
                       />
+                      <p v-if="!child.usagePerUnit" class="text-red-500 text-sm mt-1">This field is required.</p>
+                      <p v-if="child.unitType" class="text-gray-500 text-sm mt-1">
+                        This defines how much of this material (in {{ child.unitType }}) is used per item.
+                      </p>
                     </div>
                     <div>
                       <label class="block text-gray-700 font-semibold">Cost per Unit:</label>
@@ -197,7 +243,7 @@
                           The unit type will impact how the cost and price calculations work.
                         </p>
                       </div>
-                      <div v-if="!isParentMaterial">
+                      <div>
                       <label for="totalQuantity" class="block text-gray-700 font-semibold">Total Quantity:</label>
                       <input
                         type="number"
@@ -271,7 +317,7 @@
               </div>
 
               <!-- Material Details (Only if not a Parent Material) -->
-              <div v-if="!isParentMaterial" class="bg-gray-50 p-4 rounded-lg">
+              <div class="bg-gray-50 p-4 rounded-lg">
                 <h3 class="text-gray-700 font-semibold mb-2">Material Details</h3>
 
                 <!-- Cost per Unit (User Cost) -->
@@ -538,6 +584,45 @@ export default {
       return selectedProduct && selectedProduct.price > 0;
     },
   },
+  watch: {
+    unitType(newVal) {
+      this.childMaterials.forEach((child) => {
+        if (!child.unitType) {
+          child.unitType = newVal;
+        }
+      });
+    },
+    totalQuantity(newVal) {
+      const totalChildStock = this.childMaterials.reduce(
+        (total, child) => total + (child.quantity || 0),
+        0
+      );
+      if (newVal < totalChildStock) {
+        console.warn("Total parent stock is less than the sum of child stock!");
+      }
+    },
+    usagePerUnit(newVal) {
+      this.childMaterials.forEach((child) => {
+        if (!child.usagePerUnit) {
+          child.usagePerUnit = newVal;
+        }
+      });
+    },
+    costPerUnit(newVal) {
+      this.childMaterials.forEach((child) => {
+        if (!child.costPerUnit) {
+          child.costPerUnit = newVal;
+        }
+      });
+    },
+    pricePerUnit(newVal) {
+      this.childMaterials.forEach((child) => {
+        if (!child.pricePerUnit) {
+          child.pricePerUnit = newVal;
+        }
+      });
+    },
+  },
   methods: {
     closeModal() {
       this.$emit('close');
@@ -577,12 +662,12 @@ export default {
     addChildMaterial() {
       this.childMaterials.push({
         title: '',
-        unitType: '',
-        quantity: '',
-        usagePerUnit: 1,
-        minimumStockAlert: '',
-        costPerUnit: '',
-        pricePerUnit: '',
+        unitType: this.unitType || '', // Use parent's unitType
+        quantity: '', // User will input stock quantity
+        usagePerUnit: this.usagePerUnit || 1, // Use parent's usagePerUnit
+        minimumStockAlert: this.minimumStockAlert || '', // Use parent's minimum stock alert
+        costPerUnit: this.costPerUnit || '', // Use parent's cost per unit
+        pricePerUnit: this.pricePerUnit || '', // Use parent's price per unit
       });
     },
     removeChildMaterial(index) {
@@ -637,7 +722,7 @@ export default {
         cost_per_unit: this.costPerUnit  || null,     // Cost per unit for material calculation
         price_per_unit: this.pricePerUnit  || null,   // Price per unit for material calculation
         is_parent_material: this.isParentMaterial, // Add the is_parent_material field here
-        children: this.isParentMaterial ? this.childMaterials : [],
+        // children: this.isParentMaterial ? this.childMaterials : [],
       };
 
       // Determine if the product is created for a team or personal account
@@ -651,43 +736,46 @@ export default {
 
       axios.post('/api/products', productData)
         .then(response => {
-          console.log('Full server response:', response);
-          console.log('Server response data:', response.data);
+          const parentProduct = response.data.product;
 
-          if (response.data && response.data.product) {
-            this.addProduct(response.data.product);
-            this.$emit('product-created', response.data.product);
+          if (this.isParentMaterial && this.childMaterials.length > 0) {
+            const childData = this.childMaterials.map(child => ({
+              title: child.title || null,
+              unit_type: child.unitType || null,
+              quantity_in_stock: child.quantity || 0,
+              usage_per_unit: child.usagePerUnit || 0,
+              minimum_stock_alert: child.minimumStockAlert || 0,
+              cost_per_unit: child.costPerUnit || 0,
+              price_per_unit: child.pricePerUnit || 0,
+              parent_id: parentProduct.id,
+              user_id: this.userId,
+              team_id: this.teamId,
+              type: 'material',
+            }));
+
+            console.log('Child materials data being sent:', { materials: childData });
+
+            axios.post('/api/products/batch', { materials: childData })
+              .then(() => {
+                this.resetForm();
+                this.successMessage = 'Parent product and child materials created successfully!';
+                this.$emit('product-created', parentProduct);
+                window.location.reload();
+              })
+              .catch(error => {
+                console.error('Error creating child materials:', error);
+                this.errorMessage = 'Error creating child materials.';
+              });
+          } else {
             this.resetForm();
             this.successMessage = 'Product created successfully!';
-            this.errorMessage = '';  // Clear any previous error messages
+            this.$emit('product-created', parentProduct);
             window.location.reload();
-          } else {
-            console.error('Product not defined in server response');
-            this.errorMessage = 'An error occurred while creating the product.';
           }
         })
         .catch(error => {
-          console.error('Error caught in catch block:', error);
-
-          if (error.response) {
-            if (error.response.status === 422) {
-              // Validation errors
-              console.log('Validation errors:', error.response.data);
-              this.errorMessage = 'Validation error: ' + JSON.stringify(error.response.data);
-            } else {
-              this.errorMessage = 'Error: ' + error.response.status + ' - ' + error.response.data;
-            }
-          } else if (error.request) {
-            // No response received
-            console.error('No response received:', error.request);
-            this.errorMessage = 'No response received from server.';
-          } else {
-            // Request setup error
-            console.error('Error setting up request:', error.message);
-            this.errorMessage = 'An error occurred: ' + error.message;
-          }
-
-          this.successMessage = '';  // Clear any previous success messages
+          console.error('Error creating product:', error);
+          this.errorMessage = 'Error creating product.';
         });
     },
     resetForm() {
