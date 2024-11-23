@@ -184,50 +184,115 @@
                 <!-- Shared Materials Section -->
                 <div v-if="taskProduct.linkedMaterials && taskProduct.linkedMaterials.length > 0" class="mt-6">
                     <p class="text-lg font-semibold text-blue-700 mb-4">Select Materials:</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div 
-                            v-for="material in taskProduct.linkedMaterials" 
-                            :key="material.id" 
-                            class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
-                            
-                            <!-- Material Header -->
-                            <div class="flex items-center justify-between mb-3">
-                                <p class="text-xl font-semibold text-gray-800">{{ material.title }}</p>
-                                <input type="checkbox" v-model="material.selected" @change="onMaterialSelectionChange(index)" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
-                            </div>
 
-                            <!-- Material Details -->
-                            <div class="text-sm text-gray-700 space-y-2">
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Unit Type:</span>
-                                    <span>{{ material.unit_type }}</span>
+                    <!-- Simple Materials Section -->
+                    <div v-if="simpleMaterials[index]?.length > 0">
+                      <p class="text-md font-semibold text-gray-800 mb-2">Simple Materials:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div 
+                                v-for="material in simpleMaterials[index]" 
+                                :key="material.id" 
+                                class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
+
+                                <!-- Material Header -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <p class="text-xl font-semibold text-gray-800">{{ material.title }}</p>
+                                    <input 
+                                        type="checkbox" 
+                                        v-model="material.selected" 
+                                        @change="onMaterialSelectionChange(index)" 
+                                        class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Stock:</span>
-                                    <span :class="{'text-red-600': material.displayStock <= material.minimum_stock_alert || material.displayStock < 0, 'text-green-600': material.displayStock > material.minimum_stock_alert}">
-                                        {{ material.displayStock }}
-                                    </span>
+
+                                <!-- Material Details -->
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Unit Type:</span>
+                                        <span>{{ material.unit_type }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Stock:</span>
+                                        <span :class="{'text-red-600': material.displayStock <= material.minimum_stock_alert || material.displayStock < 0, 'text-green-600': material.displayStock > material.minimum_stock_alert}">
+                                            {{ material.displayStock }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Usage per Unit:</span>
+                                        <span>{{ material.usage_per_unit }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Price per Unit:</span>
+                                        <span>{{ material.price_per_unit }} kr</span>
+                                    </div>
                                 </div>
-                                <p v-if="material.displayStock < 0" class="text-sm text-gray-500 italic mt-1">
-                                    Negative values are allowed, and you can update stock levels later.
-                                </p>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Usage per Unit:</span>
-                                    <span>{{ material.usage_per_unit }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Price per Unit:</span>
-                                    <span>{{ material.price_per_unit }} kr</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Min Stock Alert:</span>
-                                    <span v-if="material.minimum_stock_alert" class="text-orange-500">{{ Number(material.minimum_stock_alert).toFixed(2) }}</span>
-                                    <span v-else class="italic text-gray-400">None</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Materials Section -->
+                    <div v-if="advancedMaterials[index]?.length > 0" class="mt-6">
+                      <p class="text-md font-semibold text-gray-800 mb-2">Advanced Materials:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div 
+                                v-for="material in advancedMaterials[index]" 
+                                :key="material.id" 
+                                class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
+
+                                <!-- Parent Material Header -->
+                                <p class="text-xl font-semibold text-gray-800 mb-3">{{ material.title }}</p>
+
+                                <!-- Child Materials Section -->
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <p class="font-medium text-blue-600 mb-2">Child Materials:</p>
+                                    <div 
+                                        v-for="child in material.child_materials" 
+                                        :key="child.id" 
+                                        class="p-2 border border-gray-300 rounded-lg shadow-sm bg-gray-50 mb-2">
+
+                                        <!-- Child Material Header -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium text-gray-600">{{ child.title }}</span>
+                                            <input 
+                                                type="checkbox" 
+                                                v-model="child.selected" 
+                                                @change="onChildMaterialSelectionChange(index, material, child)" 
+                                                class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+
+                                        <!-- Child Material Details -->
+                                        <div class="flex justify-between mt-1">
+                                            <span class="font-medium text-gray-600">Stock:</span>
+                                            <span :class="{'text-red-600': child.quantity_in_stock <= child.minimum_stock_alert, 'text-green-600': child.quantity_in_stock > child.minimum_stock_alert}">
+                                                {{ child.quantity_in_stock }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="font-medium text-gray-600">Price per Unit:</span>
+                                            <span>{{ child.price_per_unit }} kr</span>
+                                        </div>
+
+                                        <!-- Quantity Input for Advanced Materials -->
+                                        <div class="flex justify-between mt-2">
+                                            <span class="font-medium text-gray-600">Quantity:</span>
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                v-model="child.quantity" 
+                                                class="w-16 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-right" 
+                                                placeholder="0" />
+                                        </div>
+
+                                        <!-- Predefined Usage Section -->
+                                        <div v-if="child.predefined_usage" class="text-sm mt-2">
+                                            <span class="italic text-gray-500">Predefined Usage: {{ child.predefined_usage }} units</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Add Product/Service Button -->
                 <div class="mt-4">
@@ -525,6 +590,7 @@ export default {
           selectedAttributes: {}, // { 'size': 0, 'color': 0 }
           selectedAttributesQuantities: {}, // { 'size': 0, 'color': 0 }
           selectedProductDetails: null, // Initialize as null or an empty object
+          linkedMaterials: [], // Array of materials linked to the product
         }
       ],
       addedProducts: [],
@@ -537,6 +603,16 @@ export default {
     };
   },
   computed: {
+    simpleMaterials() {
+        return this.taskProducts.map(taskProduct =>
+            taskProduct?.linkedMaterials?.filter(material => !material.is_parent_material) || []
+        );
+    },
+    advancedMaterials() {
+        return this.taskProducts.map(taskProduct =>
+            taskProduct?.linkedMaterials?.filter(material => material.is_parent_material) || []
+        );
+    },
     materialStockOverview() {
         const stockMap = {};
 
@@ -609,6 +685,8 @@ export default {
     taskProducts: {
         handler(newTaskProducts, oldTaskProducts) {
             newTaskProducts.forEach((taskProduct, index) => {
+              const oldTaskProduct = oldTaskProducts?.[index];
+
                 if (taskProduct.selectedProduct !== oldTaskProducts[index]?.selectedProduct) {
                     // Only call updateDerivedPriceAndStock if materials have been selected
                     if (taskProduct.linkedMaterials.some(material => material.selected)) {
@@ -618,6 +696,19 @@ export default {
                         taskProduct.selectedProductDetails.derivedPrice = '0.00';
                     }
                 }
+
+                // Watch for changes in advanced material child quantities
+                taskProduct.linkedMaterials.forEach(material => {
+                    if (material.is_parent_material) {
+                        material.child_materials.forEach((child, childIndex) => {
+                            const oldChild = oldTaskProduct.linkedMaterials?.[index]?.child_materials?.[childIndex];
+                            if (child.selected !== oldChild?.selected || child.quantity !== oldChild?.quantity) {
+                                this.updateDerivedPriceAndStock(index);
+                            }
+                        });
+                    }
+                });
+
                 // Watch for changes in service attributes quantities
                 if (taskProduct.type === 'service') {
                     Object.keys(taskProduct.selectedAttributesQuantities || {}).forEach(attrKey => {
@@ -653,6 +744,18 @@ export default {
                         this.updateProductWithMaterials(index, product, product.selectedMaterials);
                     }
                 }
+
+                // Handle advanced materials specifically
+                product.selectedMaterials?.forEach((material, materialIndex) => {
+                    if (material.is_parent_material) {
+                        material.child_materials.forEach((child, childIndex) => {
+                            const oldChild = oldProduct.selectedMaterials?.[materialIndex]?.child_materials?.[childIndex];
+                            if (child.selected !== oldChild?.selected || child.quantity !== oldChild?.quantity) {
+                                this.updateDerivedPriceAndStock(index);
+                            }
+                        });
+                    }
+                });
             });
         },
         deep: true
@@ -841,14 +944,36 @@ export default {
         const taskProduct = this.taskProducts[index];
         if (!taskProduct || !taskProduct.linkedMaterials) return;
 
-        // Update materials and price based on selected materials and quantity
-        taskProduct.linkedMaterials = this.simulatedMaterialStock(
-            taskProduct.linkedMaterials, 
-            taskProduct.quantity,
-            taskProduct.selectedAttributes
-        );
+        taskProduct.linkedMaterials.forEach(material => {
+            if (!material.is_parent_material && material.selected) {
+                // Simple material selection logic
+                const materialEffectiveStock = Math.floor(material.displayStock / (material.usage_per_unit || 1));
+                material.derivedStock = materialEffectiveStock;
+            } else if (material.is_parent_material) {
+                // Parent material logic: Ignore its `selected` state and focus on child materials
+                material.child_materials.forEach(child => {
+                    if (child.selected) {
+                        // Update parent material stock or price based on child selections
+                        const childEffectiveStock = Math.floor(child.quantity_in_stock / (child.usage_per_unit || 1));
+                        material.derivedStock = childEffectiveStock;
+                    }
+                });
+            }
+        });
 
-        this.updateDerivedPriceAndStock(index); // Recalculate product details
+        // Recalculate overall price and stock
+        this.updateDerivedPriceAndStock(index);
+    },
+
+    onChildMaterialSelectionChange(index, parentMaterial, childMaterial) {
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct || !parentMaterial || !childMaterial) return;
+
+        // If all children are selected, mark the parent as selected; otherwise, deselect it
+        parentMaterial.selected = parentMaterial.child_materials.every(child => child.selected);
+
+        // Ensure derived stock and price are recalculated for the updated child quantity
+        this.updateDerivedPriceAndStock(index);
     },
 
     onProductQuantityChange(index) {
@@ -896,51 +1021,56 @@ export default {
         let totalPrice = 0;
         let derivedStock = Infinity; // Start with Infinity to ensure we get the lowest stock of selected materials
 
-        // Calculate total price and determine the minimum stock based on selected materials
+        // Iterate through all linked materials
         taskProduct.linkedMaterials.forEach(material => {
-            if (material.selected) {
-                // Price calculation for products and services
+            if (material.selected && !material.is_parent_material) {
+                // Simple material price and stock calculation
                 const materialTotalPrice = material.price_per_unit * (material.usage_per_unit * (taskProduct.quantity || 0));
                 totalPrice += materialTotalPrice;
 
-                // Calculate effective stock
                 const materialEffectiveStock = Math.floor(material.displayStock / (material.usage_per_unit || 1));
-
-                // Update derived stock to the minimum effective stock among selected materials
                 derivedStock = Math.min(derivedStock, materialEffectiveStock);
+            } else if (material.is_parent_material) {
+                // Advanced materials: Calculate price and stock based on child materials
+                material.child_materials.forEach(child => {
+                    if (child.selected) {
+                        // Use child-specific quantity for calculations
+                        const childQuantity = parseFloat(child.quantity) || 0;
+
+                        // Calculate price for the selected child material
+                        const childTotalPrice = child.price_per_unit * childQuantity;
+                        totalPrice += childTotalPrice;
+
+                        // Calculate stock based on the selected quantity and usage per unit
+                        const childEffectiveStock = Math.floor(child.quantity_in_stock / (child.usage_per_unit || 1));
+                        derivedStock = Math.min(derivedStock, childEffectiveStock);
+                    }
+                });
             }
         });
 
-        // Include attribute quantities in stock calculations if it is a service
+        // Handle attribute-specific calculations for services
         if (taskProduct.type === 'service') {
             Object.keys(taskProduct.selectedAttributesQuantities || {}).forEach(attrKey => {
                 const attrQuantity = parseFloat(taskProduct.selectedAttributesQuantities[attrKey]) || 0;
                 const attribute = taskProduct.selectedProductDetails.attributes?.find(a => a.key === attrKey);
 
                 if (attribute && attrQuantity > 0) {
-                    // Calculate material stock impact for attributes
-                    taskProduct.linkedMaterials.forEach(material => {
-                        if (material.selected) {
-                            const materialEffectiveStock = Math.floor(material.displayStock / (material.usage_per_unit || 1));
-                            derivedStock = Math.min(derivedStock, materialEffectiveStock);
-                        }
-                    });
-
                     totalPrice += attrQuantity * parseFloat(attribute.value);
                 }
             });
         }
 
-        // If no materials or attributes are selected, use the product's base stock
+        // If no materials are selected, fallback to base product stock
         if (derivedStock === Infinity) {
             derivedStock = parseInt(taskProduct.selectedProductDetails.quantity_in_stock) || 0;
         }
 
-        // Update the taskProduct properties
+        // Update the task product's derived properties
         taskProduct.selectedProductDetails.derivedPrice = totalPrice.toFixed(2);
-        taskProduct.selectedProductDetails.derivedStock = derivedStock; // Allow for minimum stock calculation
+        taskProduct.selectedProductDetails.derivedStock = derivedStock;
 
-        this.$forceUpdate(); // Ensure UI reflects the updates
+        this.$forceUpdate(); // Ensure the UI updates
     },
 
     toggleAttribute(taskProduct, attribute) {
@@ -980,11 +1110,17 @@ export default {
         this.products.forEach(product => {
             if (product.type !== 'material') { // Skip material type products
                 axios.get(`/api/products/${product.id}/materials`)
-                    .then(response => {
-                        this.materialsCache[product.id] = response.data.map(material => ({
-                            ...material,
-                            selected: false
+                    .then(async response => {
+                        const materials = await Promise.all(response.data.map(async material => {
+                            if (material.is_parent_material) {
+                                const childResponse = await axios.get(`/api/materials/${material.id}/children`);
+                                material.childMaterials = childResponse.data;
+                            }
+                            material.selected = false; // Ensure each material is initially not selected
+                            return material;
                         }));
+
+                        this.materialsCache[product.id] = materials;
                     })
                     .catch(error => {
                         console.error(`Error fetching materials for product ${product.id}:`, error);
