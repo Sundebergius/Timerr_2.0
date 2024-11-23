@@ -72,4 +72,25 @@ class Product extends Model
         return $this->hasMany(Product::class, 'parent_id')->where('type', 'material');
     }
 
+    /**
+     * Linked materials relationships for this product.
+     */
+    public function linkedMaterials()
+    {
+        return $this->hasMany(LinkedMaterial::class);
+    }
+
+    /**
+     * Linked materials where this product is a parent material.
+     */
+    public function asParentMaterial1()
+    {
+        return $this->hasMany(LinkedMaterial::class, 'parent_material_1_id');
+    }
+
+    public function asParentMaterial2()
+    {
+        return $this->hasMany(LinkedMaterial::class, 'parent_material_2_id');
+    }
+
 }

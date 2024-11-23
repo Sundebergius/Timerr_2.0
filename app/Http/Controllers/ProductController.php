@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\Task;
 use App\Models\Project;
 use App\Models\TaskProduct;
+use App\Models\LinkedMaterial;
 use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
@@ -297,15 +298,64 @@ class ProductController extends Controller
     public function getProductMaterials($productId)
     {
         try {
-            // Fetch materials linked to the given product
-            $materials = Product::where('parent_id', $productId)
+            $product = Product::findOrFail($productId);
+
+            // Ensure the user is authorized to view the product
+            $this->authorize('view', $product);
+
+            // Fetch direct materials linked to the given product
+            $materials = Product::where('parent_id', $product->id)
                 ->where('type', 'material')
                 ->get();
+
+            // Include child materials for any parent materials
+            foreach ($materials as $material) {
+                if ($material->is_parent_material) {
+                    $material->child_materials = Product::where('parent_id', $material->id)
+                        ->get();
+                }
+            }
 
             return response()->json($materials, 200);
         } catch (\Exception $e) {
             \Log::error('Failed to fetch linked materials:', ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Unable to fetch linked materials'], 500);
+        }
+    }
+
+    public function getParentMaterials()
+    {
+        try {
+            $user = auth()->user();
+
+            // Fetch all parent materials belonging to the current user
+            $parentMaterials = Product::where('is_parent_material', 1)
+                ->where('user_id', $user->id)
+                ->get();
+
+            return response()->json($parentMaterials, 200);
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch parent materials:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Unable to fetch parent materials'], 500);
+        }
+    }
+
+    public function getChildMaterials($parentId)
+    {
+        try {
+            $parentMaterial = Product::findOrFail($parentId);
+
+            // Ensure the user is authorized to view the parent material
+            $this->authorize('view', $parentMaterial);
+
+            // Fetch child materials for the given parent material
+            $childMaterials = Product::where('parent_id', $parentMaterial->id)
+                ->get();
+
+            return response()->json($childMaterials, 200);
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch child materials:', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Unable to fetch child materials'], 500);
         }
     }
 
@@ -348,6 +398,26 @@ class ProductController extends Controller
             \Log::error('Error fetching products: '.$e->getMessage());
             return response()->json(['error' => 'An error occurred while fetching products.'], 500);
         }
+    }
+
+    public function saveLinkedMaterials(Request $request, $productId)
+    {
+        $validated = $request->validate([
+            'parent_material_1_id' => 'required|exists:products,id',
+            'parent_material_2_id' => 'required|exists:products,id',
+            'child_material_relationships' => 'required|array',
+        ]);
+
+        $product = Product::findOrFail($productId);
+
+        LinkedMaterial::create([
+            'product_id' => $product->id,
+            'parent_material_1_id' => $validated['parent_material_1_id'],
+            'parent_material_2_id' => $validated['parent_material_2_id'],
+            'child_material_relationships' => $validated['child_material_relationships'],
+        ]);
+
+        return response()->json(['message' => 'Linked materials saved successfully.']);
     }
 
     public function index(Request $request)
