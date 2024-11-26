@@ -400,7 +400,7 @@ class ProductController extends Controller
         }
     }
 
-    public function saveLinkedMaterials(Request $request, $productId)
+    public function saveLinkedMaterials(Request $request)
     {
         $validated = $request->validate([
             'parent_material_1_id' => 'required|exists:products,id',
@@ -408,12 +408,25 @@ class ProductController extends Controller
             'child_material_relationships' => 'required|array',
         ]);
 
-        $product = Product::findOrFail($productId);
+        // Fetch parent materials to find their parent product
+        $parentMaterial1 = Product::findOrFail($validated['parent_material_1_id']);
+        $parentMaterial2 = Product::findOrFail($validated['parent_material_2_id']);
 
+        // Ensure both materials are linked to the same product
+        if ($parentMaterial1->parent_id !== $parentMaterial2->parent_id) {
+            return response()->json([
+                'error' => 'The selected parent materials must belong to the same product.'
+            ], 422);
+        }
+
+        // Use the common parent product ID
+        $productId = $parentMaterial1->parent_id;
+
+        // Create the linked materials entry
         LinkedMaterial::create([
-            'product_id' => $product->id,
-            'parent_material_1_id' => $validated['parent_material_1_id'],
-            'parent_material_2_id' => $validated['parent_material_2_id'],
+            'product_id' => $productId,
+            'parent_material_1_id' => $parentMaterial1->id,
+            'parent_material_2_id' => $parentMaterial2->id,
             'child_material_relationships' => $validated['child_material_relationships'],
         ]);
 
