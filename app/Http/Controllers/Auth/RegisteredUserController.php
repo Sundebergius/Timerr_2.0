@@ -45,7 +45,7 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        DB::beginTransaction(); // Start a database transaction
+        DB::beginTransaction();
 
         try {
             // Create the user
@@ -69,7 +69,7 @@ class RegisteredUserController extends Controller
             $user->current_team_id = $team->id;
             $user->save();
 
-            // Optionally, make the user a member of their own team
+            // Make the user a owner of their own personal team
             $user->teams()->attach($team, ['role' => 'owner']);
 
             // Wrap Stripe-related code in a separate try-catch block
