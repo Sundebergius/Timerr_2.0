@@ -106,43 +106,63 @@
                         <i class="fas fa-plus mr-2"></i> Create New Product
                     </button> --}}
 
-                    <!-- Product Counter -->
                     <div class="text-center mb-8">
                         <h1 class="text-4xl font-bold text-blue-500 mb-4">Products</h1>
-                        
+                    
                         <!-- Product Counter -->
                         <div class="mb-6">
                             <p class="text-lg font-semibold text-gray-800">
                                 You have created <span class="text-blue-500">{{ $productCount }}</span> out of <span class="text-blue-500">{{ $productLimit }}</span> products.
                             </p>
-
+                    
                             @if ($productCount < $productLimit)
                                 <p class="text-green-500">You can create {{ $productLimit - $productCount }} more products.</p>
                             @else
                                 <p class="text-red-500">You have reached your product limit.</p>
                             @endif
                         </div>
-
-                        <!-- Create Product Button -->
-                        <button type="button" @click="showModal = true"
-                            class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $productCount >= $productLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
-                            @if ($productCount >= $productLimit) disabled @endif>
-                            <i class="fas fa-plus mr-2"></i> Create New Product
-                        </button>
-
-                        <!-- CTA for Upgrade when Product Limit is Reached -->
-                        @if ($productCount >= $productLimit)
-                            <div class="mt-6 bg-yellow-100 p-4 rounded-lg shadow-md">
-                                <h3 class="text-lg font-semibold text-yellow-800">Need more products?</h3>
-                                <p class="text-yellow-600">Upgrade to the Freelancer plan to create up to 15 products and unlock advanced features.</p>
-                                <a href="{{ route('stripe.checkout', ['plan' => 'freelancer']) }}" class="mt-4 inline-block bg-yellow-500 text-white py-2 px-6 rounded-lg shadow hover:bg-yellow-600">Upgrade Now</a>
-                            </div>
-                        @endif
+                    
+                        <!-- Button Group -->
+                        <div class="flex justify-center space-x-4">
+                            <!-- Create Product Button -->
+                            <button
+                                type="button"
+                                @click="showModal = true"
+                                class="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out {{ $productCount >= $productLimit ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                @if ($productCount >= $productLimit) disabled @endif>
+                                <i class="fas fa-plus mr-2"></i> Create New Product
+                            </button>
+                    
+                            <!-- Link Parent Materials Button -->
+                            <button
+                                type="button"
+                                @click="openLinkMaterialsModal({{ $products->first()->id ?? 'null' }})"
+                                class="bg-purple-500 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+                                <i class="fas fa-link mr-2"></i> Link Parent Materials
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Product Modal -->
-                    <product-modal v-if="showModal" :user-id="userId" :team-id="teamId" @close="showModal = false"
-                        @product-created="handleProductCreated"></product-modal>
+                    <product-modal
+                        v-if="showModal"
+                        :user-id="userId"
+                        :team-id="teamId"
+                        @close="showModal = false"
+                        @product-created="handleProductCreated">
+                    </product-modal>
+                    
+                    <!-- Link Materials Modal -->
+                    <link-materials-modal
+                        v-if="showLinkMaterialsModal"
+                        :product-id="selectedProductId"
+                        @close="showLinkMaterialsModal = false"
+                        @materials-linked="refreshPage">
+                    </link-materials-modal>
+                    
+                    
+                        
+                        
 
                         <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             @foreach ($products as $product)
@@ -151,8 +171,12 @@
                        
                                     
                                     <!-- Badge for Type -->
-                                    <span class="absolute top-0 right-0 mt-4 mr-4 px-2 py-1 text-sm font-semibold rounded-full 
-                                        {{ $product->type === 'product' ? 'bg-blue-200 text-blue-800' : 'bg-green-200 text-green-800' }}">
+                                    <span class="absolute top-0 right-0 mt-4 mr-4 px-2 py-1 text-sm font-semibold rounded-full
+                                        {{ 
+                                            $product->type === 'product' ? 'bg-blue-200 text-blue-800' : 
+                                            ($product->type === 'service' ? 'bg-green-200 text-green-800' : 
+                                            'bg-yellow-200 text-yellow-800') 
+                                        }}">
                                         {{ ucfirst($product->type) }}
                                     </span>
                         
@@ -161,6 +185,42 @@
                                         <h3 class="text-xl font-bold text-gray-800">{{ $product->title }}</h3>
                                         <p class="text-gray-600">{{ $product->description ?? 'No description available.' }}</p>
                                     </div>
+
+                                    <!-- Materials Linked to Product or Service -->
+                                    @if($product->type === 'product' || $product->type === 'service')
+                                    <div class="mb-4 text-sm">
+                                        <p class="font-semibold text-gray-700">Materials:</p>
+                                        <ul class="list-disc ml-4 mt-2">
+                                            @foreach ($product->materials as $material)
+                                            <li class="mt-2">
+                                                <span class="font-bold">{{ $material->title }}</span>
+                                                <span class="text-gray-500">({{ $material->quantity_in_stock }} {{ $material->unit_type }})</span>
+                                                <span class="text-gray-400 ml-2">Usage: {{ $material->usage_per_unit }} per unit</span>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    @endif
+
+                                    <!-- Parent Material and Children -->
+                                    @if($product->is_parent_material)
+                                    <div class="mt-4">
+                                        <p class="font-semibold text-gray-700">Parent Material:</p>
+                                        <ul class="mt-2 space-y-2">
+                                            @foreach ($product->children as $child)
+                                            <li class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                                                <div>
+                                                    <span class="font-bold">{{ $child->title }}</span>
+                                                    <span class="text-gray-500 ml-2">({{ $child->quantity_in_stock }} {{ $child->unit_type }})</span>
+                                                </div>
+                                                <div class="text-sm text-gray-500">
+                                                    Cost: ${{ $child->cost_per_unit }}, Price: ${{ $child->price_per_unit }}
+                                                </div>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                    @endif
                         
                                     <!-- Product-Specific Details with Stock Progress Bar -->
                                     @if($product->type === 'product')

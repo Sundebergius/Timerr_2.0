@@ -24,6 +24,7 @@ import '../css/app.css';
 // import vue components
 import TaskCreator from './components/TaskCreator.vue'; // Import your new component
 import ProductModal from './components/productModal.vue'; // Import your new component
+import LinkMaterialsModal from './components/LinkMaterialsModal.vue'; // Import your new LinkMaterialsModal component
 
 /**
  * Next, we will create a fresh Vue application instance. You may then begin
@@ -36,6 +37,8 @@ const app = createApp({
     data() {
         return {
             showModal: false,
+            showLinkMaterialsModal: false, // Add this for managing the LinkMaterialsModal state
+            selectedProductId: null, // Track the selected product ID
             userId: null,
             teamId: null,
         };
@@ -57,6 +60,25 @@ const app = createApp({
         },
         toggleModal() {
             this.showModal = !this.showModal;
+        },
+        // New method to handle closing the LinkMaterialsModal
+        handleMaterialsLinked() {
+            console.log('Materials linked successfully');
+            this.showLinkMaterialsModal = false;
+            this.refreshPage(); // Refresh the page after linking materials
+            // Perform any additional actions after linking materials
+        },
+        openLinkMaterialsModal(productId) {
+            if (productId) {
+                this.selectedProductId = productId; // Set the selected product ID
+                this.showLinkMaterialsModal = true; // Show the modal
+            } else {
+                alert('No product selected for linking materials.');
+            }
+        },
+        refreshPage() {
+            console.log('Refreshing the page...');
+            window.location.reload();
         },
 
         // New submitForm method to handle form submissions from task-creator
@@ -80,6 +102,7 @@ const app = createApp({
 // Register components globally
 app.component('task-creator', TaskCreator);
 app.component('product-modal', ProductModal);
+app.component('link-materials-modal', LinkMaterialsModal); // Register your new LinkMaterialsModal component
 app.component('font-awesome-icon', FontAwesomeIcon);
 
 // Mount the Vue instance if #app exists

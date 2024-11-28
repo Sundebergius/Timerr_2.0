@@ -163,21 +163,16 @@
                                         <p class="font-semibold text-gray-800">{{ attribute.key }}</p>
                                         <span class="ml-4 text-gray-600">{{ attribute.value }} kr</span>
                                     </div>
-                                    
-                                    <!-- Toggle for Attribute Selection -->
-                                    <div class="flex items-center mt-2 md:mt-0 md:ml-4">
-                                        <button @click.prevent="toggleAttribute(taskProduct, attribute)" 
-                                            class="flex items-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-md transition duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-400">
-                                            <span v-if="taskProduct.selectedAttributes[attribute.key]">Deselect</span>
-                                            <span v-else>Select</span>
-                                        </button>
-                                    </div>
                                 </div>
 
-                                <!-- Attribute Quantity if selected -->
-                                <div v-if="taskProduct.selectedAttributes[attribute.key]" class="flex items-center mt-2 md:mt-0 md:ml-6">
+                                <!-- Attribute Quantity Input -->
+                                <div class="flex items-center mt-2 md:mt-0 md:ml-6">
                                     <label class="text-gray-600 mr-2">Quantity:</label>
-                                    <input type="number" v-model="taskProduct.selectedAttributesQuantities[attribute.key]" min="1"
+                                    <input 
+                                        type="number" 
+                                        v-model="taskProduct.selectedAttributesQuantities[attribute.key]" 
+                                        min="0"
+                                        @input="onAttributeQuantityChange(index, attribute.key)" 
                                         class="shadow border rounded py-1 px-3 w-20 text-center text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-300 ease-in-out">
                                 </div>
                             </div>
@@ -189,50 +184,115 @@
                 <!-- Shared Materials Section -->
                 <div v-if="taskProduct.linkedMaterials && taskProduct.linkedMaterials.length > 0" class="mt-6">
                     <p class="text-lg font-semibold text-blue-700 mb-4">Select Materials:</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div 
-                            v-for="material in taskProduct.linkedMaterials" 
-                            :key="material.id" 
-                            class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
-                            
-                            <!-- Material Header -->
-                            <div class="flex items-center justify-between mb-3">
-                                <p class="text-xl font-semibold text-gray-800">{{ material.title }}</p>
-                                <input type="checkbox" v-model="material.selected" @change="onMaterialSelectionChange(index)" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
-                            </div>
 
-                            <!-- Material Details -->
-                            <div class="text-sm text-gray-700 space-y-2">
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Unit Type:</span>
-                                    <span>{{ material.unit_type }}</span>
+                    <!-- Simple Materials Section -->
+                    <div v-if="simpleMaterials[index]?.length > 0">
+                      <p class="text-md font-semibold text-gray-800 mb-2">Simple Materials:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div 
+                                v-for="material in simpleMaterials[index]" 
+                                :key="material.id" 
+                                class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
+
+                                <!-- Material Header -->
+                                <div class="flex items-center justify-between mb-3">
+                                    <p class="text-xl font-semibold text-gray-800">{{ material.title }}</p>
+                                    <input 
+                                        type="checkbox" 
+                                        v-model="material.selected" 
+                                        @change="onMaterialSelectionChange(index)" 
+                                        class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Stock:</span>
-                                    <span :class="{'text-red-600': material.displayStock <= material.minimum_stock_alert || material.displayStock < 0, 'text-green-600': material.displayStock > material.minimum_stock_alert}">
-                                        {{ material.displayStock }}
-                                    </span>
+
+                                <!-- Material Details -->
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Unit Type:</span>
+                                        <span>{{ material.unit_type }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Stock:</span>
+                                        <span :class="{'text-red-600': material.displayStock <= material.minimum_stock_alert || material.displayStock < 0, 'text-green-600': material.displayStock > material.minimum_stock_alert}">
+                                            {{ material.displayStock }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Usage per Unit:</span>
+                                        <span>{{ material.usage_per_unit }}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium text-gray-600">Price per Unit:</span>
+                                        <span>{{ material.price_per_unit }} kr</span>
+                                    </div>
                                 </div>
-                                <p v-if="material.displayStock < 0" class="text-sm text-gray-500 italic mt-1">
-                                    Negative values are allowed, and you can update stock levels later.
-                                </p>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Usage per Unit:</span>
-                                    <span>{{ material.usage_per_unit }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Price per Unit:</span>
-                                    <span>{{ material.price_per_unit }} kr</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="font-medium text-gray-600">Min Stock Alert:</span>
-                                    <span v-if="material.minimum_stock_alert" class="text-orange-500">{{ Number(material.minimum_stock_alert).toFixed(2) }}</span>
-                                    <span v-else class="italic text-gray-400">None</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Materials Section -->
+                    <div v-if="advancedMaterials[index]?.length > 0" class="mt-6">
+                      <p class="text-md font-semibold text-gray-800 mb-2">Advanced Materials:</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div 
+                                v-for="material in advancedMaterials[index]" 
+                                :key="material.id" 
+                                class="p-4 border border-gray-200 rounded-lg shadow-md bg-white hover:shadow-lg transition-shadow duration-300">
+
+                                <!-- Parent Material Header -->
+                                <p class="text-xl font-semibold text-gray-800 mb-3">{{ material.title }}</p>
+
+                                <!-- Child Materials Section -->
+                                <div class="text-sm text-gray-700 space-y-2">
+                                    <p class="font-medium text-blue-600 mb-2">Child Materials:</p>
+                                    <div 
+                                        v-for="child in material.child_materials" 
+                                        :key="child.id" 
+                                        class="p-2 border border-gray-300 rounded-lg shadow-sm bg-gray-50 mb-2">
+
+                                        <!-- Child Material Header -->
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-medium text-gray-600">{{ child.title }}</span>
+                                            <input 
+                                                type="checkbox" 
+                                                v-model="child.selected" 
+                                                @change="onChildMaterialSelectionChange(index, material, child)" 
+                                                class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+
+                                        <!-- Child Material Details -->
+                                        <div class="flex justify-between mt-1">
+                                            <span class="font-medium text-gray-600">Stock:</span>
+                                            <span :class="{'text-red-600': child.quantity_in_stock <= child.minimum_stock_alert, 'text-green-600': child.quantity_in_stock > child.minimum_stock_alert}">
+                                                {{ child.quantity_in_stock }}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="font-medium text-gray-600">Price per Unit:</span>
+                                            <span>{{ child.price_per_unit }} kr</span>
+                                        </div>
+
+                                        <!-- Quantity Input for Advanced Materials -->
+                                        <div class="flex justify-between mt-2">
+                                            <span class="font-medium text-gray-600">Quantity:</span>
+                                            <input 
+                                                type="number" 
+                                                min="0" 
+                                                v-model="child.quantity" 
+                                                class="w-16 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 text-right" 
+                                                placeholder="0" />
+                                        </div>
+
+                                        <!-- Predefined Usage Section -->
+                                        <div v-if="child.predefined_usage" class="text-sm mt-2">
+                                            <span class="italic text-gray-500">Predefined Usage: {{ child.predefined_usage }} units</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Add Product/Service Button -->
                 <div class="mt-4">
@@ -251,9 +311,10 @@
           <!-- Editable quantity for physical products -->
           <div v-if="product.type === 'product'" class="mb-4">
             <label for="quantity" class="block text-gray-700 font-semibold mb-2">Quantity:</label>
-            <input type="number" v-model="product.quantity" min="1"
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
-            <p class="text-gray-700 mt-2"><strong>Total Price:</strong> {{ calculateTotalPrice(product) }} kr</p>
+            <input type="number" v-model="product.quantity" min="1" 
+                  @input="recalculateProductTotal(index)"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline transition duration-300 ease-in-out">
+            <p class="text-gray-700 mt-2"><strong>Total Price:</strong> {{ product.totalPrice }} kr</p>
           </div>
 
           <!-- Display Selected Materials for Dynamic Products -->
@@ -527,136 +588,190 @@ export default {
           type: 'product', // or 'service'
           attributes: {}, // { 'size': 'Large', 'color': 'Red' }
           selectedAttributes: {}, // { 'size': 0, 'color': 0 }
-          selectedAttributesQuantities: {} // { 'size': 0, 'color': 0 }
+          selectedAttributesQuantities: {}, // { 'size': 0, 'color': 0 }
+          selectedProductDetails: null, // Initialize as null or an empty object
+          linkedMaterials: [], // Array of materials linked to the product
         }
       ],
       addedProducts: [],
       showEditModal: false,
       editProductIndex: null,
       editProductDetails: {
-        quantity: 1,
+        quantity: 0,
         // Add other fields for editing if needed
     },
     };
   },
   computed: {
+    simpleMaterials() {
+        return this.taskProducts.map(taskProduct =>
+            taskProduct?.linkedMaterials?.filter(material => !material.is_parent_material) || []
+        );
+    },
+    advancedMaterials() {
+        return this.taskProducts.map(taskProduct =>
+            taskProduct?.linkedMaterials?.filter(material => material.is_parent_material) || []
+        );
+    },
     materialStockOverview() {
         const stockMap = {};
 
-        // Loop through each added product/service and accumulate material usage
         this.addedProducts.forEach(product => {
-            if (product.selectedMaterials && product.selectedMaterials.length > 0) {
-                product.selectedMaterials.forEach(material => {
-                    if (!stockMap[material.title]) {
-                        // Initialize material in stockMap with initial values
-                        stockMap[material.title] = {
-                            title: material.title,
-                            unitType: material.unitType,
-                            initialStock: parseFloat(material.initialStock) || 0,
-                            remainingStock: parseFloat(material.initialStock) - parseFloat(material.quantityUsed),
-                            minimumStockAlert: parseFloat(material.minimumStockAlert) || 0
-                        };
-                    } else {
-                        // Deduct used quantity from remaining stock for the material
-                        stockMap[material.title].remainingStock -= parseFloat(material.quantityUsed) || 0;
-                    }
-                });
-            }
+            (product.selectedMaterials || []).forEach(material => {
+                const initialStock = Number(material.initialStock) || 0;
+                const quantityUsed = Number(material.quantityUsed) || 0;
+                const usagePerUnit = Number(material.usage_per_unit) || 0;
+                const minimumStockAlert = Number(material.minimumStockAlert) || 0;
+
+                if (!stockMap[material.title]) {
+                    stockMap[material.title] = {
+                        title: material.title,
+                        unitType: material.unitType,
+                        initialStock,
+                        remainingStock: initialStock - quantityUsed, // Ensure subtraction is numeric
+                        minimumStockAlert
+                    };
+                } else {
+                    stockMap[material.title].remainingStock -= quantityUsed; // Ensure numeric subtraction
+                }
+
+                // Adjust for service attributes if it's a service
+                if (product.type === 'service') {
+                    Object.keys(product.selectedAttributesQuantities || {}).forEach(attrKey => {
+                        const attrQuantity = parseFloat(product.selectedAttributesQuantities[attrKey]) || 0;
+                        // stockMap[material.title].remainingStock -= attrQuantity * usagePerUnit; // Ensure numeric subtraction
+                    });
+                }
+
+                // Safeguard against negative or NaN remaining stock
+                stockMap[material.title].remainingStock = isNaN(stockMap[material.title].remainingStock)
+                    ? 0
+                    : stockMap[material.title].remainingStock;
+            });
         });
 
-        // Return as an array for rendering
-        return Object.values(stockMap);
+        // Return array of materials with all numbers validated
+        return Object.values(stockMap).map(material => ({
+            ...material,
+            remainingStock: isNaN(material.remainingStock) ? 0 : material.remainingStock, // Fallback to 0 if NaN
+            initialStock: isNaN(material.initialStock) ? 0 : material.initialStock // Ensure initialStock is valid
+        }));
     },
 
     totalProductSummary() {
-        const summary = {
-            totalPrice: 0,
-            totalQuantity: 0,
-            products: []
-        };
+        let totalPrice = 0;
+        let totalQuantity = 0;
 
         this.addedProducts.forEach(product => {
-            let productTotalPrice = parseFloat(product.totalPrice) || 0;
-            let quantity = 0;
-
-            if (product.type === 'product') {
-                // Use the already calculated totalPrice from when the product was added
-                productTotalPrice = parseFloat(product.totalPrice) || 0;
-                quantity = product.quantity || 0;
-            } else if (product.type === 'service') {
-                // For services, accumulate based on attribute quantities
-                quantity = product.selectedAttributes.reduce((sum, attr) => sum + (attr.quantity || 0), 0);
-            }
-
-            // Accumulate total values
-            summary.totalPrice += productTotalPrice;
-            summary.totalQuantity += quantity;
-
-            // Add each product/service instance to the products array with independent quantities
-            summary.products.push({
-                title: product.title,
-                quantity: quantity,
-                totalPrice: productTotalPrice.toFixed(2)
-            });
+            totalPrice += parseFloat(product.totalPrice) || 0;
+            totalQuantity += product.type === 'product'
+                ? (parseFloat(product.quantity) || 0) // Ensure numeric value for quantity
+                : this.getAttributeTotalQuantity(product);
         });
 
-        // Round total price for display consistency
-        summary.totalPrice = Math.round(summary.totalPrice * 100) / 100;
-
-        return summary;
+        return {
+            totalPrice: isNaN(totalPrice) ? '0.00' : totalPrice.toFixed(2), // Ensure valid total price
+            totalQuantity: isNaN(totalQuantity) ? 0 : totalQuantity, // Ensure valid total quantity
+            products: this.addedProducts.map(product => ({
+                title: product.title,
+                quantity: isNaN(product.quantity) ? 0 : product.type === 'product' ? product.quantity : this.getAttributeTotalQuantity(product),
+                totalPrice: isNaN(product.totalPrice) ? '0.00' : parseFloat(product.totalPrice).toFixed(2) // Ensure valid product total price
+            }))
+        };
     }
 },
 
-watch: {
-    // Watch for changes in the addedProducts array and recalculate total price and material usage
-    addedProducts: {
-        handler(newProducts) {
-            newProducts.forEach(product => {
-                if (product.type === 'product') {
-                    // Recalculate price and material usage for each product
-                    this.calculateTotalPrice(product);
-                }
-            });
-        },
-        deep: true // Ensure deep reactivity to capture changes within nested objects/arrays
-    },
-
-    // Watch for changes in taskProducts array and track changes to selected product
+  watch: {
     taskProducts: {
-        handler(newTaskProducts) {
-            newTaskProducts.forEach(taskProduct => {
-                if (taskProduct.selectedProduct) {
-                    // Flag that a product change has occurred
-                    this.productChangedFlag = true;
+        handler(newTaskProducts, oldTaskProducts) {
+            newTaskProducts.forEach((taskProduct, index) => {
+              const oldTaskProduct = oldTaskProducts?.[index];
+
+                if (taskProduct.selectedProduct !== oldTaskProducts[index]?.selectedProduct) {
+                    // Only call updateDerivedPriceAndStock if materials have been selected
+                    if (taskProduct.linkedMaterials.some(material => material.selected)) {
+                        this.updateDerivedPriceAndStock(index);
+                    } else {
+                        // Reset price if no materials are selected
+                        taskProduct.selectedProductDetails.derivedPrice = '0.00';
+                    }
+                }
+
+                // Watch for changes in advanced material child quantities
+                taskProduct.linkedMaterials.forEach(material => {
+                    if (material.is_parent_material) {
+                        material.child_materials.forEach((child, childIndex) => {
+                            const oldChild = oldTaskProduct.linkedMaterials?.[index]?.child_materials?.[childIndex];
+                            if (child.selected !== oldChild?.selected || child.quantity !== oldChild?.quantity) {
+                                this.updateDerivedPriceAndStock(index);
+                            }
+                        });
+                    }
+                });
+
+                // Watch for changes in service attributes quantities
+                if (taskProduct.type === 'service') {
+                    Object.keys(taskProduct.selectedAttributesQuantities || {}).forEach(attrKey => {
+                        if (taskProduct.selectedAttributesQuantities[attrKey] !== oldTaskProducts[index]?.selectedAttributesQuantities?.[attrKey]) {
+                            // Recalculate the total price for the service when attributes change
+                            taskProduct.selectedProductDetails.derivedPrice = this.calculateTotalPrice(taskProduct, taskProduct.linkedMaterials);
+                        }
+                    });
                 }
             });
         },
-        deep: true // Ensure deep reactivity
+        deep: true
     },
 
-    // Watch for changes in localProject object and update form data
-    localProject: {
-      handler(newValue) {
-        this.formData = JSON.stringify(newValue);
-      },
-      deep: true // Ensure deep reactivity to nested changes in localProject
+    addedProducts: {
+        handler(newProducts, oldProducts) {
+            newProducts.forEach((product, index) => {
+                if (product !== oldProducts[index]) {
+                    if (!product.selectedProductDetails) {
+                        const selectedProduct = this.products.find(p => p.id === product.id);
+                        if (selectedProduct) {
+                            product.selectedProductDetails = { ...selectedProduct };
+                        } else {
+                            console.warn('No selected product details found for added product from Watch:', product);
+                            return; // Skip further processing if selectedProductDetails cannot be set
+                        }
+                    }
+
+                    product.totalPrice = this.calculateTotalPrice(product, product.selectedMaterials);
+
+                    // Ensure materials stock is updated if a product or service changes
+                    if (product.type === 'product' || product.type === 'service') {
+                        this.updateProductWithMaterials(index, product, product.selectedMaterials);
+                    }
+                }
+
+                // Handle advanced materials specifically
+                product.selectedMaterials?.forEach((material, materialIndex) => {
+                    if (material.is_parent_material) {
+                        material.child_materials.forEach((child, childIndex) => {
+                            const oldChild = oldProduct.selectedMaterials?.[materialIndex]?.child_materials?.[childIndex];
+                            if (child.selected !== oldChild?.selected || child.quantity !== oldChild?.quantity) {
+                                this.updateDerivedPriceAndStock(index);
+                            }
+                        });
+                    }
+                });
+            });
+        },
+        deep: true
     }
 },
+
   mounted() {
-      if (this.project) {
-          this.localProject = this.project;
-          
-          if (this.localProject && this.localProject.user_id) {
-              this.fetchProducts().then(() => {
-                  // Preload materials only after products are fetched
-                  this.preloadMaterialsForProducts();
-              });
-          } else {
-              console.warn('User ID is not available in the project data');
-          }
-      }
+    if (this.localProject.user_id) {
+        this.fetchProducts()
+            .then(() => this.fetchAllMaterials())
+            .catch(error => console.error('Error initializing materials:', error));
+    }
   },
+  
   methods: {
+
     addCustomField() {
       this.customFields.push({ value: '' });
     },
@@ -685,190 +800,277 @@ watch: {
       this.checklistSections[sectionIndex].items.splice(itemIndex, 1);
     },
 
-    preloadMaterialsForProducts() {
-        this.products.forEach(product => {
-            if (product.type !== 'material') { // Skip material type products
-                axios.get(`/api/products/${product.id}/materials`)
-                    .then(response => {
-                        // Directly assign the cached materials without using this.$set
-                        this.materialsCache[product.id] = response.data || [];
-                    })
-                    .catch(error => {
-                        console.error(`Error preloading materials for product ${product.id}:`, error);
-                    });
-            }
-        });
+    //Product based methods for task creation: 
+
+    // Fetch all products from the API old method
+
+    // preloadMaterialsForProducts() {
+    //     this.products.forEach(product => {
+    //         if (product.type !== 'material') { // Skip material type products
+    //             axios.get(`/api/products/${product.id}/materials`)
+    //                 .then(response => {
+    //                     // Directly assign the cached materials without using this.$set
+    //                     this.materialsCache[product.id] = response.data || [];
+    //                 })
+    //                 .catch(error => {
+    //                     console.error(`Error preloading materials for product ${product.id}:`, error);
+    //                 });
+    //         }
+    //     });
+    // },
+
+    simulatedMaterialStock(materials = [], quantity, attributes = {}) {
+      // Create a lookup for each material's remaining stock from the overall stock overview
+      const materialStockOverviewLookup = this.materialStockOverview.reduce((acc, material) => {
+          acc[material.title] = material.remainingStock;
+          return acc;
+      }, {});
+
+      return materials.map(material => {
+          const usagePerUnit = parseFloat(material.usage_per_unit) || 0; 
+          const initialStock = !Number.isNaN(Number(materialStockOverviewLookup[material.title]))
+              ? Number(materialStockOverviewLookup[material.title])
+              : parseFloat(material.quantity_in_stock) || 0; 
+
+          let totalQuantityUsed = 0;
+
+          if (material.selected) {
+              if (quantity > 0) {
+                  // Calculate base quantity usage for products
+                  totalQuantityUsed = usagePerUnit * quantity;
+              }
+
+              // Add usage from each selected attribute for services
+              Object.keys(attributes).forEach(attrKey => {
+                  if (attributes[attrKey]) { 
+                      const attrQuantity = parseFloat(this.taskProducts[0].selectedAttributesQuantities[attrKey]) || 0;
+                      totalQuantityUsed += usagePerUnit * attrQuantity;
+                  }
+              });
+          }
+
+          totalQuantityUsed = isNaN(totalQuantityUsed) ? 0 : totalQuantityUsed; 
+
+          return {
+              ...material,
+              initialStock: isNaN(initialStock) ? 0 : initialStock,
+              displayStock: initialStock - totalQuantityUsed,
+              minimumStockAlert: material.minimum_stock_alert || 0,
+          };
+      });
+  },
+
+  getAttributeTotalQuantity(product) {
+      return Object.values(product.selectedAttributesQuantities || {}).reduce((sum, qty) => sum + qty, 0);
     },
 
-    simulatedMaterialStock(materials, quantity) {
-    const materialStockOverviewLookup = this.materialStockOverview.reduce((acc, material) => {
-        acc[material.title] = material.remainingStock;
-        return acc;
-    }, {});
+    onProductChange(index) {
+        this.updateTaskProductDetails(index);
 
-    return materials.map(material => {
-        const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
-        const initialStock = materialStockOverviewLookup[material.title] !== undefined
-            ? materialStockOverviewLookup[material.title]
-            : parseFloat(material.quantity_in_stock) || 0;
+        const taskProduct = this.taskProducts[index];
 
-        // Calculate quantity used based on user input for each service attribute or product quantity
-        const quantityUsed = material.selected ? usagePerUnit * quantity : 0;
-
-        return {
-            ...material,
-            displayStock: initialStock - quantityUsed,
-            minimumStockAlert: material.minimum_stock_alert || 0
-        };
-    });
-},
-
-onProductChange(index) {
-    const selectedProduct = this.products.find(product => product.id === this.taskProducts[index].selectedProduct);
-
-    if (selectedProduct) {
-        // Reset quantity only when switching between product types
-        if (this.previousProductType !== selectedProduct.type) {
-            this.taskProducts[index].quantity = 0;
-            this.previousProductType = selectedProduct.type;
+        // Ensure taskProduct and selectedProduct exist before proceeding
+        if (!taskProduct || !taskProduct.selectedProduct) {
+            console.error("Selected product is not defined in taskProduct:", taskProduct);
+            return;
         }
 
-        const attributes = typeof selectedProduct.attributes === 'string'
-            ? JSON.parse(selectedProduct.attributes)
-            : selectedProduct.attributes || {};
+        // Reset fields that need clearing but retain selectedProduct value
+        this.resetTaskProductFields(index);
 
-        const selectedAttributes = {};
-        const selectedAttributesQuantities = {};
+        // Find the selected product in the products list
+        const selectedProduct = this.products.find(p => p.id === taskProduct.selectedProduct);
+
+        if (!selectedProduct) {
+            console.error("Selected product not found in products list for id:", taskProduct.selectedProduct);
+            return;
+        }
+
+        // Set selected product details with initial derivedPrice and derivedStock
+        taskProduct.selectedProductDetails = {
+            ...selectedProduct,
+            derivedPrice: parseFloat(selectedProduct.price) || 0, // Set initial price
+            derivedStock: parseInt(selectedProduct.quantity_in_stock) || 0, // Set initial stock
+        };
+
+        // Set the type explicitly
+        taskProduct.type = selectedProduct.type;
+
+        // Initialize attributes for services
+        taskProduct.selectedAttributes = {};
+        taskProduct.selectedAttributesQuantities = {};
+        const attributes = selectedProduct.attributes || [];
 
         if (selectedProduct.type === 'service') {
             attributes.forEach(attr => {
-                selectedAttributes[attr.key] = false;
-                selectedAttributesQuantities[attr.key] = 0;
+                taskProduct.selectedAttributes[attr.key] = false;
+                taskProduct.selectedAttributesQuantities[attr.key] = 0;
             });
         }
 
-        let derivedPrice = selectedProduct.type === 'product' && selectedProduct.price === 0 ? 0 : parseFloat(selectedProduct.price) || 0;
-        let derivedStock = selectedProduct.quantity_in_stock;
+        // Load materials from cache, initializing each material's `selected` state to false
+        const cachedMaterials = (this.materialsCache[selectedProduct.id] || []).map(material => ({
+            ...material,
+            initialStock: parseFloat(material.quantity_in_stock) || 0, // Ensure initial stock is set as a valid number
+            selected: false // Ensure each material is initially not selected
+        }));
 
-        // Initialize totalAttributeQuantity for services
-        let totalAttributeQuantity = 0;
+        this.updateProductWithMaterials(index, selectedProduct, cachedMaterials);
 
-        // Calculate total attribute quantity for services
-        if (selectedProduct.type === 'service') {
-            totalAttributeQuantity = Object.values(this.taskProducts[index].selectedAttributesQuantities)
-                .reduce((sum, quantity) => sum + quantity, 0);
+        // Run updateDerivedPriceAndStock to set initial price and stock based on non-selected materials
+        this.updateDerivedPriceAndStock(index);
+    },
 
-            // Adjust derived price based on attributes for services
-            derivedPrice = attributes.reduce((total, attr) => {
-                const attrQuantity = this.taskProducts[index].selectedAttributesQuantities[attr.key] || 0;
-                return total + (attrQuantity * (parseFloat(attr.value) || 0));
-            }, derivedPrice);
-        }
+    // Update task product with materials and attributes
+    updateProductWithMaterials(index, product, materials) {
+        const taskProduct = this.taskProducts[index];
+        taskProduct.selectedProductDetails = { ...product };
+        taskProduct.quantity = taskProduct.quantity || 0;
 
-        const materialStockOverviewLookup = this.materialStockOverview.reduce((acc, material) => {
-            acc[material.title] = material.remainingStock;
-            return acc;
-        }, {});
+        taskProduct.linkedMaterials = materials.map(material => ({
+            ...material,
+            initialStock: isNaN(material.initialStock) ? parseFloat(material.quantity_in_stock) || 0 : material.initialStock // Safeguard for valid `initialStock`
+        }));
 
-        const calculateDerivedValues = (materials) => {
-            const productQuantity = this.taskProducts[index].quantity || 0;
-
-            // Calculate derived price based on selected materials for products
-            if (selectedProduct.type === 'product' && derivedPrice === 0) {
-                derivedPrice = materials.reduce((total, material) => {
-                    return material.selected ? total + (material.price_per_unit * material.usage_per_unit * productQuantity) : total;
-                }, 0);
-            }
-
-            // Adjust stock for selected materials based on the product quantity or service attribute quantities
-            const stockQuantities = materials
-                .filter(material => material.selected)
-                .map(material => {
-                    const adjustedStock = materialStockOverviewLookup[material.title] !== undefined
-                        ? materialStockOverviewLookup[material.title]
-                        : material.quantity_in_stock;
-
-                    // Directly subtract the `usage_per_unit` multiplied by the product or service quantity
-                    const usageMultiplier = selectedProduct.type === 'service' ? totalAttributeQuantity : productQuantity;
-
-                    return adjustedStock - (material.usage_per_unit * usageMultiplier);
-                });
-
-            // Set derived stock as the minimum stock available across selected materials
-            derivedStock = stockQuantities.length ? Math.min(...stockQuantities) : selectedProduct.quantity_in_stock;
-
-            const selectedStates = materials.reduce((acc, material) => {
-                acc[material.id] = material.selected;
-                return acc;
-            }, {});
-
-            materials.forEach(material => {
-                const adjustedStock = materialStockOverviewLookup[material.title] !== undefined
-                    ? materialStockOverviewLookup[material.title]
-                    : material.quantity_in_stock;
-
-                // Adjust material stock based on the exact usage, not a percentage
-                const usageMultiplier = selectedProduct.type === 'service' ? totalAttributeQuantity : productQuantity;
-
-                material.displayStock = material.selected
-                    ? adjustedStock - (material.usage_per_unit * usageMultiplier)
-                    : adjustedStock;
-
-                material.selected = selectedStates[material.id] || false;
-            });
-
-            this.taskProducts[index] = {
-                ...this.taskProducts[index],
-                type: selectedProduct.type || 'unknown',
-                attributes: selectedProduct.type === 'service' ? attributes : [],
-                selectedAttributes,
-                selectedAttributesQuantities,
-                quantity: productQuantity,
-                selectedProductDetails: { ...selectedProduct, derivedPrice, derivedStock },
-                linkedMaterials: materials
-            };
-        };
-
-        // Fetch materials and calculate derived values
-        if (this.materialsCache[selectedProduct.id]) {
-            const materials = this.materialsCache[selectedProduct.id];
-            calculateDerivedValues(materials);
-        } else {
-            axios.get(`/api/products/${selectedProduct.id}/materials`)
-                .then(response => {
-                    const materials = response.data.map(material => ({
-                        ...material,
-                        selected: false
-                    }));
-                    this.materialsCache[selectedProduct.id] = materials;
-                    calculateDerivedValues(materials);
-                })
-                .catch(error => {
-                    console.error('Error fetching linked materials:', error);
-                    this.taskProducts[index].linkedMaterials = [];
-                    this.taskProducts[index].selectedProductDetails = {
-                        ...selectedProduct,
-                        derivedPrice: selectedProduct.price,
-                        derivedStock: selectedProduct.quantity_in_stock
-                    };
-                });
-        }
-    } else {
-        console.error('Selected product not found.');
-    }
-},
+        // Simulate stock for materials based on initial quantity and attributes (even if zero)
+        taskProduct.linkedMaterials = this.simulatedMaterialStock(taskProduct.linkedMaterials, taskProduct.quantity);
 
 
-
-
+        this.taskProducts[index] = taskProduct;
+    },
 
     // New method to handle material selection changes
     onMaterialSelectionChange(index) {
-        this.onProductChange(index); // Recalculate values based on selected materials
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct || !taskProduct.linkedMaterials) return;
+
+        taskProduct.linkedMaterials.forEach(material => {
+            if (!material.is_parent_material && material.selected) {
+                // Simple material selection logic
+                const materialEffectiveStock = Math.floor(material.displayStock / (material.usage_per_unit || 1));
+                material.derivedStock = materialEffectiveStock;
+            } else if (material.is_parent_material) {
+                // Parent material logic: Ignore its `selected` state and focus on child materials
+                material.child_materials.forEach(child => {
+                    if (child.selected) {
+                        // Update parent material stock or price based on child selections
+                        const childEffectiveStock = Math.floor(child.quantity_in_stock / (child.usage_per_unit || 1));
+                        material.derivedStock = childEffectiveStock;
+                    }
+                });
+            }
+        });
+
+        // Recalculate overall price and stock
+        this.updateDerivedPriceAndStock(index);
+    },
+
+    onChildMaterialSelectionChange(index, parentMaterial, childMaterial) {
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct || !parentMaterial || !childMaterial) return;
+
+        // If all children are selected, mark the parent as selected; otherwise, deselect it
+        parentMaterial.selected = parentMaterial.child_materials.every(child => child.selected);
+
+        // Ensure derived stock and price are recalculated for the updated child quantity
+        this.updateDerivedPriceAndStock(index);
     },
 
     onProductQuantityChange(index) {
-        this.onProductChange(index); // Recalculate values based on the new quantity
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct) return;
+
+        // Recalculate the material stock based on the updated quantity
+        taskProduct.linkedMaterials = this.simulatedMaterialStock(
+            taskProduct.linkedMaterials, 
+            taskProduct.quantity
+        );
+
+        // Recalculate price and stock based on the new quantity
+        this.updateDerivedPriceAndStock(index);
+    },
+
+    onAttributeQuantityChange(index, attrKey) {
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct) return;
+
+        // If the attribute quantity is greater than 0, it will be considered in calculations
+        const attrQuantity = parseFloat(taskProduct.selectedAttributesQuantities[attrKey]) || 0;
+
+        if (attrQuantity > 0) {
+            taskProduct.selectedAttributes[attrKey] = true; // Mark as active if quantity > 0
+        } else {
+            delete taskProduct.selectedAttributes[attrKey]; // Remove if quantity is 0
+        }
+
+        // Recalculate the material stock and price when attribute quantity changes
+        taskProduct.linkedMaterials = this.simulatedMaterialStock(
+            taskProduct.linkedMaterials,
+            taskProduct.quantity,
+            taskProduct.selectedAttributes
+        );
+
+        this.updateDerivedPriceAndStock(index);
+    },
+
+    updateDerivedPriceAndStock(index) {
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct || !taskProduct.selectedProductDetails) return;
+
+        // Initialize total price and stock
+        let totalPrice = 0;
+        let derivedStock = Infinity; // Start with Infinity to ensure we get the lowest stock of selected materials
+
+        // Iterate through all linked materials
+        taskProduct.linkedMaterials.forEach(material => {
+            if (material.selected && !material.is_parent_material) {
+                // Simple material price and stock calculation
+                const materialTotalPrice = material.price_per_unit * (material.usage_per_unit * (taskProduct.quantity || 0));
+                totalPrice += materialTotalPrice;
+
+                const materialEffectiveStock = Math.floor(material.displayStock / (material.usage_per_unit || 1));
+                derivedStock = Math.min(derivedStock, materialEffectiveStock);
+            } else if (material.is_parent_material) {
+                // Advanced materials: Calculate price and stock based on child materials
+                material.child_materials.forEach(child => {
+                    if (child.selected) {
+                        // Use child-specific quantity for calculations
+                        const childQuantity = parseFloat(child.quantity) || 0;
+
+                        // Calculate price for the selected child material
+                        const childTotalPrice = child.price_per_unit * childQuantity;
+                        totalPrice += childTotalPrice;
+
+                        // Calculate stock based on the selected quantity and usage per unit
+                        const childEffectiveStock = Math.floor(child.quantity_in_stock / (child.usage_per_unit || 1));
+                        derivedStock = Math.min(derivedStock, childEffectiveStock);
+                    }
+                });
+            }
+        });
+
+        // Handle attribute-specific calculations for services
+        if (taskProduct.type === 'service') {
+            Object.keys(taskProduct.selectedAttributesQuantities || {}).forEach(attrKey => {
+                const attrQuantity = parseFloat(taskProduct.selectedAttributesQuantities[attrKey]) || 0;
+                const attribute = taskProduct.selectedProductDetails.attributes?.find(a => a.key === attrKey);
+
+                if (attribute && attrQuantity > 0) {
+                    totalPrice += attrQuantity * parseFloat(attribute.value);
+                }
+            });
+        }
+
+        // If no materials are selected, fallback to base product stock
+        if (derivedStock === Infinity) {
+            derivedStock = parseInt(taskProduct.selectedProductDetails.quantity_in_stock) || 0;
+        }
+
+        // Update the task product's derived properties
+        taskProduct.selectedProductDetails.derivedPrice = totalPrice.toFixed(2);
+        taskProduct.selectedProductDetails.derivedStock = derivedStock;
+
+        this.$forceUpdate(); // Ensure the UI updates
     },
 
     toggleAttribute(taskProduct, attribute) {
@@ -899,6 +1101,34 @@ onProductChange(index) {
         }
     },
 
+    fetchAllMaterials() {
+        if (!this.products || this.products.length === 0) {
+            console.error("No products found for the current user.");
+            return;
+        }
+
+        this.products.forEach(product => {
+            if (product.type !== 'material') { // Skip material type products
+                axios.get(`/api/products/${product.id}/materials`)
+                    .then(async response => {
+                        const materials = await Promise.all(response.data.map(async material => {
+                            if (material.is_parent_material) {
+                                const childResponse = await axios.get(`/api/materials/${material.id}/children`);
+                                material.childMaterials = childResponse.data;
+                            }
+                            material.selected = false; // Ensure each material is initially not selected
+                            return material;
+                        }));
+
+                        this.materialsCache[product.id] = materials;
+                    })
+                    .catch(error => {
+                        console.error(`Error fetching materials for product ${product.id}:`, error);
+                    });
+            }
+        });
+    },
+
     handleProductEvent(newProduct) {
       this.handleProductCreated(newProduct);
       this.updateProductList(newProduct);
@@ -918,137 +1148,109 @@ onProductChange(index) {
 
   addProduct(index) {
     const taskProduct = this.taskProducts[index];
-    console.log("Task Product:", taskProduct);
+    const selectedProduct = this.products.find(p => p.id === taskProduct.selectedProduct);
 
-    const selectedProduct = this.products.find(product => product.id === taskProduct.selectedProduct);
-    console.log("Selected Product:", selectedProduct);
-
-    if (selectedProduct) {
-        let totalPrice = 0;
-        const isService = selectedProduct.type === 'service';
-        console.log("Is Service:", isService);
-
-        // Products with materials
-        if (selectedProduct.type === 'product') {
-            console.log("Adding product with materials...");
-            const selectedMaterials = taskProduct.linkedMaterials
-                .filter(material => material.selected)
-                .map(material => {
-                    const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
-                    const pricePerUnit = parseFloat(material.price_per_unit) || 0;
-                    const quantityUsed = usagePerUnit * (taskProduct.quantity || 1);
-                    const materialCost = quantityUsed * pricePerUnit;
-
-                    console.log("Material:", material.title, "Usage Per Unit:", usagePerUnit, "Price Per Unit:", pricePerUnit, "Quantity Used:", quantityUsed, "Material Cost:", materialCost);
-
-                    totalPrice += materialCost;
-                    console.log("Total Price (after material):", totalPrice);
-
-                    return {
-                        title: material.title,
-                        unitType: material.unit_type,
-                        quantityUsed: quantityUsed.toFixed(2),
-                        totalCost: materialCost.toFixed(2),
-                        initialStock: material.quantity_in_stock,
-                        minimumStockAlert: material.minimum_stock_alert
-                    };
-                });
-
-            console.log("Selected Materials:", selectedMaterials);
-
-            // Add the product with the total price calculated from materials
-            this.addedProducts.push({
-                ...selectedProduct,
-                quantity: taskProduct.quantity,
-                totalPrice: totalPrice.toFixed(2),
-                selectedMaterials,
-            });
-
-            console.log("Product added with total price:", totalPrice);
-        }
-
-        // Services with attributes and materials
-        if (isService) {
-            console.log("Adding service with attributes and materials...");
-            // Calculate attribute costs and material usage
-            const selectedAttributes = Object.keys(taskProduct.selectedAttributes)
-                .filter(key => taskProduct.selectedAttributes[key])
-                .map(key => {
-                    const attribute = selectedProduct.attributes.find(attr => attr.key === key);
-                    const attrQuantity = taskProduct.selectedAttributesQuantities[key];
-                    const attrPrice = parseFloat(attribute.value) || 0;
-                    const attributeTotal = attrQuantity * attrPrice;
-
-                    console.log("Attribute:", attribute.key, "Quantity:", attrQuantity, "Price:", attrPrice, "Attribute Total:", attributeTotal);
-
-                    totalPrice += attributeTotal;
-                    console.log("Total Price (after attribute):", totalPrice);
-
-                    return {
-                        attribute: key,
-                        quantity: attrQuantity,
-                        price: attrPrice,
-                        total: attributeTotal.toFixed(2),
-                    };
-                });
-
-            const selectedMaterials = taskProduct.linkedMaterials
-                .filter(material => material.selected)
-                .map(material => {
-                    const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
-                    const pricePerUnit = parseFloat(material.price_per_unit) || 0;
-                    const totalAttributeQuantity = selectedAttributes.reduce((sum, attr) => sum + attr.quantity, 0);
-                    const quantityUsed = usagePerUnit * totalAttributeQuantity;
-                    const materialCost = quantityUsed * pricePerUnit;
-
-                    console.log("Material:", material.title, "Usage Per Unit:", usagePerUnit, "Price Per Unit:", pricePerUnit, "Total Attribute Quantity:", totalAttributeQuantity, "Quantity Used:", quantityUsed, "Material Cost:", materialCost);
-
-                    totalPrice += materialCost;
-                    console.log("Total Price (after materials for service):", totalPrice);
-
-                    return {
-                        title: material.title,
-                        unitType: material.unit_type,
-                        quantityUsed: quantityUsed.toFixed(2),
-                        totalCost: materialCost.toFixed(2),
-                        initialStock: material.quantity_in_stock,
-                        minimumStockAlert: material.minimum_stock_alert
-                    };
-                });
-
-            console.log("Selected Attributes:", selectedAttributes);
-            console.log("Selected Materials for Service:", selectedMaterials);
-
-            // Add the service with the total price calculated from attributes and materials
-            this.addedProducts.push({
-                ...selectedProduct,
-                totalPrice: totalPrice.toFixed(2),
-                selectedAttributes,
-                selectedMaterials,
-            });
-
-            console.log("Service added with total price:", totalPrice);
-        }
-
-        // Reset task product fields after adding to ongoing tasks
-        this.taskProducts[index] = {
-            selectedProduct: null,
-            quantity: 0,
-            type: 'product',
-            attributes: [],
-            selectedAttributes: {},
-            selectedAttributesQuantities: {},
-        };
-
-        console.log("Task Product reset after addition.");
-    } else {
-        console.log("Selected product not found.");
+    if (!selectedProduct) {
+        console.warn('Selected product not found when adding:', taskProduct.selectedProduct);
+        return;
     }
 
-    console.log('Final Added Products/Services:', this.addedProducts);
+    if (!taskProduct.selectedProductDetails) {
+        taskProduct.selectedProductDetails = { ...selectedProduct };
+    }
+
+    console.log('Task Product before calculating price:', taskProduct);
+
+    // Calculate quantity for services outside the material mapping
+    let serviceAttributeQuantity = 0;
+
+    if (taskProduct.selectedProductDetails.type === 'service') {
+        // Calculate total quantity based on selected attributes for services
+        serviceAttributeQuantity = Object.values(taskProduct.selectedAttributesQuantities).reduce((sum, qty) => {
+            return sum + (parseFloat(qty) || 0);
+        }, 0);
+    }
+
+    // Filter and calculate selected materials with the pre-calculated quantity
+    const selectedMaterials = taskProduct.linkedMaterials
+        .filter(m => m.selected)
+        .map(material => {
+            // Use serviceAttributeQuantity if it's a service, else calculate based on product quantity
+            const quantityUsed = taskProduct.selectedProductDetails.type === 'service'
+                ? serviceAttributeQuantity
+                : parseFloat(material.usage_per_unit) * (taskProduct.quantity || 1);
+
+            const totalCost = quantityUsed * parseFloat(material.price_per_unit);
+
+            return {
+                ...material,
+                quantityUsed: quantityUsed.toFixed(2),
+                totalCost: totalCost.toFixed(2),
+            };
+        });
+
+    if (!taskProduct.selectedProductDetails) {
+        console.error('selectedProductDetails missing before price calculation:', taskProduct);
+        return;
+    }
+
+    // Calculate total price, including materials
+    const totalPrice = this.calculateTotalPrice(taskProduct, selectedMaterials);
+
+    // Add the product or service to the list of added products
+    this.addedProducts.push({
+        ...selectedProduct,
+        quantity: taskProduct.quantity,
+        totalPrice: totalPrice.toFixed(2),
+        selectedMaterials: JSON.parse(JSON.stringify(selectedMaterials)), // Deep copy
+        selectedAttributesQuantities: JSON.parse(JSON.stringify(taskProduct.selectedAttributesQuantities)),
+    });
+
+    console.log('Product added to addedProducts:', this.addedProducts[this.addedProducts.length - 1]);
+
+    this.resetTaskProduct(index);
 },
 
+    // Reset the task product to its initial state
+    resetTaskProduct(index) {
+      this.taskProducts[index] = {
+        selectedProduct: null,
+        quantity: 0,
+        type: 'product',
+        selectedProductDetails: null, // Clear any previously loaded product details
+        linkedMaterials: [],
+        attributes: {},
+        selectedAttributes: {},
+        selectedAttributesQuantities: {},
+      };
+    },
 
+    // Reset specific fields for task product without overriding the selected product itself
+    resetTaskProductFields(index) {
+        const taskProduct = this.taskProducts[index];
+        taskProduct.quantity = 0;
+        taskProduct.selectedProductDetails = null;
+        taskProduct.linkedMaterials = [];
+        taskProduct.selectedAttributes = {};
+        taskProduct.selectedAttributesQuantities = {};
+    },
+
+    updateTaskProductDetails(index) {
+        const taskProduct = this.taskProducts[index];
+        if (!taskProduct) return;
+
+        console.log('Updating task product details for index:', index);
+        console.log('Current task product:', taskProduct);
+
+        // Find the selected product details
+        const selectedProduct = this.products.find(p => p.id === taskProduct.selectedProduct);
+        if (selectedProduct) {
+            taskProduct.selectedProductDetails = { ...selectedProduct };
+            console.log('Updated selectedProductDetails:', taskProduct.selectedProductDetails);
+        } else {
+            console.warn('Selected product not found:', taskProduct.selectedProduct);
+        }
+    },
 
     handleProductCreated(product) {
       console.log(product);
@@ -1056,6 +1258,7 @@ onProductChange(index) {
       this.$emit('productCreated', product);
       this.showModal = false;
     },
+
     validateForm() {
       if (!this.task_title) {
         this.titleError = true;
@@ -1065,27 +1268,33 @@ onProductChange(index) {
         this.handleFormSubmission();
       }
     },
+
     validateAndAddProduct(index) {
-      const taskProduct = this.taskProducts[index];
+        const taskProduct = this.taskProducts[index];
 
-      // Validate for physical products
-      if (taskProduct.type === 'product' && taskProduct.quantity <= 0) {
-        alert("Please specify a valid quantity for the product.");
-        return;
-      }
-
-      // Validate for service products with attributes
-      if (taskProduct.type === 'service') {
-        for (const key in taskProduct.selectedAttributes) {
-          if (taskProduct.selectedAttributes[key] && (!taskProduct.selectedAttributesQuantities[key] || taskProduct.selectedAttributesQuantities[key] <= 0)) {
-            alert(`Please specify a valid quantity for the attribute: ${key}`);
+        // Check the type from selectedProductDetails instead of taskProduct directly
+        if (taskProduct.selectedProductDetails.type === 'product' && taskProduct.quantity <= 0) {
+            alert("Please specify a valid quantity for the product.");
             return;
-          }
         }
-      }
 
-      this.addProduct(index);
+        // Validate for service products with attributes
+        if (taskProduct.selectedProductDetails.type === 'service') {
+            for (const key in taskProduct.selectedAttributes) {
+                if (taskProduct.selectedAttributes[key] && (!taskProduct.selectedAttributesQuantities[key] || taskProduct.selectedAttributesQuantities[key] <= 0)) {
+                    alert(`Please specify a valid quantity for the attribute: ${key}`);
+                    return;
+                }
+            }
+        }
+
+        // Proceed to add product if validation passes
+        if (!taskProduct.hasValidated) {  // Avoid re-validation or multiple triggers
+            taskProduct.hasValidated = true;  // Set a temporary validation flag
+            this.addProduct(index);
+        }
     },
+
     editProduct(index) {
       this.editProductIndex = index;
       this.editProductDetails = {
@@ -1094,6 +1303,7 @@ onProductChange(index) {
       };
       this.showEditModal = true;
     },
+
     updateProduct() {
       if (this.editProductIndex !== null) {
         // Update the selected product with the new details
@@ -1110,6 +1320,7 @@ onProductChange(index) {
         this.editProductIndex = null;
       }
     },
+    
     removeProduct(index) {
         // Check if the index is valid for addedProducts
         if (index >= 0 && index < this.addedProducts.length) {
@@ -1141,63 +1352,120 @@ onProductChange(index) {
         console.log('Task Products Length:', this.taskProducts.length);
     },
 
-    calculateTotalPrice(product) {
-    let totalPrice = 0;
+    updatePriceAndStockWithTotalCalculation(index) {
+        const taskProduct = this.taskProducts[index];
 
-    // Case for products
-    if (product.type === 'product') {
-        // Products with selected materials
-        if (product.selectedMaterials && product.selectedMaterials.length > 0) {
-            product.selectedMaterials.forEach(material => {
-                const usagePerUnit = parseFloat(material.usage_per_unit) || 0;  // Get usage per unit
-                const quantityUsed = usagePerUnit * (product.quantity || 1);    // Update quantity used based on product quantity
-                const materialCost = quantityUsed * (parseFloat(material.price_per_unit) || 0); // Calculate cost based on quantity used
+        if (!taskProduct || !taskProduct.selectedProductDetails) return;
 
-                // Dynamically update the material data
-                material.quantityUsed = quantityUsed.toFixed(2);  // Update material's quantity used
-                material.totalCost = materialCost.toFixed(2);     // Update material's total cost
+        // Recalculate the derived price based on selected materials
+        taskProduct.selectedProductDetails.derivedPrice = this.calculateTotalPrice(
+            taskProduct,
+            taskProduct.linkedMaterials
+        );
 
-                totalPrice += materialCost;
-            });
-        }
-    }
+        // Recalculate the derived stock by checking material stock
+        taskProduct.selectedProductDetails.derivedStock = taskProduct.linkedMaterials.reduce(
+          (totalStock, material) => totalStock + (material.selected ? material.displayStock : 0),
+          parseInt(taskProduct.selectedProductDetails.quantity_in_stock) || 0
+      );
+    },
 
-    // Case for services
-    else if (product.type === 'service') {
-        // Start with the base price of the service (if any)
-        totalPrice += parseFloat(product.price) || 0;
-
-        // Add the prices of the selected attributes
-        if (product.selectedAttributes && product.selectedAttributes.length > 0) {
-            product.selectedAttributes.forEach(attr => {
-                const attrPrice = parseFloat(attr.price) || 0;
-                const attrQuantity = parseInt(attr.quantity) || 0;
-                const attrTotal = attrPrice * attrQuantity;
-                totalPrice += attrTotal;
-            });
+    calculateTotalPrice(taskProduct, selectedMaterials) {
+        // Ensure selectedProductDetails is populated
+        if (!taskProduct.selectedProductDetails) {
+            console.warn('selectedProductDetails is missing; attempting to update.');
+            this.updateTaskProductDetails(this.taskProducts.indexOf(taskProduct));
         }
 
-        // Add material costs (if materials are also selected for the service)
-        if (product.selectedMaterials && product.selectedMaterials.length > 0) {
-            product.selectedMaterials.forEach(material => {
-                const usagePerUnit = parseFloat(material.usage_per_unit) || 0;
-                const quantityUsed = usagePerUnit * (product.quantity || 1);  // Update quantity used based on product quantity
-                const materialCost = quantityUsed * (parseFloat(material.price_per_unit) || 0);
-
-                // Dynamically update the material data
-                material.quantityUsed = quantityUsed.toFixed(2);  // Update material's quantity used
-                material.totalCost = materialCost.toFixed(2);     // Update material's total cost
-
-                totalPrice += materialCost;
-            });
+        if (!taskProduct.selectedProductDetails) {
+            console.error('No selected product details found for taskProduct from CalTotalPrice:', taskProduct);
+            return 0;
         }
-    }
 
-    // Return the total price rounded to two decimal places
-    return Math.round(totalPrice * 100) / 100;
-},
+        let totalPrice = 0;
 
+        const { type, price, attributes } = taskProduct.selectedProductDetails;
+        
+        // Handle products
+        if (type === 'product') {
+            // Calculate the base product price multiplied by the quantity
+            const productBasePrice = parseFloat(price) || 0;
+            totalPrice = productBasePrice * (taskProduct.quantity || 0); // Ensure the quantity is factored in
 
+            // Add selected material costs
+            selectedMaterials.forEach(material => {
+                const materialCostPerUnit = parseFloat(material.price_per_unit) || 0;
+                const materialUsed = parseFloat(material.usage_per_unit) * (taskProduct.quantity || 0);
+                const materialCost = materialCostPerUnit * materialUsed;
+                totalPrice += materialCost; // Add material cost to the total price
+            });
+
+            return isNaN(totalPrice) ? 0 : parseFloat(totalPrice.toFixed(2)); // Ensure valid number
+          }
+
+        // Handle services
+        if (type === 'service') {
+            totalPrice = parseFloat(price) || 0;
+
+            // Calculate attribute prices based on quantities
+            Object.keys(taskProduct.selectedAttributesQuantities).forEach(attrKey => {
+                const attrQuantity = parseFloat(taskProduct.selectedAttributesQuantities[attrKey]) || 0;
+                const attribute = attributes?.find(a => a.key === attrKey);
+                const attrPrice = parseFloat(attribute?.value) || 0;
+                totalPrice += attrQuantity * attrPrice;
+            });
+
+            // Calculate material costs for each attribute quantity individually
+            Object.keys(taskProduct.selectedAttributesQuantities).forEach(attrKey => {
+                const attrQuantity = parseFloat(taskProduct.selectedAttributesQuantities[attrKey]) || 0;
+                selectedMaterials.forEach(material => {
+                    const materialCostPerUnit = parseFloat(material.price_per_unit) || 0;
+                    const materialUsed = parseFloat(material.usage_per_unit) * attrQuantity;
+                    totalPrice += materialCostPerUnit * materialUsed;
+                });
+            });
+
+            return isNaN(totalPrice) ? 0 : parseFloat(totalPrice.toFixed(2));
+        }
+
+        return isNaN(totalPrice) ? 0 : parseFloat(totalPrice.toFixed(2));
+    },
+
+    recalculateProductTotal(index) {
+        const product = this.addedProducts[index];
+
+        // Ensure selectedProductDetails is available
+        if (!product.selectedProductDetails) {
+            const selectedProduct = this.products.find(p => p.id === product.id);
+            if (selectedProduct) {
+                product.selectedProductDetails = { ...selectedProduct };
+            } else {
+                console.warn('Product details not found during recalculation:', product.id);
+                return;
+            }
+        }
+
+        // Recalculate total price and update materials
+        const updatedMaterials = product.selectedMaterials.map(material => {
+            const quantityUsed = parseFloat(material.usage_per_unit) * (product.quantity || 1);
+            const totalCost = quantityUsed * parseFloat(material.price_per_unit);
+
+            return {
+                ...material,
+                quantityUsed: quantityUsed.toFixed(2),
+                totalCost: totalCost.toFixed(2),
+            };
+        });
+
+        const newTotalPrice = this.calculateTotalPrice(product, updatedMaterials);
+
+        // Update product with new values directly
+        this.addedProducts[index] = {
+            ...product,
+            totalPrice: newTotalPrice.toFixed(2),
+            selectedMaterials: JSON.parse(JSON.stringify(updatedMaterials)), // Ensure deep copy
+        };
+    },
 
     handleFormSubmission() {
       console.log('handleFormSubmission called');
@@ -1301,6 +1569,14 @@ onProductChange(index) {
                   productData.basePrice = product.price; 
                 }
 
+                // Add materials data if present
+                productData.materials = product.selectedMaterials.map(material => ({
+                        material_id: material.id,
+                        title: material.title,
+                        quantity_used: material.quantityUsed,
+                        total_cost: material.totalCost
+                    }));
+
                 return productData;
               })
             };
@@ -1328,6 +1604,9 @@ onProductChange(index) {
           };
           break;
       }
+
+       // Log the final data object for review before sending it to the server
+      console.log("Data payload to be sent:", JSON.stringify(data, null, 2));
 
       // Emit the formSubmitted event with the form data as payload
       this.$emit('formSubmitted', { route, data });

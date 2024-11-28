@@ -45,11 +45,14 @@ Route::delete('/tag/{id}', [TagController::class, 'delete']);
 Route::get('/clients/{id}/tags', [TagController::class, 'getClientTags']);
 
 Route::post('/products', [ProductController::class, 'store']);
+Route::post('/products/batch', [ProductController::class, 'storeBatch']);
 
 // Chattie wants to test the getUserProducts method to work without the userId parameter
 // Route::get('/products', [ProductController::class, 'getUserProducts']);
 Route::get('/products/{userId}', [ProductController::class, 'getUserProducts']);
 Route::get('/products/{productId}/materials', [ProductController::class, 'getProductMaterials']);
+Route::get('/materials/{parentId}/children', [ProductController::class, 'getChildMaterials']);
+Route::get('/parent-materials', [ProductController::class, 'getParentMaterials']);
 
 // Apply Sanctum authentication middleware to the event routes
 Route::middleware(['auth:sanctum'])->prefix('events')->group(function () {

@@ -159,6 +159,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::put('/{product}', [ProductController::class, 'update'])->name('products.update');
         Route::delete('/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
+        Route::post('/{product}/linked-materials', [ProductController::class, 'saveLinkedMaterials']);
     });
 
     /*
